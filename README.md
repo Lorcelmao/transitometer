@@ -33,6 +33,8 @@ All project commands go through `python tasks.py <task>` (works on every OS):
 | Task | What it does |
 |---|---|
 | `check` | lint + typecheck + tests |
+| `fetch [--only realtime\|schedule] [--workers N] [--accept-changes]` | download the pinned sources in `config/sources.json` into `<data root>/landing`, verified against `data-manifest.json` |
+| `validate-landing` | validate the landing zone and write `results/landing-volume-report.json` |
 | `compose-config` | validate `docker/compose.yaml` for every profile |
 | `verify-lock` | confirm pinned image digests in `docker/versions.env` still match the registry |
 | `storage-check` | soft storage guard: warn at 25 GB, refuse engine starts at 30 GB |

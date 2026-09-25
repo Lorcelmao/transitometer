@@ -30,7 +30,7 @@ Driven by a feasibility audit, verified research, and on-host measurements. All 
 | 2 | **Spark = full production engine; Flink = Axis A comparison workload only.** Both emit benchmark results to **Kafka result topics**; only Spark writes Delta. | Legacy Delta–Flink connector deprecated in Delta 4.0; the Kernel-based replacement is experimental (§21). |
 | 3 | **Spark and Flink run only in containers (Java 17).** No host JDK needed. | Host default Java is 23 (unsupported by Spark 4.x / Flink 2.x); PySpark on Windows needs `winutils`. |
 | 4 | **Canonical stream = real archive data re-encoded to GTFS-RT protobuf** by the replay harness. | gtfsrt.io raw `.pb` bucket returns HTTP 403 (list *and* object GET) — measured 2026-09-25; the Parquet archive is public. |
-| 5 | **Data scope = MTA Bus + one subway feed group; 14-day core window; corridor-focused history.** | Measured archive volumes: MTA Bus ≈ 1.0 GB/day Parquet; all MTA subway+rail trip updates ≈ 0.67 GB/day. v1's "~90 days" ≈ 150 GB — unfit. |
+| 5 | **Data scope = MTA Bus + one subway feed group; 14-day core window (reduced to 7 service days in S1); corridor-focused history.** | Measured archive volumes: MTA Bus ≈ 1.0 GB/day Parquet; all MTA subway+rail trip updates ≈ 0.67 GB/day. v1's "~90 days" ≈ 150 GB — unfit. |
 | 6 | **Synthetic data only for fault injection / controlled tests.** Scale experiments use real day-slices. | Real MTA Bus data alone ≈ 3–4×10⁷ rows/day [E]. |
 | 7 | **DuckDB SQL = independent golden reference**; pandas re-implementation dropped. | Removes a third copy of KPI logic; keeps an engine-independent oracle. |
 | 8 | **DuckDB Spatial replaces PostGIS in core**; PostGIS optional. **FastAPI, Trino dropped. Metabase, Airflow, Neo4j → optional/discussion.** | Focus: depth over technology count. |
@@ -279,7 +279,7 @@ Tags: **[V]** verified against primary source · **[M]** measured on this host 2
 | └ MTA subway feed group (e.g. `nyct/gtfs`, lines 1–7/S) | Core: subway trip updates | via archive | MTA ToU | ≈ 109 MB/day Parquet; **no vehicle positions archived** | **[M]** |
 | gtfsrt.io raw protobuf (`protobuf.gtfsrt.io`) | — | **HTTP 403** on listing and on direct object GET | — | — | **[X][M]** → re-encode from Parquet (§1.1 R2) |
 | gtfsrt.io versioned static schedules (`schedules.json`, `schedules/`) | Schedule truth for historical dates | Public | agency ToU | versions with validity windows; **includes MTA subway, not MTA Bus** | **[M]** |
-| **MTA Bus GTFS static** (per borough + MTA Bus Co.) | Schedule truth for bus | Bulk download from MTA | MTA ToU | 10⁵–10⁶ stop_times | **[A]** — confirm URLs + historical versions (Mobility Database) in S1 |
+| **MTA Bus GTFS static** (5 boroughs + MTA Bus Co.) | Schedule truth for bus | Versioned Parquet tables in the gtfsrt.io archive (`schedules/…/_feed_digest=`), pinned by digest | MTA ToU | 10⁵–10⁶ stop_times | **[M]** — S1: version 2026-09-06 → 2027-01-02 covers the window |
 | **MTA live GTFS-RT** | Optional live mode only | Subway keyless; Bus Time needs free key | MTA ToU | 15–30 s cadence | **[V]** optional (§20) |
 | **Mobility Database catalogue** | Feed metadata; historical static versions | Bulk JSON/CSV | Apache-2.0 repo; feeds own licences | 6,000+ feeds | **[V]** |
 | **OpenStreetMap / Geofabrik** | Hanoi geospatial reference (BR11) | Bulk download | **ODbL 1.0** | VN extract ~hundreds of MB | **[V]** |
@@ -306,12 +306,12 @@ window into the landing zone early (S1) with checksums.
 | Hanoi GTFS | CSV-in-ZIP | ~1.5 MB | one-off | provenance likely reconstructed |
 | Weather | JSON API | small | hourly | gap-filling |
 
-**Row counts.** A sampled small feed gave 479,616 trip-update rows in 11.9 MB **[M]** → MTA Bus trip updates ≈
-**3–4×10⁷ rows/day [E]**; the 14-day core window ≈ **4–5×10⁸ raw rows [E]**, reduced to ~10⁷–10⁸ Silver rows after
-dedup/stop-event inference [E].
+**Row counts (measured in S1).** The 7-service-day window (2026-09-17 → 09-23, fetched as 8 UTC partitions) holds
+**1.48 × 10⁹ raw rows in 12.3 GB [M]** (≈ 1.9 × 10⁸ rows/day; weekday ≈ 1.66 GB/day). Silver is expected to be
+1–2 orders of magnitude smaller after dedup/stop-event inference [E].
 
-**Honest scale stance.** This is *medium* data (10⁸–10⁹ raw rows) on one machine, not petabyte Big Data. We prove
-scaling behaviour with **real day-slices (1 / 3 / 7 days; 14 optional)**, and we state where the architecture would
+**Honest scale stance.** This is *medium* data (≈ 1.5 × 10⁹ raw rows) on one machine, not petabyte Big Data. We prove
+scaling behaviour with **real day-slices (1 / 3 / 7 days)**, and we state where the architecture would
 need a cluster. Every performance number is a single-machine result.
 
 ---
@@ -476,7 +476,7 @@ PostGIS/pgRouting vs Neo4j routing is **discussion-only** (§12.2).
 
 ### 13.4 Big-Data stance, provenance, and single-machine benchmarks
 1. **Real data first.** All BR demonstrations and app content use real archived observations (re-encoded transport is still real — R2).
-2. **Scale with real data.** Scaling curves use real 1/3/7-day slices (14 optional); synthetic data is used only for labelled fault injection.
+2. **Scale with real data.** Scaling curves use real 1/3/7-day slices; synthetic data is used only for labelled fault injection.
 3. **Single-machine benchmarks.** Every performance number is a single-host Docker measurement published with the host spec and caps (§17.4); vendor benchmarks are cited only as prior art.
 
 ---
@@ -689,7 +689,7 @@ Transit Equity".
 ## 22. Unresolved questions
 
 1. **Group ID and member names** — needed at submission.
-2. **MTA Bus GTFS static historical versions** — confirm availability for the 14-day core window (S1 gate); if unavailable for older dates, pick the core window inside a single published static version.
+2. ~~MTA Bus GTFS static historical versions~~ — **resolved in S1:** versioned bus schedules are archived by gtfsrt.io; the 7-day window sits inside one bus and one subway version.
 3. **Corridor selection for BR9** — which subway lines / bus routes; decided in S1 from measured volume.
 4. **Data-set freeze date** — planned end of week 6; confirm against the course calendar.
 5. **Instructor confirmation** that a NYC-core + Hanoi case-study framing is acceptable under "domain = Transportation".

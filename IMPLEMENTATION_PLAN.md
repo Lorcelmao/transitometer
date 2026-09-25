@@ -137,9 +137,17 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Exit:** fresh clone → `python tasks.py check` green; Docker disk verified on D:.
 
 ### S1 — Real-data acquisition & landing zone — host
+- **Status (2026-09-25):** ✅ implemented and verified. Owner-approved scope changes: **7 service days 2026-09-17 → 09-23** (not 14); BR9 history, Hanoi/OSM and Open-Meteo **deferred to S13** (same fetch code, new `config/sources.json` entries); manifest is **JSON** (`data-manifest.json`, stdlib) instead of YAML; GTFS validity is checked with DuckDB/pyarrow (the archive serves schedules as Parquet tables, so `gtfs_kit` does not apply).
+- **Measured results** (`results/landing-volume-report.json`):
+  - **1.48 × 10⁹ real-time rows, 12.3 GB** (94 files incl. schedules). Weekday ≈ 1.66 GB/day, weekend ≈ 1.1 GB/day.
+  - Archive `date=` partitions are **UTC days**; the window is NYC service days, so the fetch includes the following UTC day (window.end + 1).
+  - All 7 schedule versions (6 MTA Bus boroughs/companies + subway, pinned by content digest from the gtfsrt.io archive) cover every window day, cross-checked against `feed_info`.
+  - Snapshot gaps ≤ ~1 min in all feeds.
+  - Real archive gap found outside the window: MTA Bus trip updates missing on 2026-09-05 (BR7 evidence).
+  - **Trip-id matching:** MTA Bus 99.2% exact. NYCT subway 84.1% across tiers (suffix after first `_`; origin time + route + direction). Remaining ~16% = added/unscheduled or retimed trips; ~61% of those lie within ±2 min of a scheduled trip on the same route and direction. **S4 must define the matching policy** (tiers + time tolerance + an explicit "unscheduled" label).
 - **Goal:** real data pinned and measured.
 - **Deliverables:** `data-manifest.yaml` (URL, retrieval timestamp, licence, SHA-256, rows, bytes); `fetch_data.py`:
-  - gtfsrt.io Parquet: **MTA Bus** trip updates + vehicle positions and **one subway feed group** (default `nyct/gtfs`) for the **14-day core window**;
+  - gtfsrt.io Parquet: **MTA Bus** trip updates + vehicle positions and **one subway feed group** (default `nyct/gtfs`) for the **core window** (7 service days, see status above);
   - GTFS static: subway versions from gtfsrt.io `schedules/` covering the window; MTA Bus static from MTA (+ Mobility Database historical versions if needed);
   - BR9 history: **corridor subset** (default: the subway group, Jan 2026 →, filtered at download with pyarrow predicates) — size capped;
   - Hanoi GTFS + OSM extract (BR11), Open-Meteo (BR10) — small.
@@ -199,7 +207,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 
 ### S10 — Benchmarks & phase cleanup — Docker
 - **Goal:** evaluation evidence.
-- **Deliverables:** fairness contract (published first); **Axis A** runs (latency p50/p95/p99 from Kafka append times, throughput knee, late-data correctness, recovery, memory) → then **remove Flink image/state**; **Axis B** runs (cold/warm latency, freshness, footprint, compaction effect) → then **drop ClickHouse data/image**; **real-data scaling** (1/3/7-day slices; 14 optional) of Silver building in Spark; raw CSVs + plotting scripts in `results/`; post-phase compaction.
+- **Deliverables:** fairness contract (published first); **Axis A** runs (latency p50/p95/p99 from Kafka append times, throughput knee, late-data correctness, recovery, memory) → then **remove Flink image/state**; **Axis B** runs (cold/warm latency, freshness, footprint, compaction effect) → then **drop ClickHouse data/image**; **real-data scaling** (1/3/7-day slices) of Silver building in Spark; raw CSVs + plotting scripts in `results/`; post-phase compaction.
 - **Tests:** ≥3 runs with spread; counterbalanced order; idle-host check; input checksums identical across arms; "what we did not test" declared.
 - **Exit:** results reproducible from committed CSVs; storage log shows return to ≤ 25 GB steady.
 

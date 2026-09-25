@@ -21,6 +21,9 @@ from transitometer.ops.envfile import read_env_file  # noqa: E402
 
 COMPOSE_FILE = ROOT / "docker" / "compose.yaml"
 VERSIONS_FILE = ROOT / "docker" / "versions.env"
+SOURCES_FILE = ROOT / "config" / "sources.json"
+MANIFEST_FILE = ROOT / "data-manifest.json"
+LANDING_REPORT = ROOT / "results" / "landing-volume-report.json"
 PROFILES = ("spark", "app", "flink", "clickhouse")
 
 
@@ -144,6 +147,56 @@ def task_up(args: argparse.Namespace) -> int:
     return run(compose_cmd(*extra, "up", "-d"))
 
 
+def landing_dir() -> Path:
+    return Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "landing"
+
+
+def task_fetch(args: argparse.Namespace) -> int:
+    """Download the pinned sources into the landing zone and update data-manifest.json."""
+    from transitometer.ingest.fetch import fetch_all
+    from transitometer.ingest.sources import load_sources
+
+    specs = load_sources(SOURCES_FILE).files()
+    if args.only:
+        specs = [s for s in specs if s.kind == args.only]
+    landing = landing_dir()
+    print(f"{len(specs)} files -> {landing}")
+    result = fetch_all(
+        specs, landing, MANIFEST_FILE, workers=args.workers, accept_changes=args.accept_changes
+    )
+    print(
+        f"downloaded {len(result.downloaded)}, unchanged {len(result.skipped)}, "
+        f"failed {len(result.errors)}"
+    )
+    for relpath, error in sorted(result.errors.items()):
+        print(f"  {relpath}: {error}")
+    return 0 if result.ok else 1
+
+
+def task_validate_landing(_: argparse.Namespace) -> int:
+    """Validate the landing zone and write results/landing-volume-report.json."""
+    import json
+
+    from transitometer.ingest.fetch import load_manifest
+    from transitometer.ingest.sources import load_sources
+    from transitometer.ingest.validate import summary, validate
+
+    sources = load_sources(SOURCES_FILE)
+    report = validate(sources, landing_dir(), load_manifest(MANIFEST_FILE))
+    body = summary(report, (sources.window.start, sources.window.end))
+    LANDING_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    LANDING_REPORT.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
+    print(f"totals: {body['totals']}")
+    for match in body["trip_matching"]:
+        print(f"trip_id match {match['feed']}/{match['feed_type']}: {match['match_ratio']:.1%}")
+    for line in body["failures"]:
+        print(f"FAIL {line}")
+    for line in body["warnings"]:
+        print(f"WARN {line}")
+    print(f"{'OK' if report.ok else 'FAILED'} -> {LANDING_REPORT}")
+    return 0 if report.ok else 1
+
+
 def task_down(_: argparse.Namespace) -> int:
     """Stop every service; named volumes are kept (use Docker directly for deliberate resets)."""
     return run(compose_cmd("--profile", "*", "down"))
@@ -163,6 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
             task_storage_report,
             "print usage and append to results/storage-log.csv",
         ),
+        "validate-landing": (task_validate_landing, "validate landing data, write volume report"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }
     for name, (func, help_text) in simple.items():
@@ -173,6 +227,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-peak", action="store_true", help="proceed above the block threshold"
     )
     check.set_defaults(func=task_storage_check)
+
+    fetch = sub.add_parser("fetch", help="download pinned sources into the landing zone")
+    fetch.add_argument("--only", choices=("realtime", "schedule"), help="fetch one kind only")
+    fetch.add_argument("--workers", type=int, default=4, help="parallel downloads")
+    fetch.add_argument(
+        "--accept-changes", action="store_true", help="adopt upstream content changes"
+    )
+    fetch.set_defaults(func=task_fetch)
 
     up = sub.add_parser("up", help="storage guard, then start kafka or a profile")
     up.add_argument("profile", choices=("kafka", *PROFILES))

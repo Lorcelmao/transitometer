@@ -1,0 +1,105 @@
+{
+  "archive_base_url": "https://storage.googleapis.com/parquet.gtfsrt.io",
+  "window": { "start": "2026-09-17", "end": "2026-09-23" },
+  "golden_window": { "start": "2026-09-22", "end": "2026-09-23" },
+  "realtime": [
+    {
+      "alias": "mta_bus",
+      "feed_type": "trip_updates",
+      "feed_url": "https://gtfsrt.prod.obanyc.com/tripUpdates",
+      "schedule_group": "bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "mta_bus",
+      "feed_type": "vehicle_positions",
+      "feed_url": "https://gtfsrt.prod.obanyc.com/vehiclePositions",
+      "schedule_group": "bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "nyct_subway_1234567s",
+      "feed_type": "trip_updates",
+      "feed_url": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
+      "schedule_group": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    }
+  ],
+  "schedules": [
+    {
+      "alias": "bus_bronx",
+      "group": "bus",
+      "feed_url": "http://web.mta.info/developers/data/nyct/bus/google_transit_bronx.zip",
+      "digest": "v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50",
+      "valid_from": "2026-09-06",
+      "valid_to": "2027-01-02",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "bus_brooklyn",
+      "group": "bus",
+      "feed_url": "http://web.mta.info/developers/data/nyct/bus/google_transit_brooklyn.zip",
+      "digest": "v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd",
+      "valid_from": "2026-09-06",
+      "valid_to": "2027-01-02",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "bus_manhattan",
+      "group": "bus",
+      "feed_url": "http://web.mta.info/developers/data/nyct/bus/google_transit_manhattan.zip",
+      "digest": "v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee",
+      "valid_from": "2026-09-06",
+      "valid_to": "2027-01-02",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "bus_queens",
+      "group": "bus",
+      "feed_url": "http://web.mta.info/developers/data/nyct/bus/google_transit_queens.zip",
+      "digest": "v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8",
+      "valid_from": "2026-09-06",
+      "valid_to": "2027-01-02",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "bus_staten_island",
+      "group": "bus",
+      "feed_url": "http://web.mta.info/developers/data/nyct/bus/google_transit_staten_island.zip",
+      "digest": "v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237",
+      "valid_from": "2026-09-06",
+      "valid_to": "2027-01-02",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "bus_busco",
+      "group": "bus",
+      "feed_url": "http://web.mta.info/developers/data/busco/google_transit.zip",
+      "digest": "v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196",
+      "valid_from": "2026-09-06",
+      "valid_to": "2027-01-02",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    },
+    {
+      "alias": "subway",
+      "group": "subway",
+      "feed_url": "http://web.mta.info/developers/data/nyct/subway/google_transit.zip",
+      "digest": "v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d",
+      "valid_from": "2026-05-26",
+      "valid_to": "2026-10-31",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io"
+    }
+  ],
+  "schedule_tables": [
+    "agency.parquet",
+    "calendar.parquet",
+    "calendar_dates.parquet",
+    "feed_info.parquet",
+    "metadata.json",
+    "routes.parquet",
+    "shapes.parquet",
+    "stop_times.parquet",
+    "stops.parquet",
+    "trips.parquet"
+  ]
+}

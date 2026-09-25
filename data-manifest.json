@@ -1,0 +1,944 @@
+{
+  "files": {
+    "realtime/trip_updates/date=2026-09-17/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-17/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "c6fe75d1476219b3c47b1466a29d6a9fdb206d83d54346dbbd9b20e0441c7130",
+      "bytes": 1302285781,
+      "rows": 176695301,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:16+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-17/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-17/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "6206386fc6c91ff7ca9f877b088cc843a6ac3a2ebe1df19a2fb5b9d3e9ab4696",
+      "bytes": 137898963,
+      "rows": 18393269,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:18+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-18/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-18/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "564579f7362bc6fc9546ea4ddd948942205c5ed0d5fe445b17add79a4ed69e1b",
+      "bytes": 1294408497,
+      "rows": 175732148,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:13+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-18/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-18/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "c334a2246008ad88bb923eac4f02c93b3c0657681dacd909abd64e984e2716ef",
+      "bytes": 143587115,
+      "rows": 19841650,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:25+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-19/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-19/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "9da4a3e86adfb711233e7320e911d5542444358504d8bff5e3d6a5dec71bb798",
+      "bytes": 986933790,
+      "rows": 133693346,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:00+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-19/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-19/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "37fd3443403bf0dac24d02eeebe306762c3fff942c86d7c0dc14d13cd602a7c8",
+      "bytes": 117460613,
+      "rows": 14143597,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:25+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-20/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-20/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "793525b38f5baee847be40a0b8d9704f15b11cee6e974ce6d4a2f123ed5d3532",
+      "bytes": 862854307,
+      "rows": 115829471,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:54+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-20/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-20/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "598b4a13d9e7079da1ede69ed7ac91020f83167169c1ea9e76de2ee9c0b75e10",
+      "bytes": 109261772,
+      "rows": 12483095,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:26+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-21/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-21/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "6a288c99913c85992f563c6fbbb9515847feb00859be27d62fc7dbdaa334989b",
+      "bytes": 1230838525,
+      "rows": 166278501,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:56+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-21/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-21/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "34dff990ab4f42e5bc177439109fb3edcdaf7f454f4f55ee6358483beec8b0bd",
+      "bytes": 137807906,
+      "rows": 18838151,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:36+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-22/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-22/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "4c7bd0b9375b71407e2b92b05707da4279de0cee6e3cca7f5415e5c8756f81b8",
+      "bytes": 1289355236,
+      "rows": 174667857,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:03+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-22/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-22/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "aa8782f97a6738ebe5f2130d9ea5876e1abc1bbfe395ae3e1b8265dcaeb1dbbd",
+      "bytes": 143882977,
+      "rows": 20139156,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:36+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-23/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-23/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "7f83387597084f83f0cdbe8d670813f40fe952a281f15dc69c6cf32da214fe71",
+      "bytes": 1303710105,
+      "rows": 176987976,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:17+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-23/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-23/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "8b1ff8b0464e5d7c85ee1b30c58deb5c3fa3d75ab059cc990d2dec8fca1e1f5d",
+      "bytes": 144868200,
+      "rows": 20189659,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:35+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-24/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-24/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
+      "sha256": "e57a2d06d8fcf14c47683fadaa541c5b50d696d48591cc688303a80322ba6af7",
+      "bytes": 1304557012,
+      "rows": 177145485,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:50:12+00:00"
+    },
+    "realtime/trip_updates/date=2026-09-24/feed=nyct_subway_1234567s/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-24/base64url=aHR0cHM6Ly9hcGktZW5kcG9pbnQubXRhLmluZm8vRGF0YXNlcnZpY2UvbXRhZ3Rmc2ZlZWRzL255Y3QlMkZndGZz/data.parquet",
+      "sha256": "c226672056921665c8d7649dd6e94ec4d4fbadb9b172c41ca32beef933318473",
+      "bytes": 143494068,
+      "rows": 19858053,
+      "kind": "realtime",
+      "source": "nyct_subway_1234567s",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:49:21+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-17/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-17/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "898f7e229bb872f1d5c9e4d8a59f776e23372bc4d3597d13259cf2f6fe44af05",
+      "bytes": 221127882,
+      "rows": 6029729,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:30+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-18/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-18/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "28eee8b88d4f1865196c96f6d5ce1cfbb0a93e560ab5f298d923cdc59bd4287f",
+      "bytes": 219857721,
+      "rows": 5990903,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:45+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-19/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-19/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "e06f3fc76c75094834635cf65190f71ea9618b228e62b983dc8f9be08ea8962a",
+      "bytes": 161075906,
+      "rows": 4219569,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:42:54+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-20/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-20/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "af4f208beed02c623354a84ce59d5c1ed15288a5e712f6da8359da3cf157ccdc",
+      "bytes": 139427267,
+      "rows": 3571374,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:04+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-21/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-21/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "9418775259198f0dfb42da0370cdfe80f257b37e4861791cc856c24b96dff321",
+      "bytes": 209539256,
+      "rows": 5688879,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:10+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-22/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-22/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "45ceab3c736c0d64e6c4c1176eb4ffd954306be2fc17bdf34decf32d05a5dc87",
+      "bytes": 219068945,
+      "rows": 5981429,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:16+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-23/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-23/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "978eb2921a4a41a17adf89e01b5423e9cb1b674a2e49af359171d5bbff1930a5",
+      "bytes": 221703841,
+      "rows": 6057948,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:43:25+00:00"
+    },
+    "realtime/vehicle_positions/date=2026-09-24/feed=mta_bus/data.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/vehicle_positions/date=2026-09-24/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3ZlaGljbGVQb3NpdGlvbnM/data.parquet",
+      "sha256": "4dd5b85fb96ce5760b1d35343a952f67006790a2059d8d94bf8b9d6afe22b6e2",
+      "bytes": 221662983,
+      "rows": 6049137,
+      "kind": "realtime",
+      "source": "mta_bus",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:49:25+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/agency.parquet",
+      "sha256": "5a466caa2eafeb86172dc355123f2aa18753ebb4c5cb0db845b2c0190393833f",
+      "bytes": 2080,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:51+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/calendar.parquet",
+      "sha256": "68781f0ac75aead2c3dde4b241cf6b73a64266404c48a56c55d99f731b4817e6",
+      "bytes": 2937,
+      "rows": 15,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:51+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/calendar_dates.parquet",
+      "sha256": "258fb0dad6daf6e49e0378a35b101125052b3d5628000f051e0ab78ab3605141",
+      "bytes": 1626,
+      "rows": 276,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:51+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/feed_info.parquet",
+      "sha256": "073efbf89b01f26498985237e414633f873238c108681c11034c129c68009fdf",
+      "bytes": 2656,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:51+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/metadata.json",
+      "sha256": "f491bb13aaa21c0bfec616e430dd4746748dbf34c136689b42fe459c298aa028",
+      "bytes": 1497,
+      "rows": null,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:51+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/routes.parquet",
+      "sha256": "dc166566d33b5ac4f37440d9af5cafeec23134d5e8aa128d5ecbcc028cd92e77",
+      "bytes": 12242,
+      "rows": 307,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:51+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/shapes.parquet",
+      "sha256": "c6a319ef76c002d216473c24221b47d3ad6565f41033573a7147ecec610721bd",
+      "bytes": 205781,
+      "rows": 48952,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:52+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/stop_times.parquet",
+      "sha256": "59ab4176bf92b85858c52fe6e4664f7fb1ef892724dd4c5e94171db16bdb9c07",
+      "bytes": 6642610,
+      "rows": 1160378,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/stops.parquet",
+      "sha256": "680b626f98adc6ca087654a51615fab61cbc5664fd1a01965acbc95f59d3bc37",
+      "bytes": 38746,
+      "rows": 1889,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:52+00:00"
+    },
+    "schedules/bus_bronx/v1-3b7e594b7c4398bd/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvbnguemlw/_feed_digest=v1:3b7e594b7c4398bd98b636572db5ca0f35efaae64a1462c2992ce737b1d4ad50/trips.parquet",
+      "sha256": "4abf6b43d2ee859c938f5591148f0f1d6233440689473dc9e274b1a41d70536c",
+      "bytes": 420599,
+      "rows": 41156,
+      "kind": "schedule",
+      "source": "bus_bronx",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/agency.parquet",
+      "sha256": "5a466caa2eafeb86172dc355123f2aa18753ebb4c5cb0db845b2c0190393833f",
+      "bytes": 2080,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:52+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/calendar.parquet",
+      "sha256": "8c4d38eb53692403bddfaa40b27ca81a6fc3732c02647a2b7507dd0a6aa4b9af",
+      "bytes": 3090,
+      "rows": 36,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/calendar_dates.parquet",
+      "sha256": "cc6c4c68945ac6565e979d0d56b2fdafebc748a97984bf123976bbfcefd076dc",
+      "bytes": 1764,
+      "rows": 728,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/feed_info.parquet",
+      "sha256": "073efbf89b01f26498985237e414633f873238c108681c11034c129c68009fdf",
+      "bytes": 2656,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/metadata.json",
+      "sha256": "345db2d9af68965786df973ff61bd89055ae0ddcb4acb076b5aabcf701037539",
+      "bytes": 1500,
+      "rows": null,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/routes.parquet",
+      "sha256": "dc166566d33b5ac4f37440d9af5cafeec23134d5e8aa128d5ecbcc028cd92e77",
+      "bytes": 12242,
+      "rows": 307,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:53+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/shapes.parquet",
+      "sha256": "f9546f07e234ac05bc2d4075e379293ff2aabcec7b70d3316f565200ac38f394",
+      "bytes": 374578,
+      "rows": 83654,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:55+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/stop_times.parquet",
+      "sha256": "f0be89b4fdb4aad7f55f70a8716ea03334d1d24d538f77c1753b1a6eb14f3d42",
+      "bytes": 13169086,
+      "rows": 2400187,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:56+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/stops.parquet",
+      "sha256": "4b74d3ffb7008dfe1f0330721f09ff2d4290f03eb0d7a2282905cb3d75219792",
+      "bytes": 92512,
+      "rows": 4575,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:54+00:00"
+    },
+    "schedules/bus_brooklyn/v1-111d223dadbb9e58/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfYnJvb2tseW4uemlw/_feed_digest=v1:111d223dadbb9e58e71b6e376f00dd788ddd857b9480f99c73a74c5d62cdb2dd/trips.parquet",
+      "sha256": "b87cf2c087e6bec33704a67a5f94c0b33a23f33d97b390c0068d055b595547d0",
+      "bytes": 627965,
+      "rows": 58357,
+      "kind": "schedule",
+      "source": "bus_brooklyn",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:55+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/agency.parquet",
+      "sha256": "d3e1248b6dc7b6e0a4a5c58098811eae21f480c3e1bced171464d5bcc80069fc",
+      "bytes": 1700,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:01+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/calendar.parquet",
+      "sha256": "b50f40668e690d8bd66709b5a3124066443e2c3126afbc82d41d49ecd9092bbd",
+      "bytes": 3085,
+      "rows": 32,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:02+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/calendar_dates.parquet",
+      "sha256": "b3f718f4a8a5699a9a39c0732803ea380e843e5286d20426025003e8a37db6ab",
+      "bytes": 1445,
+      "rows": 210,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:02+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/feed_info.parquet",
+      "sha256": "073efbf89b01f26498985237e414633f873238c108681c11034c129c68009fdf",
+      "bytes": 2656,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:02+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/metadata.json",
+      "sha256": "4cb1d90128af268cbf0a488799c1c5fbf41c9e4fbf4700ea3246885dd7d71173",
+      "bytes": 1488,
+      "rows": null,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:02+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/routes.parquet",
+      "sha256": "13e4ae4f07c1472c7325c68888e7cb4462f413f525b09af6d8206210ea0c0277",
+      "bytes": 5830,
+      "rows": 92,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:02+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/shapes.parquet",
+      "sha256": "c43f8ea9891118c70a757101103a6847861461745fdb63c5dbcb92efaeba128f",
+      "bytes": 670696,
+      "rows": 138016,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:04+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/stop_times.parquet",
+      "sha256": "e4bdd31d82fb14c80eeed7c0702608adad7dd2d41945709b381091ebfa148a75",
+      "bytes": 5446835,
+      "rows": 1077031,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:04+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/stops.parquet",
+      "sha256": "a67e24beebde9160f2bff84a5faaca1b83ad942ac60cea217ff6de5d999459d3",
+      "bytes": 74914,
+      "rows": 2754,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:04+00:00"
+    },
+    "schedules/bus_busco/v1-39e4362e5288468c/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvYnVzY28vZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:39e4362e5288468cc980a294bc713c315f354077ee2b46f7bc116e244c2c1196/trips.parquet",
+      "sha256": "df9e9db555b38974d528b7cf93dfe237caa927989a91d9f0de7bf60e46341132",
+      "bytes": 238806,
+      "rows": 45424,
+      "kind": "schedule",
+      "source": "bus_busco",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:05+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/agency.parquet",
+      "sha256": "5a466caa2eafeb86172dc355123f2aa18753ebb4c5cb0db845b2c0190393833f",
+      "bytes": 2080,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:54+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/calendar.parquet",
+      "sha256": "94ab950db37374c8443d295d5e7dce376404d76d500c292701e6e84f8a20fc90",
+      "bytes": 2992,
+      "rows": 21,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:55+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/calendar_dates.parquet",
+      "sha256": "f5de9c1753a79fe12801e3ef769bee704f5f859680cd4e851c69a1a62e5dd6e1",
+      "bytes": 1667,
+      "rows": 345,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:55+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/feed_info.parquet",
+      "sha256": "073efbf89b01f26498985237e414633f873238c108681c11034c129c68009fdf",
+      "bytes": 2656,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:55+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/metadata.json",
+      "sha256": "6e77316db65ec0466f1bc4a33ff00b125d8bd7dec90cf0776cea06aa87957185",
+      "bytes": 1501,
+      "rows": null,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:55+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/routes.parquet",
+      "sha256": "dc166566d33b5ac4f37440d9af5cafeec23134d5e8aa128d5ecbcc028cd92e77",
+      "bytes": 12242,
+      "rows": 307,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:56+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/shapes.parquet",
+      "sha256": "492b3b9f7f2e3d1285bd40869ba63efc5d8d99d4e9bf85f1c7df8c081dd9d927",
+      "bytes": 144335,
+      "rows": 33589,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:57+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/stop_times.parquet",
+      "sha256": "25c0728eaf8e47dda0593e2051b700a5757e092a09a8c8d4c7c2eb1094770d0f",
+      "bytes": 6669840,
+      "rows": 1174914,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:58+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/stops.parquet",
+      "sha256": "f3a68e012658ca1867092ea69a21544fecc959270659c6791ffc22b9cf14e3f7",
+      "bytes": 35957,
+      "rows": 1824,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:56+00:00"
+    },
+    "schedules/bus_manhattan/v1-dd55edd90eb6750d/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfbWFuaGF0dGFuLnppcA/_feed_digest=v1:dd55edd90eb6750d27c4790fbd977d005b876154101aa3004be1e6ef32d228ee/trips.parquet",
+      "sha256": "2f1180eb7bc3795f3695f0b17539f63a6b0e44914cabba6925f5556e1e75610c",
+      "bytes": 400830,
+      "rows": 37872,
+      "kind": "schedule",
+      "source": "bus_manhattan",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:57+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/agency.parquet",
+      "sha256": "5a466caa2eafeb86172dc355123f2aa18753ebb4c5cb0db845b2c0190393833f",
+      "bytes": 2080,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:57+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/calendar.parquet",
+      "sha256": "6efbd0559f4fac57ab00e6a280d797def646f85f7690989f118e57605d0ffc91",
+      "bytes": 2981,
+      "rows": 20,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:57+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/calendar_dates.parquet",
+      "sha256": "be11446bd6dea60663f1f9a638bf4e753e75f33d0f445456203d8b6e60680c4a",
+      "bytes": 1734,
+      "rows": 345,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:57+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/feed_info.parquet",
+      "sha256": "073efbf89b01f26498985237e414633f873238c108681c11034c129c68009fdf",
+      "bytes": 2656,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:57+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/metadata.json",
+      "sha256": "ea9a6f080478dcda98e07cd50bb17006003d1d9377a14907a385b8bf7dc5c902",
+      "bytes": 1497,
+      "rows": null,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:58+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/routes.parquet",
+      "sha256": "dc166566d33b5ac4f37440d9af5cafeec23134d5e8aa128d5ecbcc028cd92e77",
+      "bytes": 12242,
+      "rows": 307,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:58+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/shapes.parquet",
+      "sha256": "f887bde583d86f4a60e294a9dfa70f76baffc7b364cb68ae94bb68e976528c3c",
+      "bytes": 196095,
+      "rows": 47768,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:59+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/stop_times.parquet",
+      "sha256": "ec2951821622c05a08431f1b77831e97678e297ff6d35f151f8bf518a1bfed64",
+      "bytes": 4533911,
+      "rows": 817866,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:00+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/stops.parquet",
+      "sha256": "9a6963457bf18df343a5b08d0c6b73afeac28a69e4468f2b7fb5ee14b61e20dd",
+      "bytes": 29719,
+      "rows": 1422,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:58+00:00"
+    },
+    "schedules/bus_queens/v1-84963511e9f36306/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfcXVlZW5zLnppcA/_feed_digest=v1:84963511e9f363062904f1a271df9e1e8cd1bfd41274024c12c2f6bb268141e8/trips.parquet",
+      "sha256": "a4256952b4415f0206daf98db9e72658cc51139cfe0c80dfe6f390472c3709e0",
+      "bytes": 330372,
+      "rows": 31199,
+      "kind": "schedule",
+      "source": "bus_queens",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:59+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/agency.parquet",
+      "sha256": "5a466caa2eafeb86172dc355123f2aa18753ebb4c5cb0db845b2c0190393833f",
+      "bytes": 2080,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:59+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/calendar.parquet",
+      "sha256": "2d27de40028ec804cfcc07cbcc2f1380372136cf013ed25d52d3f901a30beff3",
+      "bytes": 2875,
+      "rows": 12,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:40:59+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/calendar_dates.parquet",
+      "sha256": "5d492c06e6d8bcdd1ddf657a49d82a063a058f7a3b0fbf8db6312826eb143553",
+      "bytes": 1270,
+      "rows": 87,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:00+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/feed_info.parquet",
+      "sha256": "073efbf89b01f26498985237e414633f873238c108681c11034c129c68009fdf",
+      "bytes": 2656,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:00+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/metadata.json",
+      "sha256": "ba6e414e4d9aac9fff86d120f48e149ce211d6a0995ded36391070e1297819c5",
+      "bytes": 1504,
+      "rows": null,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:00+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/routes.parquet",
+      "sha256": "dc166566d33b5ac4f37440d9af5cafeec23134d5e8aa128d5ecbcc028cd92e77",
+      "bytes": 12242,
+      "rows": 307,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:00+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/shapes.parquet",
+      "sha256": "4d18738588fccbcf66659bd73c380b29ba84327eaab894cef52b8991d222e5d7",
+      "bytes": 561768,
+      "rows": 148788,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:01+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/stop_times.parquet",
+      "sha256": "f2136b60b30a2771de83c500dfd942ffd443d2345c77529b16a867be30ddc6ac",
+      "bytes": 4512335,
+      "rows": 804835,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:02+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/stops.parquet",
+      "sha256": "93d99e7f7facc9ae3992f25f21a27981674c712e6c528ffafa36d2e16d4edf69",
+      "bytes": 41803,
+      "rows": 1968,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:01+00:00"
+    },
+    "schedules/bus_staten_island/v1-c10cad53b1f1453c/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9idXMvZ29vZ2xlX3RyYW5zaXRfc3RhdGVuX2lzbGFuZC56aXA/_feed_digest=v1:c10cad53b1f1453c85f7c99d71608f319418e179ccebbcbbcd21d84f0ee14237/trips.parquet",
+      "sha256": "27a847572dcf1e22f489299fd6237edb26556fe75a07987112d73c0514877731",
+      "bytes": 193984,
+      "rows": 16524,
+      "kind": "schedule",
+      "source": "bus_staten_island",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:01+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/agency.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/agency.parquet",
+      "sha256": "5a466caa2eafeb86172dc355123f2aa18753ebb4c5cb0db845b2c0190393833f",
+      "bytes": 2080,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:04+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/calendar.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/calendar.parquet",
+      "sha256": "35c1867bb6b6c2591d7b3a17641fd6b952db20f82a79bc82a740ceb00feb679f",
+      "bytes": 2814,
+      "rows": 7,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:04+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/calendar_dates.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/calendar_dates.parquet",
+      "sha256": "6c81f6d924750e6e980339193acbf23f65d31f61dd94cfa509d8e722f184014a",
+      "bytes": 1078,
+      "rows": 6,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:05+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/feed_info.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/feed_info.parquet",
+      "sha256": "ff5ab0b61798f18d85a6eed45f1f78a678d9afa698d38753d5ce1ea1a42569c3",
+      "bytes": 2816,
+      "rows": 1,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:05+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/metadata.json": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/metadata.json",
+      "sha256": "a124f87f6c2f40dbe6d433845582648348ea54be280323e24755ee5aa6272ec3",
+      "bytes": 1608,
+      "rows": null,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:05+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/routes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/routes.parquet",
+      "sha256": "68c790e7348be351e344160120f7728518e7991263dca19594bc90aaa0bcf937",
+      "bytes": 8327,
+      "rows": 29,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:05+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/shapes.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/shapes.parquet",
+      "sha256": "e8a23a36d728ec44b593b7f04be08ca8ca022c2c7228b25252855eceb97e6b4c",
+      "bytes": 428407,
+      "rows": 150744,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:06+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/stop_times.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/stop_times.parquet",
+      "sha256": "c8211620b17f822c230c1151b59644cc803c69f8679d75d850076d8a28680c35",
+      "bytes": 1812390,
+      "rows": 565093,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:07+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/stops.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/stops.parquet",
+      "sha256": "2023aca3424e3b6865c8e02adb606e4b765d42552f4890e2d3691bdfe40449c5",
+      "bytes": 19020,
+      "rows": 1488,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:05+00:00"
+    },
+    "schedules/subway/v1-c5d217d4e0339d5b/trips.parquet": {
+      "url": "https://storage.googleapis.com/parquet.gtfsrt.io/schedules/base64url=aHR0cDovL3dlYi5tdGEuaW5mby9kZXZlbG9wZXJzL2RhdGEvbnljdC9zdWJ3YXkvZ29vZ2xlX3RyYW5zaXQuemlw/_feed_digest=v1:c5d217d4e0339d5bb4ca651ab6ddd99d8757578481683571092e0014edcb762d/trips.parquet",
+      "sha256": "a2dbcf056cc8934c40eb3a590dbeba4bbeac7ebdc48ed74c138f592dc9b890ae",
+      "bytes": 114170,
+      "rows": 20621,
+      "kind": "schedule",
+      "source": "subway",
+      "license": "MTA data feeds terms of use; archived by gtfsrt.io",
+      "retrieved_utc": "2026-09-25T04:41:06+00:00"
+    }
+  }
+}
