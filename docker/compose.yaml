@@ -1,0 +1,151 @@
+# Transitometer single-host stack. Run through `python tasks.py up <profile>`, which passes
+# --env-file config/.env (host paths) then docker/versions.env (pins, last so they win), and runs
+# the storage guard first.
+# Kafka has no profile (always on); engines are profile-gated and run one at a time.
+name: transitometer
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  kafka:
+    image: ${KAFKA_IMAGE:?pin missing - see docker/versions.env}
+    hostname: kafka
+    logging: *default-logging
+    environment:
+      # KRaft requires a base64url-encoded UUID (22 chars); fixed so restarts reuse the same log dirs.
+      CLUSTER_ID: YaDDUZhURp2nEgae2Z9VBg
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      # Storage budget (IMPLEMENTATION_PLAN.md §4.2): Kafka is a transient replay log, <= 3 GB.
+      # Worst case per partition = retention (150 MB) + one active segment (64 MB) = 214 MB;
+      # 12 data partitions ~= 2.6 GB, kpi.* result topics are small. Replays regenerate from landing.
+      KAFKA_COMPRESSION_TYPE: zstd
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_BYTES: 157286400
+      KAFKA_LOG_SEGMENT_BYTES: 67108864
+      # Broker stamps records on append: time retention never deletes replayed archive data early,
+      # and Axis A latency is measured from append times (PROJECT_PLAN.md §13.1).
+      # Event time travels inside the protobuf payload.
+      KAFKA_LOG_MESSAGE_TIMESTAMP_TYPE: LogAppendTime
+      KAFKA_HEAP_OPTS: -Xms512m -Xmx1g
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  # Spark production engine; the same image also runs the replay harness, DuckDB and tooling.
+  spark:
+    profiles: [spark]
+    build:
+      context: ./spark-tools
+      args:
+        SPARK_BASE_IMAGE: ${SPARK_BASE_IMAGE}
+        SPARK_VERSION: ${SPARK_VERSION}
+        DELTA_VERSION: ${DELTA_VERSION}
+        DELTA_SPARK_ARTIFACT: ${DELTA_SPARK_ARTIFACT}
+        SPARK_KAFKA_ARTIFACT: ${SPARK_KAFKA_ARTIFACT}
+    image: transitometer/spark-tools:${SPARK_VERSION}
+    logging: *default-logging
+    depends_on: [kafka]
+    environment:
+      SPARK_MASTER: local[8]
+      KAFKA_BOOTSTRAP: kafka:9092
+      LAKEHOUSE_DIR: /data/lakehouse
+      CHECKPOINT_DIR: /data/checkpoints
+      LANDING_DIR: /data/landing
+    command: ["sleep", "infinity"]
+    volumes:
+      - lakehouse:/data/lakehouse
+      - checkpoints:/data/checkpoints
+      - scratch:/data/scratch
+      # Host zone is read-only input; no measured path reads from this mount.
+      - ${TRANSITOMETER_DATA_ROOT:?set in config/.env}/landing:/data/landing:ro
+      - ../src:/opt/transitometer/src:ro
+
+  app:
+    profiles: [app]
+    image: transitometer/spark-tools:${SPARK_VERSION}
+    # Locally built image only; never resolve this name against a public registry.
+    pull_policy: never
+    logging: *default-logging
+    environment:
+      LAKEHOUSE_DIR: /data/lakehouse
+    command: ["streamlit", "run", "/opt/transitometer/src/transitometer/app/main.py",
+              "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - lakehouse:/data/lakehouse:ro
+      - ../src:/opt/transitometer/src:ro
+
+  # Axis A alternative engine (phase-scoped: built in S8, removed after results are exported).
+  flink-jobmanager:
+    profiles: [flink]
+    build:
+      context: ./flink-py
+      args:
+        FLINK_BASE_IMAGE: ${FLINK_BASE_IMAGE}
+        PYFLINK_VERSION: ${PYFLINK_VERSION}
+        FLINK_KAFKA_CONNECTOR_VERSION: ${FLINK_KAFKA_CONNECTOR_VERSION}
+    image: transitometer/flink-py:${PYFLINK_VERSION}
+    logging: *default-logging
+    depends_on: [kafka]
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: &flink-properties |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 8
+        parallelism.default: 8
+        python.executable: /opt/pyflink-venv/bin/python
+        python.client.executable: /opt/pyflink-venv/bin/python
+        execution.checkpointing.dir: file:///data/checkpoints/flink
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - checkpoints:/data/checkpoints
+      - ../src:/opt/transitometer/src:ro
+
+  flink-taskmanager:
+    profiles: [flink]
+    image: transitometer/flink-py:${PYFLINK_VERSION}
+    pull_policy: never
+    logging: *default-logging
+    depends_on: [flink-jobmanager]
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: *flink-properties
+    volumes:
+      - checkpoints:/data/checkpoints
+      - ../src:/opt/transitometer/src:ro
+
+  # Axis B serving arm (phase-scoped: data dropped after results are exported).
+  clickhouse:
+    profiles: [clickhouse]
+    image: ${CLICKHOUSE_IMAGE:?pin missing - see docker/versions.env}
+    logging: *default-logging
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    ports:
+      - "127.0.0.1:8123:8123"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/system-log-ttl.xml:/etc/clickhouse-server/config.d/system-log-ttl.xml:ro
+
+volumes:
+  kafka-data:
+  lakehouse:
+  checkpoints:
+  scratch:
+  clickhouse-data:

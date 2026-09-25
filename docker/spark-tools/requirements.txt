@@ -1,0 +1,6 @@
+# Python tooling inside the Spark image (base image Python 3.10). Transitive pins are frozen
+# into requirements.lock when the image is first built in S2.
+duckdb==1.5.5
+pyarrow==25.0.1
+streamlit==1.64.0
+gtfs-realtime-bindings==3.0.0

@@ -1,0 +1,8 @@
+# Normalize to LF in the repository and working tree so shell scripts,
+# Dockerfiles and config files behave identically inside Linux containers.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary

@@ -1,0 +1,18 @@
+<!-- ClickHouse system log tables grow silently; keep them to one day so the Axis B phase
+     stays inside the Docker storage budget (IMPLEMENTATION_PLAN.md §4.2). -->
+<clickhouse>
+    <query_log>
+        <ttl>event_date + INTERVAL 1 DAY DELETE</ttl>
+    </query_log>
+    <query_thread_log remove="1"/>
+    <trace_log remove="1"/>
+    <metric_log>
+        <ttl>event_date + INTERVAL 1 DAY DELETE</ttl>
+    </metric_log>
+    <asynchronous_metric_log>
+        <ttl>event_date + INTERVAL 1 DAY DELETE</ttl>
+    </asynchronous_metric_log>
+    <part_log>
+        <ttl>event_date + INTERVAL 1 DAY DELETE</ttl>
+    </part_log>
+</clickhouse>
