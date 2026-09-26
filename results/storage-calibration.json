@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "checks": {
+    "kafka_messages_equal_landing_rows": true,
+    "silver_rows_equal_kafka_messages": true,
+    "rerun_appends_nothing": true,
+    "duckdb_equals_silver": true,
+    "projected_steady_within_25gb": true
+  },
+  "measurements": {
+    "hour_utc": {
+      "start": "2026-09-22T14:00:00Z",
+      "end": "2026-09-22T15:00:00Z"
+    },
+    "replay": {
+      "rows": 298860,
+      "snapshots": 120,
+      "messages": 298860,
+      "acknowledged": 298860
+    },
+    "spark_first_run": {
+      "rows_before": 0,
+      "rows_after": 298860,
+      "rows_appended": 298860
+    },
+    "spark_rerun": {
+      "rows_before": 298860,
+      "rows_after": 298860,
+      "rows_appended": 0
+    },
+    "duckdb": {
+      "rows": 298860,
+      "vehicles": 3280,
+      "first_feed_ts": 1790085642,
+      "last_feed_ts": 1790089193
+    },
+    "bytes": {
+      "image_content_spark_tools": 1039488239,
+      "image_content_kafka": 238880881,
+      "kafka_log": 30015488,
+      "silver_delta_hour": 6541312,
+      "checkpoint": 53248,
+      "images_on_disk": 4613000000
+    },
+    "mount_read_probe": {
+      "file": "/data/landing/realtime/trip_updates/date=2026-09-22/feed=mta_bus/data.parquet",
+      "mount_seconds": 14.26,
+      "volume_seconds": 12.17,
+      "mount_overhead_share": 0.147,
+      "runs_seconds": {
+        "/data/landing/realtime/trip_updates/date=2026-09-22/feed=mta_bus/data.parquet": [
+          14.48,
+          14.26
+        ],
+        "/data/scratch/read-probe.parquet": [
+          12.17,
+          12.82
+        ]
+      },
+      "note": "lower bound: page-cache effects are not controlled; re-measure cold in S10",
+      "stage_scale_runs_in_docker": false
+    },
+    "docker_logical_bytes": 6489531800,
+    "docker_by_type": {
+      "Images": 4613000000,
+      "Containers": 331800,
+      "Local Volumes": 168200000,
+      "Build Cache": 1708000000
+    },
+    "disk_image_bytes": 13395558400,
+    "projection_gb": {
+      "images": 4.61,
+      "build_cache_cap": 2.0,
+      "kafka_cap": 3.0,
+      "silver_vehicle_positions_7d": 1.1,
+      "silver_trip_update_derived_budget": 3.3,
+      "checkpoints_cap": 1.0,
+      "steady_total": 15.01
+    }
+  }
+}

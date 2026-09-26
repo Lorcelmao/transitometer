@@ -8,22 +8,37 @@ ARG SPARK_VERSION
 ARG DELTA_VERSION
 ARG DELTA_SPARK_ARTIFACT
 ARG SPARK_KAFKA_ARTIFACT
+ARG SPARK_PROTOBUF_ARTIFACT
+ARG GRPCIO_TOOLS_VERSION=1.84.0
 
 USER root
 
 # Resolve connector jars (with transitive dependencies) at build time so runs never download.
+# install-jars.sh skips libraries Spark already ships and fails the build on any duplicate.
+COPY install-jars.sh /tmp/install-jars.sh
 RUN printf 'pass\n' > /tmp/noop.py \
  && /opt/spark/bin/spark-submit --conf spark.jars.ivy=/tmp/ivy \
-      --packages "${DELTA_SPARK_ARTIFACT}:${DELTA_VERSION},${SPARK_KAFKA_ARTIFACT}:${SPARK_VERSION}" \
+      --packages "${DELTA_SPARK_ARTIFACT}:${DELTA_VERSION},${SPARK_KAFKA_ARTIFACT}:${SPARK_VERSION},${SPARK_PROTOBUF_ARTIFACT}:${SPARK_VERSION}" \
       /tmp/noop.py \
- && cp /tmp/ivy/jars/*.jar /opt/spark/jars/ \
- && rm -rf /tmp/ivy /tmp/noop.py
+ && bash /tmp/install-jars.sh /tmp/ivy/jars \
+ && rm -rf /tmp/ivy /tmp/noop.py /tmp/install-jars.sh
 
-COPY requirements.txt /tmp/requirements.txt
+# requirements.lock pins every transitive package to the versions the skeleton was tested with.
 # delta-spark's Python API only; PySpark itself comes from the base image, so skip its pyspark dependency.
-RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt \
- && python3 -m pip install --no-cache-dir --no-deps "delta-spark==${DELTA_VERSION}" \
- && rm /tmp/requirements.txt
+COPY requirements.txt requirements.lock /tmp/
+RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.txt -c /tmp/requirements.lock \
+ && python3 -m pip install --no-cache-dir --no-deps "delta-spark==${DELTA_VERSION}"
+
+# Compile the official GTFS-Realtime schema into a descriptor set for Spark's from_protobuf.
+# The compiler is only needed here, so it is removed in the same layer (protobuf stays locked).
+COPY gtfs-realtime.proto /opt/transitometer/proto/gtfs-realtime.proto
+RUN python3 -m pip install --no-cache-dir "grpcio-tools==${GRPCIO_TOOLS_VERSION}" -c /tmp/requirements.lock \
+ && python3 -m grpc_tools.protoc -I/opt/transitometer/proto --include_imports \
+      --descriptor_set_out=/opt/transitometer/gtfs-realtime.desc gtfs-realtime.proto \
+ && python3 -m pip uninstall -y grpcio-tools grpcio \
+ && rm /tmp/requirements.txt /tmp/requirements.lock \
+ && chmod a+r /opt/transitometer/gtfs-realtime.desc
+ENV GTFS_RT_DESCRIPTOR=/opt/transitometer/gtfs-realtime.desc
 
 # Pre-install DuckDB extensions so the app and golden checks work offline.
 ENV TRANSITOMETER_DUCKDB_EXT_DIR=/opt/duckdb-extensions

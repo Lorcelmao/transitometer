@@ -95,6 +95,16 @@ def build_report(
     )
 
 
+def parse_buildx_private(text: str) -> int | None:
+    """Private (unshared) bytes from `docker buildx du` summary output, or None if absent.
+
+    With the containerd image store most build-cache records are the image's own layers
+    ("Shared"); only the private part occupies disk beyond the images themselves.
+    """
+    match = re.search(r"^Private:\s*(\S+)\s*$", text, re.MULTILINE)
+    return parse_size(match.group(1)) if match else None
+
+
 def measure(vhdx_path: Path | None, thresholds: Thresholds) -> StorageReport:
     """Query the running Docker engine and the disk image file."""
     result = subprocess.run(
@@ -103,8 +113,17 @@ def measure(vhdx_path: Path | None, thresholds: Thresholds) -> StorageReport:
         text=True,
         check=True,
     )
+    usage = parse_system_df(result.stdout)
+    if "Build Cache" in usage:
+        # Count only the unshared build cache, so shared image layers are not counted twice.
+        cache = subprocess.run(
+            ["docker", "buildx", "du"], capture_output=True, text=True, check=False
+        )
+        private = parse_buildx_private(cache.stdout) if cache.returncode == 0 else None
+        if private is not None:
+            usage["Build Cache"] = private
     vhdx_bytes = vhdx_path.stat().st_size if vhdx_path and vhdx_path.exists() else None
-    return build_report(parse_system_df(result.stdout), vhdx_bytes, thresholds)
+    return build_report(usage, vhdx_bytes, thresholds)
 
 
 def format_report(report: StorageReport, thresholds: Thresholds) -> str:

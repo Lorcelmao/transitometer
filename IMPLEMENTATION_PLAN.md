@@ -80,7 +80,7 @@ The host needs **no JDK**. Host Java 23 is irrelevant to the stack.
 
 | Component | Steady | Controls |
 |---|---|---|
-| Images: Kafka + Spark/tooling | 3.0–3.5 GB | One Python-bearing Spark image also runs the replay harness, DuckDB and Streamlit; connector jars + DuckDB extensions baked; containerd store overhead included |
+| Images: Kafka + Spark/tooling | **4.6–4.8 GB measured** (on-disk, containerd store) | One Python-bearing Spark image also runs the replay harness, DuckDB and Streamlit; connector jars + DuckDB extensions baked; containerd store overhead included |
 | Image: Flink + PyFlink | 0 outside S8/S10-A; 1.6–2.0 GB during | Pull/build in phase; remove after Axis A results are exported; digest-pinned so rebuild is identical |
 | Image: ClickHouse | 0 outside S9/S10-B; ~0.7 GB during | same |
 | Build cache | ≤ 2 GB | `docker builder prune --keep-storage 2GB` after every image build |
@@ -97,7 +97,7 @@ The host needs **no JDK**. Host Java 23 is irrelevant to the stack.
 | S2–S7 normal development | **~18–21 GB** | Kafka + Spark images, Delta, Kafka log, cache |
 | S8 + S10-A (Flink) | ~21–23 GB | + Flink image/state |
 | S9 + S10-B (ClickHouse) | ~21–25 GB | Flink image removed first; + ClickHouse image/data |
-| **Temporary peak** — real-data scaling runs (7-day slice staged into `scratch`) + `OPTIMIZE` rewrite | **~30–35 GB** | Only if S2 shows mount reads > 20% of Spark runtime; otherwise read slices from the read-only mount and skip staging |
+| **Temporary peak** — real-data scaling runs (7-day slice staged into `scratch`) + `OPTIMIZE` rewrite | **~30–35 GB** | Only if S2 shows mount reads > 20% of Spark runtime; otherwise read slices from the read-only mount and skip staging. **S2 measured 8–15 % → staging not needed** (steady peak stays ≈ 15–20 GB) |
 
 **Verdict:** ≤ 25 GB is **sustainable in normal development** with the controls above; it is **not** sustainable
 through the scaling/compaction peak. **Compromise target:** ≤ 25 GB steady, peaks confined to scheduled windows and followed by cleanup + compaction.
@@ -157,11 +157,17 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Exit:** `python tasks.py fetch` reproduces the landing zone from the manifest; volume report committed.
 
 ### S2 — Walking skeleton & storage calibration — Docker
+- **Status (2026-09-26):** ✅ implemented and verified (`results/storage-calibration.json`).
+  - One real hour (2026-09-22 14:00–15:00 UTC, MTA Bus vehicle positions): 298,860 archive rows → 298,860 **broker-acknowledged** protobuf messages (one per entity, 120 snapshots) → 298,860 Silver Delta rows via Spark Structured Streaming with native `from_protobuf` → DuckDB 298,860 rows / 3,280 vehicles → Streamlit renders. Re-run on the same checkpoint appends 0 rows. Re-encode round trip on the real hour: 0 mismatched fields.
+  - **Storage calibration:** images 4.6–4.8 GB on disk (containerd keeps compressed + unpacked layers; build cache is shared with image layers, so the storage guard counts only its unshared part); Kafka ≈ 15 MB and Silver ≈ 6.5 MB per replayed hour; **projected steady usage ≈ 15 GB ≤ 25 GB**. The Docker disk file sits at ≈ 13 GB after image builds (non-sparse high-water mark).
+  - **Mount read overhead 8–15 %** (lower bound; page cache not controlled) → scale runs read landing directly; the 30–35 GB staging peak is **not needed** (re-measure cold in S10).
+  - Hardening from review: connector jars are de-duplicated against Spark's own jars and the build fails on a clash (`docker/spark-tools/install-jars.sh`); Python packages pinned by `docker/spark-tools/requirements.lock`; failed runs overwrite the report with `ok: false`; Kafka health check runs every 60 s with a 64 MB heap.
+  - Semantics decision: when a feed omits `current_status`, Silver keeps the GTFS-RT spec default (IN_TRANSIT_TO); S4 golden SQL applies the same rule.
 - **Goal:** prove the whole chain on **one real hour** and calibrate the storage budget.
 - **Deliverables:** minimal re-encoder (one snapshot → `FeedMessage` → per-entity Kafka messages); Kafka topic setup with the §4.2 retention/compression settings; Spark streaming job decoding protobuf → Silver Delta table; DuckDB query over that Delta table; one Streamlit chart.
 - **Measurements (feed §4 recalibration):** image sizes after build; Kafka bytes per replayed hour; Silver bytes per hour; checkpoint size; Spark time share spent reading the read-only mount (decides scale-run staging); VHDX size.
 - **Tests:** E2E smoke (row counts landing → Kafka → Silver consistent); container restart does not duplicate Silver rows.
-- **Exit:** skeleton runs from `python tasks.py skeleton`; `results/storage-calibration.md` projects steady usage ≤ 25 GB (or the owner approves an adjusted window/target).
+- **Exit:** skeleton runs from `python tasks.py skeleton`; `results/storage-calibration.json` projects steady usage ≤ 25 GB (or the owner approves an adjusted window/target).
 
 ### S3 — Replay harness & canonical schemas
 - **Goal:** deterministic, paced, real-data event stream — the fairness backbone.

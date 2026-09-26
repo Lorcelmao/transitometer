@@ -12,6 +12,7 @@ from transitometer.ops.storage_check import (
     append_log,
     build_report,
     classify,
+    parse_buildx_private,
     parse_size,
     parse_system_df,
 )
@@ -95,3 +96,9 @@ def test_append_log_writes_header_once(tmp_path: Path) -> None:
     rows = list(csv.reader(log.open(encoding="utf-8")))
     assert rows[0] == ["timestamp_utc", "type", "bytes"]
     assert [r[1] for r in rows[1:]] == ["Images", "total", "disk_image"] * 2
+
+
+def test_parse_buildx_private_reads_unshared_bytes() -> None:
+    text = "ID  RECLAIMABLE  SIZE\n...\nShared:\t\t3.278GB\nPrivate:\t86.02kB\nTotal:\t\t3.278GB\n"
+    assert parse_buildx_private(text) == 86_020
+    assert parse_buildx_private("no summary here") is None

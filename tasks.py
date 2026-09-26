@@ -197,6 +197,49 @@ def task_validate_landing(_: argparse.Namespace) -> int:
     return 0 if report.ok else 1
 
 
+def task_skeleton(args: argparse.Namespace) -> int:
+    """Walking skeleton: one real hour via Kafka -> Spark -> Delta -> DuckDB, plus calibration."""
+    from transitometer.ops import skeleton
+
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    pins = read_env_file(VERSIONS_FILE)
+    spark_image = f"transitometer/spark-tools:{pins['SPARK_VERSION']}"
+    steps = [
+        compose_cmd("--profile", "spark", "build", "spark"),
+        ["docker", "builder", "prune", "-f", "--keep-storage", "2GB"],
+        compose_cmd("--profile", "spark", "up", "-d", "--wait", "kafka", "spark"),
+    ]
+    for step in steps:
+        code = run(step)
+        if code:
+            return code
+    vhdx = host_settings().get("TRANSITOMETER_DOCKER_VHDX") or None
+    report = ROOT / "results" / "storage-calibration.json"
+    report.unlink(missing_ok=True)  # never leave an earlier passing report behind a failed run
+    try:
+        outcome = skeleton.run(
+            compose_cmd,
+            images={"spark_tools": spark_image, "kafka": pins["KAFKA_IMAGE"]},
+            vhdx=Path(vhdx) if vhdx else None,
+            log=print,
+        )
+    except Exception as exc:
+        failed = skeleton.Outcome(checks={"completed": False}, measurements={"error": str(exc)})
+        skeleton.write_report(failed, report)
+        print(f"FAILED: {exc}")
+        return 1
+    skeleton.write_report(outcome, report)
+    for name, passed in outcome.checks.items():
+        print(f"{'PASS' if passed else 'FAIL'} {name}")
+    print(f"projection: {outcome.measurements['projection_gb']}")
+    print(f"mount read: {outcome.measurements['mount_read_probe']}")
+    print(f"{'OK' if outcome.ok else 'FAILED'} -> {report}")
+    print("View it: python tasks.py up app  ->  http://127.0.0.1:8501")
+    return 0 if outcome.ok else 1
+
+
 def task_down(_: argparse.Namespace) -> int:
     """Stop every service; named volumes are kept (use Docker directly for deliberate resets)."""
     return run(compose_cmd("--profile", "*", "down"))
@@ -235,6 +278,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--accept-changes", action="store_true", help="adopt upstream content changes"
     )
     fetch.set_defaults(func=task_fetch)
+
+    skel = sub.add_parser("skeleton", help="walking skeleton end to end + storage calibration")
+    skel.add_argument("--allow-peak", action="store_true", help="proceed above the block threshold")
+    skel.set_defaults(func=task_skeleton)
 
     up = sub.add_parser("up", help="storage guard, then start kafka or a profile")
     up.add_argument("profile", choices=("kafka", *PROFILES))
