@@ -38,12 +38,16 @@ from transitometer.ingest.sources import Sources
 
 PARAMS = runner.Params(min_events=2)
 Q4 = (40.84, -73.95)
-STOPS = {f"Q{i}": (40.80 + 0.01 * i, -73.95) for i in range(5)} | {
-    "QL": (40.85, -73.95),
-    "H0": (40.90, -73.95),
-    "H1": (40.91, -73.95),
-    "H2": (40.92, -73.95),
-}
+STOPS = (
+    {f"Q{i}": (40.80 + 0.01 * i, -73.95) for i in range(5)}
+    | {
+        "QL": (40.85, -73.95),
+        "H0": (40.90, -73.95),
+        "H1": (40.91, -73.95),
+        "H2": (40.92, -73.95),
+    }
+    | {f"B{i}": (40.70 + 0.01 * i, -73.99) for i in range(5)}
+)
 
 
 def _stop_times(
@@ -79,7 +83,11 @@ def build_landing(landing: Path) -> Sources:
         "T13": ("Q", 0, "WKD"),
         "T14": ("Q", 0, "WKD"),
         "T15": ("Q", 0, "WKD"),
+        "T16": ("Q", 0, "WKD"),
+        "T17": ("Q", 0, "WKD"),
     } | {trip: ("H", 0, "WKD") for trip in ("HA", "HB", "HC", "HD", "HF")}
+    trips |= {trip: ("B", 0, "WKD") for trip in ("BA", "BB", "BC")}
+    b = [f"B{i}" for i in range(5)]
     stop_times = (
         _stop_times("T1", list(zip(q, ["08:00", "08:10", "08:20", "08:30", "08:40"], strict=True)))
         + _stop_times(
@@ -99,6 +107,21 @@ def build_landing(landing: Path) -> Sources:
         + _stop_times("T12", [("Q0", "09:00"), ("Q1", "09:10"), ("Q2", "09:20"), ("Q4", "09:30")])
         + _stop_times("T13", [("Q0", "09:30"), ("Q1", "09:40"), ("Q4", "09:50")])
         + _stop_times("T14", [("Q0", "11:40"), ("Q1", "11:50"), ("Q4", "12:00")])
+        + _stop_times(
+            "BA", list(zip(b, ["09:00", "09:10", "09:20", "09:30", "09:40"], strict=True))
+        )
+        + _stop_times(
+            "BB", list(zip(b, ["09:10", "09:20", "09:30", "09:40", "09:50"], strict=True))
+        )
+        + _stop_times(
+            "BC", list(zip(b, ["09:20", "09:30", "09:40", "09:50", "10:00"], strict=True))
+        )
+        + _stop_times(
+            "T16", list(zip(q, ["07:30", "07:40", "07:50", "08:00", "08:10"], strict=True))
+        )
+        + _stop_times(
+            "T17", list(zip(q, ["07:40", "07:50", "08:00", "08:10", "08:20"], strict=True))
+        )
         + _stop_times(
             "T15",
             [
@@ -171,6 +194,42 @@ def build_landing(landing: Path) -> Sources:
         ("T15", "07:34", [("Q2", "07:35"), ("QL", "07:55"), ("Q4", "08:05")], "VB"),
         ("T15", "07:54", [("QL", "07:55"), ("Q4", "08:05")], "VB"),
         ("T15", "07:58", [("Q4", "08:05")], "VB"),
+        # T16 falls behind: Q1 +100, Q2 +220, Q3 +450. At Q2 (the decision point) the trend
+        # projects 220 + 0.5 x (120 / 600) x 1200 = 340 s late: warned, while the baseline
+        # (220 s now) is not; the trip ends 450 s late.
+        (
+            "T16",
+            "07:41",
+            [("Q1", "07:41:40"), ("Q2", "07:53:40"), ("Q3", "08:07:30"), ("Q4", "08:17")],
+        ),
+        ("T16", "07:53", [("Q2", "07:53:40"), ("Q3", "08:07:30"), ("Q4", "08:17")]),
+        ("T16", "08:07", [("Q3", "08:07:30"), ("Q4", "08:17")]),
+        ("T16", "08:16", [("Q4", "08:17")]),
+        # T17 runs early right behind T16: 240 s after it at Q2 (reference 1200 s: bunched, warned)
+        # and 60 s after it at Q3 (bunched again).
+        (
+            "T17",
+            "07:44",
+            [("Q1", "07:45"), ("Q2", "07:57:40"), ("Q3", "08:08:30"), ("Q4", "08:18")],
+        ),
+        ("T17", "07:57", [("Q2", "07:57:40"), ("Q3", "08:08:30"), ("Q4", "08:18")]),
+        ("T17", "08:08", [("Q3", "08:08:30"), ("Q4", "08:18")]),
+        ("T17", "08:17", [("Q4", "08:18")]),
+        # Route B (scheduled every 600 s): BB and BC each pass B2 200 s behind the trip ahead
+        # (0.33 x: warned by the rule, not yet bunched for the baseline). BB then bunches at B3
+        # (60 s behind BA: a hit); BC does not (540 s behind BB: a false alarm).
+        ("BA", "09:09", [("B1", "09:10"), ("B2", "09:20"), ("B3", "09:30"), ("B4", "09:40")]),
+        ("BA", "09:19", [("B2", "09:20"), ("B3", "09:30"), ("B4", "09:40")]),
+        ("BA", "09:29", [("B3", "09:30"), ("B4", "09:40")]),
+        ("BA", "09:31", [("B4", "09:40")]),
+        ("BB", "09:16", [("B1", "09:17"), ("B2", "09:23:20"), ("B3", "09:31"), ("B4", "09:45")]),
+        ("BB", "09:22:20", [("B2", "09:23:20"), ("B3", "09:31"), ("B4", "09:45")]),
+        ("BB", "09:30", [("B3", "09:31"), ("B4", "09:45")]),
+        ("BB", "09:32", [("B4", "09:45")]),
+        ("BC", "09:22", [("B1", "09:23"), ("B2", "09:26:40"), ("B3", "09:40"), ("B4", "09:55")]),
+        ("BC", "09:25:40", [("B2", "09:26:40"), ("B3", "09:40"), ("B4", "09:55")]),
+        ("BC", "09:39", [("B3", "09:40"), ("B4", "09:55")]),
+        ("BC", "09:41", [("B4", "09:55")]),
     ]
     # Route H at H1 (scheduled every 600 s): HB 150 s after HA (bunched, = 0.25 x), HC 1200 s
     # (gap, = 2 x), HD 720 s (regular, = 1.2 x); HF is HD's vehicle again: no headway.
@@ -191,11 +250,16 @@ def build_landing(landing: Path) -> Sources:
     near, off = (Q4[0] + 0.00027, Q4[1]), (Q4[0] + 0.00072, Q4[1])  # ~30 m and ~80 m north
     vp = vehicle_positions(
         [
-            ("T1", "08:05", "Q1", "V-T1", Q4),  # at the last stop before the trip ran: ignored
+            # at the last stop before the trip ran (ignored), and already 200 s old when published
+            ("T1", "08:05", "Q1", "V-T1", Q4),
             ("T1", "08:40:30", "Q4", "V-T1", off),  # outside the 50 m radius
             ("T1", "08:41", "Q4", "V-T1", near),  # arrival: +60 s
             ("T1", "08:43", "Q4", "V-T1", Q4),
-        ]
+            # a GPS jump: ~1,113 m in 20 s (56 m/s)
+            ("XJ", "07:30", "Q1", "VJ", (40.80, -73.95)),
+            ("XJ", "07:30:20", "Q1", "VJ", (40.81, -73.95)),
+        ],
+        fix_ages=[200, 0, 0, 0, 0, 0],
     )
     write(landing / partition("vehicle_positions", "bus"), vp)
     write_empty_like(
@@ -270,6 +334,11 @@ def test_missing_trip_classes(golden: runner.GoldenResult) -> None:
         "T13": "delivered",
         "T14": "not_run",  # reported, never observed moving
         "T15": "delivered",  # Q1, Q2, QL of 4 intermediate stops, across two vehicles
+        "T16": "delivered",
+        "T17": "delivered",
+        "BA": "delivered",
+        "BB": "delivered",
+        "BC": "delivered",
         "HA": "delivered",
         "HB": "delivered",
         "HC": "delivered",
@@ -277,9 +346,9 @@ def test_missing_trip_classes(golden: runner.GoldenResult) -> None:
         "HF": "delivered",
     }
     (summary,) = golden.summary["missing_trip_summary"]
-    assert (summary["scheduled"], summary["delivered"], summary["partial"]) == (16, 10, 1)
+    assert (summary["scheduled"], summary["delivered"], summary["partial"]) == (21, 15, 1)
     assert (summary["missing"], summary["not_run"], summary["unknown"]) == (2, 1, 2)
-    assert (summary["missing_share"], summary["not_delivered_share"]) == (0.1429, 0.2143)
+    assert (summary["missing_share"], summary["not_delivered_share"]) == (0.1053, 0.1579)
     by_route = {r["route_id"]: r for r in _table(golden, "missing_by_route")}
     assert by_route["Q"]["missing"] == 2 and by_route["H"]["delivered"] == 5
 
@@ -326,7 +395,7 @@ def test_terminal_arrivals_from_vehicle_positions(golden: runner.GoldenResult) -
     (event,) = [r for r in _table(golden, "terminal_events") if r["observations"] == 1]
     assert (event["static_trip_id"], event["stop_id"], event["delay_s"]) == ("T1", "Q4", 60)
     (summary,) = golden.summary["terminal_summary"]
-    assert (summary["matched_trips"], summary["measured"]) == (12, 1)
+    assert (summary["matched_trips"], summary["measured"]) == (17, 1)
     otp = {r["scope"]: r for r in golden.summary["otp_summary"]}
     assert (otp["terminals"]["events"], otp["terminals"]["on_time_share"]) == (1, 1.0)
 
@@ -388,18 +457,21 @@ def test_route_bootstrap_ci_recomputed_independently(golden: runner.GoldenResult
             if wn > 0:
                 shares[route_key].append(wk / wn)
     scorecard = _table(golden, "route_scorecard")
-    # Q: 7 of 7 events on time; H: HB and HF early -> 3 of 5.
+    # Q: 12 of 16 events on time (T16 Q3 late; T17 early at all 3 stops); H: HB, HF early -> 3/5;
+    # B: only BA on time (3 of 9) and only 3 trips, so it is not ranked.
     assert {r["route_id"]: (r["on_time_share"], r["rank"]) for r in scorecard} == {
-        "Q": (1.0, 1),
+        "Q": (0.75, 1),
         "H": (0.6, 2),
+        "B": (0.3333, None),
     }
     for row in scorecard:
         values = shares[(row["grp"], row["route_id"])]
-        assert len(values) > PARAMS.bootstrap_resamples * 0.9
+        assert len(values) > PARAMS.bootstrap_resamples * (0.9 if row["sufficient"] else 0.5)
         assert row["ci_low"] == round(_quantile_cont(values, 0.025), 4)
         assert row["ci_high"] == round(_quantile_cont(values, 0.975), 4)
         assert row["ci_low"] <= row["on_time_share"] <= row["ci_high"]
-        assert row["rank_low"] <= row["rank"] <= row["rank_high"]
+        if row["sufficient"]:
+            assert row["rank_low"] <= row["rank"] <= row["rank_high"]
 
 
 def test_outage_threshold_is_strict(landing_root: tuple[Sources, Path]) -> None:
@@ -434,10 +506,87 @@ def test_segments_never_cross_a_vehicle_change(golden: runner.GoldenResult) -> N
 
 def test_route_hour_scorecard_needs_enough_trips(golden: runner.GoldenResult) -> None:
     cells = {(r["route_id"], r["service_hour"]): r for r in _table(golden, "route_hour_scorecard")}
-    q8 = cells[("Q", 8)]  # T1 (3 events) and T2 (1 event): 2 trips < min_trips
-    assert (q8["events"], q8["trips"], q8["on_time_share"], q8["sufficient"]) == (4, 2, 1.0, False)
+    # hour 8: T1 (3 events, on time), T2 (1, on time), T16 Q3 (late), T17 Q2 and Q3 (early)
+    q8 = cells[("Q", 8)]
+    assert (q8["events"], q8["trips"], q8["sufficient"]) == (7, 4, False)  # 4 trips < min_trips
+    assert q8["on_time_share"] == round(4 / 7, 4)
     h10 = cells[("H", 10)]  # HA, HB, HC, HD
     assert (h10["events"], h10["trips"], h10["on_time_share"]) == (4, 4, 0.75)
     assert all(r["ci_low"] <= r["on_time_share"] <= r["ci_high"] for r in cells.values())
     routes = {r["route_id"]: r for r in _table(golden, "route_scorecard")}
-    assert routes["Q"]["trips"] == 6 and routes["Q"]["sufficient"]  # T1, T2, T11-T13, T15
+    assert routes["Q"]["trips"] == 8 and routes["Q"]["sufficient"]  # T1, T2, T11-T13, T15-T17
+
+
+def test_early_warning_decisions(golden: runner.GoldenResult) -> None:
+    rows = {
+        (r["static_trip_id"], r["unit"]): r
+        for r in _table(golden, "warning_decisions")
+        if r["grp"] == "bus"
+    }
+    # Trips observed at only one KPI stop (T2, T11-T13, route H, T15's first vehicle) get no
+    # decision: the outcome must come from a later stop.
+    assert set(rows) == {
+        ("T1", "V-T1"),
+        ("T15", "VB"),
+        ("T16", "V-T16"),
+        ("T17", "V-T17"),
+        ("BA", "V-BA"),
+        ("BB", "V-BB"),
+        ("BC", "V-BC"),
+    }
+    flags = ("warn_late", "baseline_late", "late", "warn_bunched", "baseline_bunched", "bunched")
+    assert {k[0]: tuple(v[f] for f in flags) for k, v in rows.items()} == {
+        "T1": (False, False, False, False, False, False),  # 120 s, projected 180 s
+        "T15": (False, False, False, False, False, False),  # exactly 300 s is not late
+        "T16": (True, False, True, False, False, False),  # projected 340 s, ends 450 s late
+        "T17": (False, False, False, True, True, True),  # 240 s behind T16, then 60 s
+        "BA": (False, False, False, False, False, False),  # first on its route: no headway
+        "BB": (False, False, False, True, False, True),  # 0.33 x, then bunched: rule only
+        "BC": (False, False, False, True, False, False),  # 0.33 x, then 0.9 x: false alarm
+    }
+    assert (
+        rows[("T16", "V-T16")]["decision_stop"],
+        rows[("T16", "V-T16")]["projected_delay_s"],
+    ) == (
+        "Q2",
+        340,
+    )
+    summary = {(r["outcome"], r["method"]): r for r in golden.summary["early_warning_summary"]}
+    late_rule, late_base = summary[("late", "rule")], summary[("late", "baseline")]
+    assert (late_rule["tp"], late_rule["fp"], late_rule["fn"], late_rule["f1"]) == (1, 0, 0, 1.0)
+    assert (late_base["tp"], late_base["fn"], late_base["precision"], late_base["f1"]) == (
+        0,
+        1,
+        None,
+        0.0,
+    )
+    rule, base = summary[("bunched", "rule")], summary[("bunched", "baseline")]
+    assert (rule["decisions"], rule["positives"], rule["tp"], rule["fp"]) == (7, 2, 2, 1)
+    assert (base["tp"], base["fp"], base["fn"]) == (1, 0, 1)
+
+
+def test_feed_quality_checks(golden: runner.GoldenResult) -> None:
+    metrics = {(r["feed"], r["metric"]): r for r in _table(golden, "feed_quality_metrics")}
+    vp = {m: r for (feed, m), r in metrics.items() if feed == "bus_vp"}
+    assert vp["header_lag_p99_s"]["value"] == 5.0 and vp["header_lag_p99_s"]["passed"]
+    assert vp["stale_fix_share"]["value"] == round(1 / 6, 6) and not vp["stale_fix_share"]["passed"]
+    # 1 jump in 4 steps (3 for vehicle V-T1, 1 for VJ); 99th percentile of fix ages 0 x5, 200
+    assert vp["jump_share"]["value"] == 0.25 and vp["fix_age_p99_s"]["value"] == 190.0
+    assert vp["out_of_bbox_share"]["value"] == 0.0 and vp["out_of_bbox_share"]["passed"]
+    (jump,) = _table(golden, "position_jumps")
+    assert jump["vehicle_id"] == "VJ" and abs(jump["speed_mps"] - jump["distance_m"] / 20) <= 0.1
+    assert 1100 < jump["distance_m"] < 1125
+    scores = {r["feed"]: r for r in golden.summary["feed_quality_score"]}
+    for feed, score in scores.items():
+        checks = [r for (f, _), r in metrics.items() if f == feed]
+        passed = sum(r["passed"] for r in checks)
+        assert (score["checks"], score["passed"]) == (len(checks), passed)
+        assert score["score"] == round(100 * passed / len(checks), 1)
+    assert scores["bus_vp"]["checks"] == 7
+    tu = {m: r for (feed, m), r in metrics.items() if feed == "bus_tu"}
+    assert tu["max_gap_s"]["value"] == 720.0  # the 09:56 -> 10:08 outage
+    assert tu["unknown_trip_share"]["value"] == round(1 / 18, 6)  # XQ of 18 real-time trips
+    assert tu["not_run_share"]["value"] == round(1 / 19, 6)  # T14 of 21 scheduled - 2 unknown
+    # A feed with no data at all still gets every check, all failed.
+    sub = scores["subway_tu"]
+    assert (sub["checks"], sub["passed"], sub["score"]) == (8, 0, 0.0)

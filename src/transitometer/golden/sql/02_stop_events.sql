@@ -82,6 +82,9 @@ SELECT s.*,
 FROM stop_last s
 JOIN trip_last t USING (grp, trip_id, service_date, unit);
 
+CREATE OR REPLACE TABLE event_status_summary AS
+SELECT grp, service_date, status, count(*) AS events FROM observed_events GROUP BY ALL;
+
 -- Feed-quality evidence (BR7): trips reported by more than one unit.
 CREATE OR REPLACE TABLE multi_unit_summary AS
 SELECT grp, service_date, count(*) AS rt_trips,

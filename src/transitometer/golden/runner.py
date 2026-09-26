@@ -32,6 +32,8 @@ SQL_STEPS = (
     "08_missing_trips.sql",
     "09_segments.sql",
     "10_scorecards.sql",
+    "11_early_warning.sql",
+    "12_feed_quality.sql",
 )
 EXPORTED_TABLES = (
     "stop_events",
@@ -60,6 +62,11 @@ EXPORTED_TABLES = (
     "route_scorecard",
     "route_hour_scorecard",
     "stop_hour_reliability",
+    "warning_decisions",
+    "early_warning_summary",
+    "position_jumps",
+    "feed_quality_metrics",
+    "feed_quality_score",
 )
 SUMMARY_TABLES = (
     "event_status_summary",
@@ -75,6 +82,9 @@ SUMMARY_TABLES = (
     "terminal_summary",
     "missing_trip_summary",
     "delay_attribution_summary",
+    "early_warning_summary",
+    "feed_quality_score",
+    "feed_quality_metrics",
 )
 
 
@@ -99,6 +109,8 @@ class Params:
     bootstrap_seed: str = "transitometer"
     min_events: int = 10  # scorecard cells with fewer events are flagged insufficient
     min_trips: int = 5  # routes / route-hours with fewer trips (resampling units) likewise
+    warn_headway_ratio: float = 0.5  # early warning: headway at most this share of the reference
+    warn_trend_weight: float = 0.5  # early warning: weight of the delay trend in the projection
 
 
 @dataclass
@@ -189,11 +201,6 @@ def run(
             started = time.perf_counter()
             con.execute(render(step, values))
             log(f"{step} done in {time.perf_counter() - started:.0f}s")
-        con.execute(
-            "CREATE OR REPLACE TABLE event_status_summary AS "
-            "SELECT grp, service_date, status, count(*) AS events "
-            "FROM observed_events GROUP BY ALL"
-        )
         for table in EXPORTED_TABLES:
             target = out_dir / f"{table}.parquet"
             con.execute(

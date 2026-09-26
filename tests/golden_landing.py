@@ -6,7 +6,7 @@ Service day 2026-09-22 (Tuesday, EDT): local midnight = 1_790_049_600 UTC epoch.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +25,7 @@ from transitometer.ingest.sources import (
 DAY = date(2026, 9, 22)
 NEXT = date(2026, 9, 23)
 BASE = 1_790_049_600  # 2026-09-22 00:00 America/New_York
+FETCH_LAG_S = 5  # the archive fetched every snapshot this long after its header timestamp
 SCHEDULE_TABLES = (
     "calendar.parquet",
     "calendar_dates.parquet",
@@ -42,6 +43,10 @@ def t(hhmm: str) -> int:
     """'HH:MM' or 'HH:MM:SS' (may exceed 24h) -> epoch seconds on the service day."""
     parts = [int(p) for p in hhmm.split(":")] + [0]
     return BASE + parts[0] * 3600 + parts[1] * 60 + parts[2]
+
+
+def fetched(epoch: int) -> datetime:
+    return datetime.fromtimestamp(epoch + FETCH_LAG_S, tz=timezone.utc)
 
 
 def write(path: Path, rows: Mapping[str, Sequence[object]] | pa.Table) -> None:
@@ -70,6 +75,7 @@ def trip_updates(
         for k in (
             "source_file",
             "feed_timestamp",
+            "fetch_timestamp",
             "entity_id",
             "trip_id",
             "vehicle_id",
@@ -89,6 +95,7 @@ def trip_updates(
         for seq, (stop, predicted) in enumerate(stops, start=1):
             cols["source_file"].append(f"{feed_time}.pb")
             cols["feed_timestamp"].append(t(feed_time))
+            cols["fetch_timestamp"].append(fetched(t(feed_time)))
             cols["entity_id"].append(
                 f"{position[feed_time]:06d}" if subway_ids else f"E-{trip}-{vehicle}"
             )
@@ -105,12 +112,19 @@ def trip_updates(
 
 def vehicle_positions(
     rows: list[tuple[str, str, str | None, str, tuple[float, float] | None]],
+    fix_ages: Sequence[int] | None = None,
 ) -> pa.Table:
-    """[(trip, time, next stop, vehicle, (lat, lon) or None), ...] -> vehicle-position rows."""
+    """[(trip, time, next stop, vehicle, (lat, lon) or None), ...] -> vehicle-position rows.
+
+    `time` is the snapshot time; each fix is `fix_ages[i]` seconds older (default 0)."""
+    ages = list(fix_ages) if fix_ages is not None else [0] * len(rows)
     return pa.table(
         {
             "feed_timestamp": pa.array([t(r[1]) for r in rows], pa.uint64()),
-            "timestamp": pa.array([t(r[1]) for r in rows], pa.uint64()),
+            "fetch_timestamp": [fetched(t(r[1])) for r in rows],
+            "timestamp": pa.array(
+                [t(r[1]) - a for r, a in zip(rows, ages, strict=True)], pa.uint64()
+            ),
             "trip_id": [r[0] for r in rows],
             "vehicle_id": [r[3] for r in rows],
             "start_date": ["20260922"] * len(rows),
