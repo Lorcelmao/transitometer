@@ -1,0 +1,14 @@
+{
+  "stop_events.parquet": "b19f96958c521817a4e84d1a0f19ce46a9a0a3865944e5b2c3c3281f6fae1a51",
+  "otp_summary.parquet": "16c823811b4601297003858fa1fce7beacf1a166b04da6e057d326afd17ce0a3",
+  "otp_route_hour.parquet": "d9c2188c1a762c5a67173bc2839e8f31d8dec6ece0be0ee19cb2e7f61782c02d",
+  "headways.parquet": "ba91ad6677c97a5c90b95f76ff27aeed1d9a58fa83445222eebc54523ec6dfbb",
+  "headway_regularity.parquet": "014b2078ce07f0a47937c84fddf174c351d0bf35ce9ad5d509ae222697f8a18e",
+  "headway_summary.parquet": "82d40095a8948c07a2ca053d9e3ee4ead8e67ebba9529c8c055fa5f4a6f147c3",
+  "trip_match_summary.parquet": "5a095a7a81e50a06c77182369a093c07de96e8f5fd5b44971ebf4c8321930e37",
+  "event_status_summary.parquet": "ddd1008bb50f09615571f04b90ce59ae2fcb68194a66988a8c54d456c716a25c",
+  "crosscheck_summary.parquet": "b334a358a40438f59d23d59ae2365243e26f76748dd618c46b614440529ceea8",
+  "end_of_trip_summary.parquet": "d44ef42e6c0a7e0b6173681164f8388fb1456b87ff0b7a6cf3ed457b82881007",
+  "multi_unit_summary.parquet": "06d50ad683a324eae1ff8b62d67cf20055b06ba84381a0d67c343f0c42ebd115",
+  "ambiguous_summary.parquet": "4070ada8f2df3b9ea3889a096e8ce253cc7b4fabece0a8ee940569ec7cfd79ea"
+}

@@ -1,0 +1,454 @@
+{
+  "golden_window": {
+    "start": "2026-09-22",
+    "end": "2026-09-23"
+  },
+  "params": {
+    "timezone": "America/New_York",
+    "max_lead_s": 180,
+    "max_stale_s": 90,
+    "terminal_grace_s": 300,
+    "early_s": 60,
+    "late_s": 300,
+    "bunched_ratio": 0.25,
+    "gap_ratio": 2.0,
+    "regular_tolerance": 0.2,
+    "crosscheck_slack_s": 60
+  },
+  "row_counts": {
+    "stop_events": 2955748,
+    "otp_summary": 6,
+    "otp_route_hour": 14476,
+    "headways": 2913270,
+    "headway_regularity": 25710,
+    "headway_summary": 4,
+    "trip_match_summary": 10,
+    "event_status_summary": 20,
+    "crosscheck_summary": 2,
+    "end_of_trip_summary": 8,
+    "multi_unit_summary": 4,
+    "ambiguous_summary": 4
+  },
+  "event_status_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "status": "implausible",
+      "events": 55711
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "status": "passed",
+      "events": 1479245
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "status": "stale",
+      "events": 3534
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "status": "terminal",
+      "events": 45924
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "status": "unconfirmed",
+      "events": 475013
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "status": "implausible",
+      "events": 48484
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "status": "passed",
+      "events": 1516325
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "status": "stale",
+      "events": 3650
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "status": "terminal",
+      "events": 46637
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "status": "unconfirmed",
+      "events": 380656
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "status": "implausible",
+      "events": 209
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "status": "passed",
+      "events": 85236
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "status": "stale",
+      "events": 6593
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "status": "terminal",
+      "events": 3261
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "status": "unconfirmed",
+      "events": 6328
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "status": "implausible",
+      "events": 282
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "status": "passed",
+      "events": 82568
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "status": "stale",
+      "events": 8792
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "status": "terminal",
+      "events": 3211
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "status": "unconfirmed",
+      "events": 7420
+    }
+  ],
+  "trip_match_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "tier": "exact",
+      "rt_trips": 53792
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "tier": "unscheduled",
+      "rt_trips": 385
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "tier": "exact",
+      "rt_trips": 53828
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "tier": "unscheduled",
+      "rt_trips": 426
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "tier": "route_direction",
+      "rt_trips": 693
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "tier": "suffix",
+      "rt_trips": 2688
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "tier": "unscheduled",
+      "rt_trips": 413
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "tier": "route_direction",
+      "rt_trips": 731
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "tier": "suffix",
+      "rt_trips": 2635
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "tier": "unscheduled",
+      "rt_trips": 442
+    }
+  ],
+  "multi_unit_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "rt_trips": 54177,
+      "multi_unit_trips": 17425,
+      "multi_unit_share": 0.3216
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "rt_trips": 54254,
+      "multi_unit_trips": 15892,
+      "multi_unit_share": 0.2929
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "rt_trips": 3794,
+      "multi_unit_trips": 0,
+      "multi_unit_share": 0.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "rt_trips": 3808,
+      "multi_unit_trips": 0,
+      "multi_unit_share": 0.0
+    }
+  ],
+  "ambiguous_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "trip_stops": 1406156,
+      "ambiguous_trip_stops": 26724,
+      "ambiguous_share": 0.019
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "trip_stops": 1451045,
+      "ambiguous_trip_stops": 20538,
+      "ambiguous_share": 0.0142
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "trip_stops": 74669,
+      "ambiguous_trip_stops": 0,
+      "ambiguous_share": 0.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "trip_stops": 71186,
+      "ambiguous_trip_stops": 46,
+      "ambiguous_share": 0.0006
+    }
+  ],
+  "end_of_trip_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "position": "origin",
+      "events": 42212,
+      "zero_delay_share": 0.1974,
+      "median_delay_s": 111.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "position": "terminal",
+      "events": 44526,
+      "zero_delay_share": 0.0008,
+      "median_delay_s": 453.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "position": "origin",
+      "events": 43162,
+      "zero_delay_share": 0.2012,
+      "median_delay_s": 112.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "position": "terminal",
+      "events": 45177,
+      "zero_delay_share": 0.0005,
+      "median_delay_s": 471.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "position": "origin",
+      "events": 2871,
+      "zero_delay_share": 0.945,
+      "median_delay_s": 0.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "position": "terminal",
+      "events": 2867,
+      "zero_delay_share": 0.0024,
+      "median_delay_s": -10.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "position": "origin",
+      "events": 2790,
+      "zero_delay_share": 0.9369,
+      "median_delay_s": 0.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "position": "terminal",
+      "events": 2763,
+      "zero_delay_share": 0.0033,
+      "median_delay_s": -4.0
+    }
+  ],
+  "otp_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "scope": "all_stops",
+      "events": 1379432,
+      "on_time_share": 0.4739,
+      "early_share": 0.2199,
+      "late_share": 0.3063,
+      "median_delay_s": 119.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "scope": "timepoints",
+      "events": 194343,
+      "on_time_share": 0.4797,
+      "early_share": 0.2121,
+      "late_share": 0.3083,
+      "median_delay_s": 122.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "scope": "all_stops",
+      "events": 1430507,
+      "on_time_share": 0.4685,
+      "early_share": 0.2161,
+      "late_share": 0.3154,
+      "median_delay_s": 125.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "scope": "timepoints",
+      "events": 201328,
+      "on_time_share": 0.4746,
+      "early_share": 0.2081,
+      "late_share": 0.3173,
+      "median_delay_s": 129.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "scope": "all_stops",
+      "events": 74669,
+      "on_time_share": 0.6687,
+      "early_share": 0.2631,
+      "late_share": 0.0682,
+      "median_delay_s": -9.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "scope": "all_stops",
+      "events": 71140,
+      "on_time_share": 0.6839,
+      "early_share": 0.2393,
+      "late_share": 0.0768,
+      "median_delay_s": -3.0
+    }
+  ],
+  "headway_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "headways": 1358922,
+      "regular_share": 0.3071,
+      "bunched_share": 0.0998,
+      "gap_share": 0.1252
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "headways": 1409918,
+      "regular_share": 0.3081,
+      "bunched_share": 0.1017,
+      "gap_share": 0.1167
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "headways": 73981,
+      "regular_share": 0.4595,
+      "bunched_share": 0.0064,
+      "gap_share": 0.0769
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "headways": 70449,
+      "regular_share": 0.4471,
+      "bunched_share": 0.0047,
+      "gap_share": 0.0832
+    }
+  ],
+  "crosscheck_summary": [
+    {
+      "service_date": "20260922",
+      "compared": 1305517,
+      "agreement_share": 0.9595,
+      "multi_passage_share": 0.0648,
+      "median_abs_offset_s": 15.0
+    },
+    {
+      "service_date": "20260923",
+      "compared": 1354952,
+      "agreement_share": 0.9599,
+      "multi_passage_share": 0.0649,
+      "median_abs_offset_s": 14.0
+    }
+  ]
+}

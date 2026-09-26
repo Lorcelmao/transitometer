@@ -197,6 +197,33 @@ def task_validate_landing(_: argparse.Namespace) -> int:
     return 0 if report.ok else 1
 
 
+def task_golden(_: argparse.Namespace) -> int:
+    """Golden reference KPIs (DuckDB SQL on landing) for the golden window."""
+    import time
+
+    from transitometer.golden import runner
+    from transitometer.ingest.sources import load_sources
+
+    started = time.perf_counter()
+    result = runner.run(
+        load_sources(SOURCES_FILE),
+        landing_dir(),
+        Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "golden",
+        log=lambda message: print(message, flush=True),  # visible progress when redirected
+    )
+    runner.write_repo_artifacts(result, ROOT / "golden")
+    print(f"row counts: {result.row_counts}")
+    for row in result.summary["otp_summary"]:
+        print(
+            f"OTP {row['grp']:<6} {row['service_date']} {row['scope']:<10} "
+            f"on-time {row['on_time_share']:.1%} of {row['events']:,} events"
+        )
+    for row in result.summary["crosscheck_summary"]:
+        print(f"bus VP cross-check {row['service_date']}: {row['agreement_share']:.1%} agree")
+    print(f"outputs: {result.out_dir}  ({time.perf_counter() - started:.0f}s)")
+    return 0
+
+
 def task_skeleton(args: argparse.Namespace) -> int:
     """Walking skeleton: one real hour via Kafka -> Spark -> Delta -> DuckDB, plus calibration."""
     from transitometer.ops import skeleton
@@ -260,6 +287,7 @@ def build_parser() -> argparse.ArgumentParser:
             "print usage and append to results/storage-log.csv",
         ),
         "validate-landing": (task_validate_landing, "validate landing data, write volume report"),
+        "golden": (task_golden, "golden reference KPIs (DuckDB) for the golden window"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }
     for name, (func, help_text) in simple.items():

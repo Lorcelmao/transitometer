@@ -1,0 +1,105 @@
+{
+  "method": "Seeded sample (setseed 0.42) of golden 'passed' stop events from the 2026-09-22/23 golden window. Each was verified by hand against raw landing evidence produced by src/transitometer/golden/handcheck.py: the last trip-update snapshots that listed the stop, the first snapshot without it, the scheduled arrival, and (bus) the independent vehicle-position next-stop trace. Times are New York local.",
+  "checked_on": "2026-09-26",
+  "checks": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "trip_id": "JG_D6-Weekday-SDon-071900_B6769_927",
+      "stop_id": "306559",
+      "golden": {
+        "scheduled": "12:55:10",
+        "observed": "12:52:57",
+        "delay_s": -133
+      },
+      "evidence": "Prediction 12:52:57 held from 12:53:02 to 12:53:23; stop gone at 12:53:54. VP next stop 306559 -> 306560 between 12:52:03 and 12:52:30.",
+      "verdict": "correct",
+      "note": "Observed time ~27 s after the VP passage window (known small lag, within the 60 s slack); OTP class unaffected."
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "trip_id": "JG_D6-Weekday-SDon-077800_B16_407",
+      "stop_id": "301707",
+      "golden": {
+        "scheduled": "13:50:00",
+        "observed": "14:56:16",
+        "delay_s": 3976
+      },
+      "evidence": "Prediction 14:56:16 held 14:55:58-14:56:19; stop gone at 14:57:12. VP passes 301707 between 14:55:51 and 14:56:19.",
+      "verdict": "correct",
+      "note": "Faithful to the feed: the vehicle carrying this trip id was 66 min behind schedule; possibly a trip-assignment artifact (BR7 material). Also an example of a bus trip later split per vehicle (29-32 % of bus trips have >1 vehicle)."
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "trip_id": "CA_D6-Weekday-SDon-042500_S5181_91",
+      "stop_id": "201745",
+      "golden": {
+        "scheduled": "07:28:24",
+        "observed": "07:32:06",
+        "delay_s": 222
+      },
+      "evidence": "Last listing 07:32:39 predicting 07:32:06; stop gone at 07:33:01. VP passes 201745 between 07:31:36 and 07:32:06.",
+      "verdict": "correct",
+      "note": "Observed time equals the end of the VP passage window."
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "trip_id": "KB_D6-Weekday-SDon-097200_BX9_646",
+      "stop_id": "100576",
+      "golden": {
+        "scheduled": "16:55:05",
+        "observed": "17:05:07",
+        "delay_s": 602
+      },
+      "evidence": "Prediction 17:05:07 held 17:04:18-17:04:39; stop gone at 17:05:00. VP next stop flips 100164 <-> 100576 before passing between 17:04:10 and 17:04:41.",
+      "verdict": "correct",
+      "note": "Late either way. The next-stop flip-flop shows why the cross-check must count each event once (fixed)."
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "trip_id": "058400_1..S15R",
+      "stop_id": "113S",
+      "golden": {
+        "scheduled": "10:00:30",
+        "observed": "10:00:23",
+        "delay_s": -7
+      },
+      "evidence": "Prediction 10:00:23 held 10:00:10-10:00:28; stop gone at 10:00:49.",
+      "verdict": "correct",
+      "note": ""
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "trip_id": "106300_2..N01R",
+      "stop_id": "247N",
+      "golden": {
+        "scheduled": "17:43:00",
+        "observed": "17:43:00",
+        "delay_s": 0
+      },
+      "evidence": "Prediction equal to the scheduled time, still listed 110 s after it (17:44:32-17:44:50); stop gone at 17:45:06. 247N is the trip's origin terminal.",
+      "verdict": "incorrect -> rule added",
+      "note": "Feed echoed the timetable instead of tracking the train. 247N is the trip's origin; origin stops are now excluded from arrival KPIs (94 % of subway origin events show exactly 0 s delay) and a 'stale' status (> 90 s in the past while listed) guards other echoes."
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "trip_id": "120650_7..S",
+      "stop_id": "720S",
+      "golden": {
+        "scheduled": "20:30:30",
+        "observed": "20:31:33",
+        "delay_s": 63
+      },
+      "evidence": "Prediction 20:31:33 held 20:32:08-20:32:29 (56 s stale, under the 90 s threshold); stop gone at 20:32:50. Matched by the route_direction tier.",
+      "verdict": "correct",
+      "note": "Confirms the route_direction tier maps 7-line ids to the right scheduled trip."
+    }
+  ],
+  "summary": "6 of 7 correct as first computed; 1 revealed the timetable-echo case (origin stop), fixed by excluding origin/terminal stops from KPIs plus the 'stale' status. Independent VP cross-check (per vehicle): 96.0-96.1 % agreement. Golden outputs are byte-identical across two full runs."
+}

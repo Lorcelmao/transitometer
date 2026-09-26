@@ -25,6 +25,9 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+transitometer = ["golden/sql/*.sql"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
