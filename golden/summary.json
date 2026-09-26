@@ -13,21 +13,42 @@
     "bunched_ratio": 0.25,
     "gap_ratio": 2.0,
     "regular_tolerance": 0.2,
-    "crosscheck_slack_s": 60
+    "crosscheck_slack_s": 60,
+    "terminal_radius_m": 50,
+    "outage_gap_s": 300,
+    "partial_share": 0.5,
+    "bootstrap_resamples": 200,
+    "bootstrap_seed": "transitometer",
+    "min_events": 10,
+    "min_trips": 5
   },
   "row_counts": {
-    "stop_events": 2955748,
-    "otp_summary": 6,
+    "stop_events": 2955606,
+    "otp_summary": 8,
     "otp_route_hour": 14476,
-    "headways": 2913270,
-    "headway_regularity": 25710,
+    "headways": 2956930,
+    "headway_regularity": 13891,
     "headway_summary": 4,
     "trip_match_summary": 10,
     "event_status_summary": 20,
     "crosscheck_summary": 2,
     "end_of_trip_summary": 8,
     "multi_unit_summary": 4,
-    "ambiguous_summary": 4
+    "ambiguous_summary": 4,
+    "stale_summary": 12,
+    "delay_sanity_summary": 4,
+    "terminal_events": 73874,
+    "terminal_summary": 2,
+    "trip_delivery": 117076,
+    "missing_trip_summary": 4,
+    "missing_by_route": 708,
+    "segments": 2845556,
+    "segment_travel_stats": 380506,
+    "trip_delay_attribution": 110050,
+    "delay_attribution_summary": 4,
+    "route_scorecard": 353,
+    "route_hour_scorecard": 7275,
+    "stop_hour_reliability": 392788
   },
   "event_status_summary": [
     {
@@ -94,61 +115,61 @@
       "grp": "subway",
       "service_date": "20260922",
       "status": "implausible",
-      "events": 209
+      "events": 220
     },
     {
       "grp": "subway",
       "service_date": "20260922",
       "status": "passed",
-      "events": 85236
+      "events": 85314
     },
     {
       "grp": "subway",
       "service_date": "20260922",
       "status": "stale",
-      "events": 6593
+      "events": 6446
     },
     {
       "grp": "subway",
       "service_date": "20260922",
       "status": "terminal",
-      "events": 3261
+      "events": 3264
     },
     {
       "grp": "subway",
       "service_date": "20260922",
       "status": "unconfirmed",
-      "events": 6328
+      "events": 6413
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "status": "implausible",
-      "events": 282
+      "events": 271
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "status": "passed",
-      "events": 82568
+      "events": 82296
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "status": "stale",
-      "events": 8792
+      "events": 8907
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "status": "terminal",
-      "events": 3211
+      "events": 3205
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "status": "unconfirmed",
-      "events": 7420
+      "events": 7442
     }
   ],
   "trip_match_summary": [
@@ -180,7 +201,7 @@
       "grp": "subway",
       "service_date": "20260922",
       "tier": "route_direction",
-      "rt_trips": 693
+      "rt_trips": 695
     },
     {
       "grp": "subway",
@@ -198,13 +219,13 @@
       "grp": "subway",
       "service_date": "20260923",
       "tier": "route_direction",
-      "rt_trips": 731
+      "rt_trips": 728
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "tier": "suffix",
-      "rt_trips": 2635
+      "rt_trips": 2634
     },
     {
       "grp": "subway",
@@ -231,14 +252,14 @@
     {
       "grp": "subway",
       "service_date": "20260922",
-      "rt_trips": 3794,
+      "rt_trips": 3796,
       "multi_unit_trips": 0,
       "multi_unit_share": 0.0
     },
     {
       "grp": "subway",
       "service_date": "20260923",
-      "rt_trips": 3808,
+      "rt_trips": 3804,
       "multi_unit_trips": 0,
       "multi_unit_share": 0.0
     }
@@ -261,14 +282,14 @@
     {
       "grp": "subway",
       "service_date": "20260922",
-      "trip_stops": 74669,
+      "trip_stops": 74720,
       "ambiguous_trip_stops": 0,
       "ambiguous_share": 0.0
     },
     {
       "grp": "subway",
       "service_date": "20260923",
-      "trip_stops": 71186,
+      "trip_stops": 70993,
       "ambiguous_trip_stops": 46,
       "ambiguous_share": 0.0006
     }
@@ -278,65 +299,65 @@
       "grp": "bus",
       "service_date": "20260922",
       "position": "origin",
-      "events": 42212,
-      "zero_delay_share": 0.1974,
+      "events": 41432,
+      "zero_delay_share": 0.1973,
+      "median_delay_s": 110.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "position": "terminal",
+      "events": 36631,
+      "zero_delay_share": 0.0008,
+      "median_delay_s": 494.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "position": "origin",
+      "events": 42448,
+      "zero_delay_share": 0.2008,
       "median_delay_s": 111.0
     },
     {
       "grp": "bus",
-      "service_date": "20260922",
-      "position": "terminal",
-      "events": 44526,
-      "zero_delay_share": 0.0008,
-      "median_delay_s": 453.0
-    },
-    {
-      "grp": "bus",
-      "service_date": "20260923",
-      "position": "origin",
-      "events": 43162,
-      "zero_delay_share": 0.2012,
-      "median_delay_s": 112.0
-    },
-    {
-      "grp": "bus",
       "service_date": "20260923",
       "position": "terminal",
-      "events": 45177,
-      "zero_delay_share": 0.0005,
-      "median_delay_s": 471.0
+      "events": 37953,
+      "zero_delay_share": 0.0004,
+      "median_delay_s": 510.0
     },
     {
       "grp": "subway",
       "service_date": "20260922",
       "position": "origin",
-      "events": 2871,
-      "zero_delay_share": 0.945,
+      "events": 2878,
+      "zero_delay_share": 0.9503,
       "median_delay_s": 0.0
     },
     {
       "grp": "subway",
       "service_date": "20260922",
       "position": "terminal",
-      "events": 2867,
+      "events": 2868,
       "zero_delay_share": 0.0024,
-      "median_delay_s": -10.0
+      "median_delay_s": -9.0
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "position": "origin",
-      "events": 2790,
-      "zero_delay_share": 0.9369,
+      "events": 2783,
+      "zero_delay_share": 0.9447,
       "median_delay_s": 0.0
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "position": "terminal",
-      "events": 2763,
+      "events": 2758,
       "zero_delay_share": 0.0033,
-      "median_delay_s": -4.0
+      "median_delay_s": -2.0
     }
   ],
   "otp_summary": [
@@ -349,6 +370,16 @@
       "early_share": 0.2199,
       "late_share": 0.3063,
       "median_delay_s": 119.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "scope": "terminals",
+      "events": 35681,
+      "on_time_share": 0.3725,
+      "early_share": 0.2235,
+      "late_share": 0.404,
+      "median_delay_s": 195.0
     },
     {
       "grp": "bus",
@@ -373,6 +404,16 @@
     {
       "grp": "bus",
       "service_date": "20260923",
+      "scope": "terminals",
+      "events": 36783,
+      "on_time_share": 0.3732,
+      "early_share": 0.217,
+      "late_share": 0.4098,
+      "median_delay_s": 204.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
       "scope": "timepoints",
       "events": 201328,
       "on_time_share": 0.4746,
@@ -384,55 +425,59 @@
       "grp": "subway",
       "service_date": "20260922",
       "scope": "all_stops",
-      "events": 74669,
-      "on_time_share": 0.6687,
-      "early_share": 0.2631,
-      "late_share": 0.0682,
-      "median_delay_s": -9.0
+      "events": 74720,
+      "on_time_share": 0.6745,
+      "early_share": 0.253,
+      "late_share": 0.0725,
+      "median_delay_s": -7.0
     },
     {
       "grp": "subway",
       "service_date": "20260923",
       "scope": "all_stops",
-      "events": 71140,
-      "on_time_share": 0.6839,
-      "early_share": 0.2393,
-      "late_share": 0.0768,
-      "median_delay_s": -3.0
+      "events": 70947,
+      "on_time_share": 0.6904,
+      "early_share": 0.228,
+      "late_share": 0.0816,
+      "median_delay_s": -1.0
     }
   ],
   "headway_summary": [
     {
       "grp": "bus",
       "service_date": "20260922",
-      "headways": 1358922,
-      "regular_share": 0.3071,
-      "bunched_share": 0.0998,
-      "gap_share": 0.1252
+      "headways": 1376197,
+      "regular_share": 0.3064,
+      "bunched_share": 0.1023,
+      "gap_share": 0.1178,
+      "non_kpi_passage_share": 0.0346
     },
     {
       "grp": "bus",
       "service_date": "20260923",
-      "headways": 1409918,
-      "regular_share": 0.3081,
-      "bunched_share": 0.1017,
-      "gap_share": 0.1167
+      "headways": 1421778,
+      "regular_share": 0.3066,
+      "bunched_share": 0.1041,
+      "gap_share": 0.1101,
+      "non_kpi_passage_share": 0.0269
     },
     {
       "grp": "subway",
       "service_date": "20260922",
-      "headways": 73981,
-      "regular_share": 0.4595,
-      "bunched_share": 0.0064,
-      "gap_share": 0.0769
+      "headways": 81035,
+      "regular_share": 0.4571,
+      "bunched_share": 0.0078,
+      "gap_share": 0.0579,
+      "non_kpi_passage_share": 0.1178
     },
     {
       "grp": "subway",
       "service_date": "20260923",
-      "headways": 70449,
-      "regular_share": 0.4471,
-      "bunched_share": 0.0047,
-      "gap_share": 0.0832
+      "headways": 77920,
+      "regular_share": 0.4448,
+      "bunched_share": 0.005,
+      "gap_share": 0.061,
+      "non_kpi_passage_share": 0.1351
     }
   ],
   "crosscheck_summary": [
@@ -449,6 +494,226 @@
       "agreement_share": 0.9599,
       "multi_passage_share": 0.0649,
       "median_abs_offset_s": 14.0
+    }
+  ],
+  "stale_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "position": "intermediate",
+      "stale_events": 1333,
+      "median_staleness_s": 102.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "position": "origin",
+      "stale_events": 423,
+      "median_staleness_s": 106.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "position": "terminal",
+      "stale_events": 1772,
+      "median_staleness_s": 103.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "position": "intermediate",
+      "stale_events": 1364,
+      "median_staleness_s": 102.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "position": "origin",
+      "stale_events": 439,
+      "median_staleness_s": 104.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "position": "terminal",
+      "stale_events": 1841,
+      "median_staleness_s": 103.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "position": "intermediate",
+      "stale_events": 5335,
+      "median_staleness_s": 2750.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "position": "origin",
+      "stale_events": 284,
+      "median_staleness_s": 339.5
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "position": "terminal",
+      "stale_events": 185,
+      "median_staleness_s": 1250.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "position": "intermediate",
+      "stale_events": 7471,
+      "median_staleness_s": 2978.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "position": "origin",
+      "stale_events": 365,
+      "median_staleness_s": 2570.0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "position": "terminal",
+      "stale_events": 206,
+      "median_staleness_s": 1873.5
+    }
+  ],
+  "delay_sanity_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "events": 1379432,
+      "events_over_6h": 0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "events": 1430507,
+      "events_over_6h": 0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "events": 74720,
+      "events_over_6h": 0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "events": 70947,
+      "events_over_6h": 0
+    }
+  ],
+  "terminal_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "matched_trips": 53792,
+      "measured": 35681,
+      "ambiguous": 770,
+      "measured_share": 0.6633,
+      "median_delay_s": 195.0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "matched_trips": 53828,
+      "measured": 36783,
+      "ambiguous": 640,
+      "measured_share": 0.6833,
+      "median_delay_s": 204.0
+    }
+  ],
+  "missing_trip_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "scheduled": 55159,
+      "delivered": 49005,
+      "partial": 2476,
+      "missing": 1367,
+      "not_run": 2311,
+      "unknown": 0,
+      "missing_share": 0.0248,
+      "not_delivered_share": 0.0667
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "scheduled": 55159,
+      "delivered": 50519,
+      "partial": 1568,
+      "missing": 1331,
+      "not_run": 1741,
+      "unknown": 0,
+      "missing_share": 0.0241,
+      "not_delivered_share": 0.0557
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "scheduled": 3379,
+      "delivered": 2999,
+      "partial": 36,
+      "missing": 116,
+      "not_run": 228,
+      "unknown": 0,
+      "missing_share": 0.0343,
+      "not_delivered_share": 0.1018
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "scheduled": 3379,
+      "delivered": 2899,
+      "partial": 62,
+      "missing": 146,
+      "not_run": 272,
+      "unknown": 0,
+      "missing_share": 0.0432,
+      "not_delivered_share": 0.1237
+    }
+  ],
+  "delay_attribution_summary": [
+    {
+      "grp": "bus",
+      "service_date": "20260922",
+      "trip_vehicles": 52481,
+      "mean_inherited_delay_s": 197.3,
+      "mean_gained_delay_s": 205.7,
+      "mean_final_delay_s": 403.0,
+      "attribution_mismatches": 0
+    },
+    {
+      "grp": "bus",
+      "service_date": "20260923",
+      "trip_vehicles": 52415,
+      "mean_inherited_delay_s": 179.0,
+      "mean_gained_delay_s": 176.5,
+      "mean_final_delay_s": 355.6,
+      "attribution_mismatches": 0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260922",
+      "trip_vehicles": 2616,
+      "mean_inherited_delay_s": 2.5,
+      "mean_gained_delay_s": 89.0,
+      "mean_final_delay_s": 91.5,
+      "attribution_mismatches": 0
+    },
+    {
+      "grp": "subway",
+      "service_date": "20260923",
+      "trip_vehicles": 2538,
+      "mean_inherited_delay_s": 11.3,
+      "mean_gained_delay_s": 105.7,
+      "mean_final_delay_s": 116.9,
+      "attribution_mismatches": 0
     }
   ]
 }

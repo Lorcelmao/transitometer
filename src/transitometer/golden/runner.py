@@ -28,6 +28,10 @@ SQL_STEPS = (
     "04_otp.sql",
     "05_headways.sql",
     "06_crosscheck.sql",
+    "07_terminals.sql",
+    "08_missing_trips.sql",
+    "09_segments.sql",
+    "10_scorecards.sql",
 )
 EXPORTED_TABLES = (
     "stop_events",
@@ -42,6 +46,20 @@ EXPORTED_TABLES = (
     "end_of_trip_summary",
     "multi_unit_summary",
     "ambiguous_summary",
+    "stale_summary",
+    "delay_sanity_summary",
+    "terminal_events",
+    "terminal_summary",
+    "trip_delivery",
+    "missing_trip_summary",
+    "missing_by_route",
+    "segments",
+    "segment_travel_stats",
+    "trip_delay_attribution",
+    "delay_attribution_summary",
+    "route_scorecard",
+    "route_hour_scorecard",
+    "stop_hour_reliability",
 )
 SUMMARY_TABLES = (
     "event_status_summary",
@@ -52,6 +70,11 @@ SUMMARY_TABLES = (
     "otp_summary",
     "headway_summary",
     "crosscheck_summary",
+    "stale_summary",
+    "delay_sanity_summary",
+    "terminal_summary",
+    "missing_trip_summary",
+    "delay_attribution_summary",
 )
 
 
@@ -69,6 +92,13 @@ class Params:
     gap_ratio: float = 2.0
     regular_tolerance: float = 0.2
     crosscheck_slack_s: int = 60
+    terminal_radius_m: int = 50  # a vehicle position this close to the last stop = arrival
+    outage_gap_s: int = 300  # snapshot gap that makes overlapping trips 'unknown' for BR3
+    partial_share: float = 0.5  # BR3: fewer passed intermediate stops than this share = partial
+    bootstrap_resamples: int = 200
+    bootstrap_seed: str = "transitometer"
+    min_events: int = 10  # scorecard cells with fewer events are flagged insufficient
+    min_trips: int = 5  # routes / route-hours with fewer trips (resampling units) likewise
 
 
 @dataclass
@@ -115,7 +145,7 @@ def _inputs(sources: Sources, landing: Path) -> dict[str, str]:
         "subway_tu": realtime("subway", "trip_updates"),
     }
     for group in ("bus", "subway"):
-        for table in ("calendar", "calendar_dates", "trips", "stop_times"):
+        for table in ("calendar", "calendar_dates", "trips", "stop_times", "stops"):
             values[f"{group}_{table}"] = schedule(group, table)
     return values
 

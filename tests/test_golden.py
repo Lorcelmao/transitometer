@@ -7,138 +7,32 @@ has an origin stop S0 (never listed by the feed) and intermediate stops S1/S2; S
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Mapping, Sequence
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import duckdb
-import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from transitometer.golden import runner
-from transitometer.ingest.sources import (
-    DateRange,
-    RealtimeFeed,
-    ScheduleVersion,
-    Sources,
-    realtime_relpath,
-    schedule_dir,
+from golden_landing import (
+    NEXT,
+    partition,
+    schedule,
+    schedule_folder,
+    sources,
+    trip_updates,
+    vehicle_positions,
+    write,
+    write_empty_like,
 )
+from transitometer.golden import runner
+from transitometer.ingest.sources import Sources
 
-DAY = date(2026, 9, 22)
-NEXT = date(2026, 9, 23)
-BASE = 1_790_049_600  # 2026-09-22 00:00 America/New_York
 SUB_1 = "AFA-Weekday-00_048000_1..S03R"
 SUB_7 = "AFA-Weekday-00_050000_7..N35R"
-
-Snapshot = tuple[str, str, list[tuple[str, str]]] | tuple[str, str, list[tuple[str, str]], str]
-
-
-def t(hhmm: str) -> int:
-    """'HH:MM' or 'HH:MM:SS' (may exceed 24h) -> epoch seconds on the service day."""
-    parts = [int(p) for p in hhmm.split(":")] + [0]
-    return BASE + parts[0] * 3600 + parts[1] * 60 + parts[2]
-
-
-def _write(path: Path, rows: Mapping[str, Sequence[object]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    pq.write_table(pa.table(rows), path)
-
-
-def _write_empty_like(path: Path, like: Path) -> None:
-    """An archive partition with no rows but the same (typed) schema as `like`."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    pq.write_table(pq.read_schema(like).empty_table(), path)
-
-
-def _tu(snapshots: list[Snapshot], subway_ids: bool = False) -> dict[str, list[Any]]:
-    """[(trip, feed_time, [(stop, predicted), ...][, vehicle]), ...] -> trip-update rows.
-
-    subway_ids mimics NYCT: no vehicle_id, and entity_id is the entity's position in its snapshot.
-    """
-    cols: dict[str, list[Any]] = {
-        k: []
-        for k in (
-            "source_file",
-            "feed_timestamp",
-            "entity_id",
-            "trip_id",
-            "vehicle_id",
-            "start_date",
-            "route_id",
-            "stop_id",
-            "stop_sequence",
-            "arrival_time",
-            "departure_time",
-        )
-    }
-    position: dict[str, int] = {}
-    for snap in snapshots:
-        trip, feed_time, stops = snap[0], snap[1], snap[2]
-        vehicle = snap[3] if len(snap) == 4 else f"V-{trip}"
-        position[feed_time] = position.get(feed_time, 0) + 1
-        for seq, (stop, predicted) in enumerate(stops, start=1):
-            cols["source_file"].append(f"{feed_time}.pb")
-            cols["feed_timestamp"].append(t(feed_time))
-            cols["entity_id"].append(
-                f"{position[feed_time]:06d}" if subway_ids else f"E-{trip}-{vehicle}"
-            )
-            cols["trip_id"].append(trip)
-            cols["vehicle_id"].append(None if subway_ids else vehicle)
-            cols["start_date"].append("20260922")
-            cols["route_id"].append("R")
-            cols["stop_id"].append(stop)
-            cols["stop_sequence"].append(seq)
-            cols["arrival_time"].append(t(predicted))
-            cols["departure_time"].append(t(predicted))
-    return cols
-
-
-def _schedule(
-    folder: Path, trips: dict[str, tuple[str, int]], stop_times: list[tuple[str, str, str, int]]
-) -> None:
-    """trips: trip_id -> (route_id, direction_id); stop_times: (trip, stop, 'HH:MM:SS', tp)."""
-    _write(
-        folder / "calendar.parquet",
-        {
-            "service_id": ["WKD"],
-            "monday": ["1"],
-            "tuesday": ["1"],
-            "wednesday": ["1"],
-            "thursday": ["1"],
-            "friday": ["1"],
-            "saturday": ["0"],
-            "sunday": ["0"],
-            "start_date": ["20260901"],
-            "end_date": ["20261231"],
-        },
-    )
-    _write(
-        folder / "calendar_dates.parquet",
-        {"service_id": ["WKD"], "date": ["20261225"], "exception_type": ["2"]},
-    )
-    _write(
-        folder / "trips.parquet",
-        {
-            "route_id": [r for r, _ in trips.values()],
-            "service_id": ["WKD"] * len(trips),
-            "trip_id": list(trips),
-            "direction_id": [str(d) for _, d in trips.values()],
-        },
-    )
-    _write(
-        folder / "stop_times.parquet",
-        {
-            "trip_id": [s[0] for s in stop_times],
-            "arrival_time": [s[2] for s in stop_times],
-            "departure_time": [s[2] for s in stop_times],
-            "stop_id": [s[1] for s in stop_times],
-            "stop_sequence": [str(i) for i in range(len(stop_times))],  # increasing within a trip
-            "timepoint": [str(s[3]) for s in stop_times],
-        },
-    )
+SUB_4 = "AFA-Weekday-00_150700_4..N13R"  # starts 25:07, after midnight
+SUB_6 = "AFA-Weekday-00_143900_6..N01R"  # starts 23:59, before midnight
 
 
 def _bus_trip(trip: str, times: list[str]) -> list[tuple[str, str, str, int]]:
@@ -149,26 +43,7 @@ def _bus_trip(trip: str, times: list[str]) -> list[tuple[str, str, str, int]]:
 
 
 def build_landing(landing: Path) -> Sources:
-    lic = "test"
-    bus_sched = ScheduleVersion(
-        "bus_s", "bus", "bus.zip", "v1:" + "a" * 64, date(2026, 9, 1), date(2026, 12, 31), lic
-    )
-    sub_sched = ScheduleVersion(
-        "sub_s", "subway", "sub.zip", "v1:" + "b" * 64, date(2026, 9, 1), date(2026, 12, 31), lic
-    )
-    feeds = (
-        RealtimeFeed("bus", "trip_updates", "u1", "bus", lic),
-        RealtimeFeed("bus", "vehicle_positions", "u2", "bus", lic),
-        RealtimeFeed("sub", "trip_updates", "u3", "subway", lic),
-    )
-    sources = Sources(
-        "file:///unused",
-        DateRange(DAY, DAY),
-        DateRange(DAY, DAY),
-        feeds,
-        (bus_sched, sub_sched),
-        ("calendar.parquet", "calendar_dates.parquet", "trips.parquet", "stop_times.parquet"),
-    )
+    config, bus_sched, sub_sched = sources()
 
     bus_trips = {
         "B1": ["07:55", "08:00", "08:10", "08:20"],
@@ -182,14 +57,15 @@ def build_landing(landing: Path) -> Sources:
         "B9": ["09:25", "09:30", "09:40", "09:50"],
         "B3": ["25:05", "25:10", "25:20"],
     }
-    _schedule(
-        landing / schedule_dir(bus_sched),
+    schedule(
+        schedule_folder(landing, bus_sched),
         {trip: ("R", 0) for trip in bus_trips},
         [row for trip, times in bus_trips.items() for row in _bus_trip(trip, times)],
+        {f"S{i}": (40.70 + 0.01 * i, -73.90) for i in range(4)},
     )
-    _schedule(
-        landing / schedule_dir(sub_sched),
-        {SUB_1: ("1", 1), SUB_7: ("7", 0)},
+    schedule(
+        schedule_folder(landing, sub_sched),
+        {SUB_1: ("1", 1), SUB_7: ("7", 0), SUB_4: ("4", 0), SUB_6: ("6", 0)},
         [
             (SUB_1, "100S", "07:55:00", 0),
             (SUB_1, "101S", "08:00:00", 0),
@@ -199,12 +75,19 @@ def build_landing(landing: Path) -> Sources:
             (SUB_7, "701N", "08:20:00", 0),
             (SUB_7, "702N", "08:25:00", 0),
             (SUB_7, "703N", "08:30:00", 0),
+            (SUB_4, "401N", "25:07:00", 0),
+            (SUB_4, "402N", "25:12:00", 0),
+            (SUB_4, "403N", "25:17:00", 0),
+            (SUB_6, "601N", "23:59:00", 0),
+            (SUB_6, "602N", "24:04:00", 0),
+            (SUB_6, "603N", "24:09:00", 0),
         ],
+        {},
     )
 
-    _write(
-        landing / realtime_relpath("trip_updates", DAY, "bus"),
-        _tu(
+    write(
+        landing / partition("trip_updates", "bus"),
+        trip_updates(
             [
                 # B1: S1 passed (0 s); S2 passed with a prediction exactly 180 s ahead (+120 s);
                 # S3 terminal (excluded from KPIs as a terminal).
@@ -250,18 +133,18 @@ def build_landing(landing: Path) -> Sources:
         ),
     )
     # B3 runs past midnight (25:10 = 01:10 next calendar day): next UTC archive partition.
-    _write(
-        landing / realtime_relpath("trip_updates", NEXT, "bus"),
-        _tu(
+    write(
+        landing / partition("trip_updates", "bus", NEXT),
+        trip_updates(
             [
                 ("B3", "25:09", [("S1", "25:10:30"), ("S2", "25:20")]),
                 ("B3", "25:15", [("S2", "25:21")]),
             ]
         ),
     )
-    _write(
-        landing / realtime_relpath("trip_updates", DAY, "sub"),
-        _tu(
+    write(
+        landing / partition("trip_updates", "sub"),
+        trip_updates(
             [
                 # 1 train: origin 100S observed (echo, excluded), 101S +30, 102S +60, 104S terminal
                 (
@@ -284,31 +167,42 @@ def build_landing(landing: Path) -> Sources:
             subway_ids=True,
         ),
     )
-    _write_empty_like(
-        landing / realtime_relpath("trip_updates", NEXT, "sub"),
-        landing / realtime_relpath("trip_updates", DAY, "sub"),
+    # NYCT labels a trip that starts after midnight with the calendar date, not its service day;
+    # a trip that starts at 23:59 keeps its date even though it runs past midnight.
+    after_midnight = trip_updates(
+        [
+            ("150700_4..N13R", "25:11", [("402N", "25:12:30"), ("403N", "25:17")]),
+            ("150700_4..N13R", "25:14", [("403N", "25:17")]),
+        ],
+        subway_ids=True,
+        start_date="20260923",
     )
-    vp_rows = [
-        ("B1", "07:59", "S1"),
-        ("B1", "08:01", "S2"),
-        ("B1", "08:12:30", "S3"),
-        ("B2", "08:09", "S1"),
-        ("B2", "08:11", "S2"),
-    ]
-    vp: dict[str, Sequence[object]] = {
-        "feed_timestamp": [t(r[1]) for r in vp_rows],
-        "timestamp": [t(r[1]) for r in vp_rows],
-        "trip_id": [r[0] for r in vp_rows],
-        "vehicle_id": [f"V-{r[0]}" for r in vp_rows],
-        "start_date": ["20260922"] * len(vp_rows),
-        "stop_id": [r[2] for r in vp_rows],
-    }
-    _write(landing / realtime_relpath("vehicle_positions", DAY, "bus"), vp)
-    _write_empty_like(
-        landing / realtime_relpath("vehicle_positions", NEXT, "bus"),
-        landing / realtime_relpath("vehicle_positions", DAY, "bus"),
+    before_midnight = trip_updates(
+        [
+            ("143900_6..N01R", "24:03", [("602N", "24:04:30"), ("603N", "24:09")]),
+            ("143900_6..N01R", "24:06", [("603N", "24:09")]),
+        ],
+        subway_ids=True,
     )
-    return sources
+    write(
+        landing / partition("trip_updates", "sub", NEXT),
+        {k: after_midnight[k] + before_midnight[k] for k in after_midnight},
+    )
+    vp = vehicle_positions(
+        [
+            ("B1", "07:59", "S1", "V-B1", None),
+            ("B1", "08:01", "S2", "V-B1", None),
+            ("B1", "08:12:30", "S3", "V-B1", None),
+            ("B2", "08:09", "S1", "V-B2", None),
+            ("B2", "08:11", "S2", "V-B2", None),
+        ]
+    )
+    write(landing / partition("vehicle_positions", "bus"), vp)
+    write_empty_like(
+        landing / partition("vehicle_positions", "bus", NEXT),
+        landing / partition("vehicle_positions", "bus"),
+    )
+    return config
 
 
 @pytest.fixture(scope="module")
@@ -338,13 +232,16 @@ def test_stop_event_statuses(golden: runner.GoldenResult) -> None:
     )  # B2 S2,S3; B5 S2; B4 S2; B6 S2; B7 S2 (V2); B10 S2; B3 S2
     assert status[("bus", "implausible")] == 1  # B4 S1
     assert status[("bus", "stale")] == 1  # B6 S1
-    assert status[("subway", "passed")] == 5 and status[("subway", "terminal")] == 2
+    # subway passed: 100S (origin echo), 101S, 102S, 701N, 702N, 402N, 602N;
+    # terminal: 104S, 703N, 403N, 603N
+    assert status[("subway", "passed")] == 7 and status[("subway", "terminal")] == 4
 
 
 def test_trip_matching_tiers_and_multi_vehicle_trips(golden: runner.GoldenResult) -> None:
     tiers = {(r["grp"], r["tier"]): r["rt_trips"] for r in golden.summary["trip_match_summary"]}
     assert tiers[("bus", "exact")] == 10 and tiers[("bus", "unscheduled")] == 1
-    assert tiers[("subway", "suffix")] == 1 and tiers[("subway", "route_direction")] == 1
+    # The 25:07 train reported under the next calendar date still matches its own service day.
+    assert tiers[("subway", "suffix")] == 3 and tiers[("subway", "route_direction")] == 1
     multi = {r["grp"]: r for r in golden.summary["multi_unit_summary"]}
     assert (multi["bus"]["rt_trips"], multi["bus"]["multi_unit_trips"]) == (11, 1)
 
@@ -366,6 +263,8 @@ def test_kpi_events_exclude_ambiguous_trip_stops(golden: runner.GoldenResult) ->
         ("048000_1..S03R", "102S"): 60,
         ("050000_7..N", "701N"): 60,
         ("050000_7..N", "702N"): 120,
+        ("150700_4..N13R", "402N"): 30,
+        ("143900_6..N01R", "602N"): 30,
     }
     assert all(v["observations"] == 1 for v in events.values())
     # B7 S1 was passed by two vehicles (V1 08:51, V2 08:50:30): ambiguous, reported not scored.
@@ -378,7 +277,7 @@ def test_origin_and_terminal_reported_not_scored(golden: runner.GoldenResult) ->
     assert ends[("subway", "origin")]["events"] == 1
     assert ends[("subway", "origin")]["zero_delay_share"] == 1.0  # timetable echo
     assert ends[("bus", "terminal")]["events"] == 4  # B1, B7 (V1), B8, B9
-    assert ends[("subway", "terminal")]["events"] == 2
+    assert ends[("subway", "terminal")]["events"] == 4
 
 
 def test_otp_band_edges_and_timepoints(golden: runner.GoldenResult) -> None:
@@ -394,7 +293,10 @@ def test_otp_band_edges_and_timepoints(golden: runner.GoldenResult) -> None:
 
 def test_headway_classes(golden: runner.GoldenResult) -> None:
     rows = {(r["trip_id"], r["stop_id"]): r for r in _table(golden, "headways")}
-    assert (rows[("B2", "S1")]["headway_s"], rows[("B2", "S1")]["ref_headway_s"]) == (610, 600)
+    # Unscheduled X9 (08:01) is a real passage between B1 (08:00:20) and B2 (08:10:30).
+    assert (rows[("X9", "S1")]["headway_s"], rows[("X9", "S1")]["source"]) == (40, "unscheduled")
+    assert rows[("X9", "S1")]["headway_class"] == "bunched"
+    assert (rows[("B2", "S1")]["headway_s"], rows[("B2", "S1")]["ref_headway_s"]) == (570, 600)
     assert rows[("B2", "S1")]["headway_class"] == "regular"
     assert (rows[("B5", "S1")]["headway_s"], rows[("B5", "S1")]["headway_class"]) == (60, "bunched")
     assert (rows[("B8", "S1")]["headway_s"], rows[("B8", "S1")]["headway_class"]) == (1410, "gap")
@@ -402,6 +304,8 @@ def test_headway_classes(golden: runner.GoldenResult) -> None:
         900,
         "irregular",
     )
+    # B7's S1 is ambiguous (two vehicles), yet its first passage still follows B10 in the sequence.
+    assert (rows[("B7", "S1")]["headway_s"], rows[("B7", "S1")]["source"]) == (30, "ambiguous")
 
 
 def test_vehicle_position_crosscheck(golden: runner.GoldenResult) -> None:

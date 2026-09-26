@@ -20,8 +20,8 @@
 -- else the trip itself. Two vehicles can report the same bus trip, and merging them would mix
 -- their predictions. NYCT subway sends no vehicle_id and its entity_id is only the entity's
 -- position within each snapshot ('000001', ...), so it carries no identity; the rare subway
--- snapshot with two entities for one trip stays merged and is resolved by the arg_max order. Every aggregate has a total order,
--- so results are deterministic regardless of thread scheduling.
+-- snapshot with two entities for one trip stays merged and is resolved by the arg_max order.
+-- Every aggregate has a total order, so results are deterministic regardless of thread scheduling.
 
 CREATE OR REPLACE TABLE stop_last AS
 WITH tu AS (
@@ -30,7 +30,14 @@ WITH tu AS (
            coalesce(arrival_time, departure_time) AS predicted, feed_timestamp
     FROM read_parquet($bus_tu)
     UNION ALL
-    SELECT 'subway', trip_id, start_date, route_id, stop_id,
+    -- NYCT trip ids start with the origin time in hundredths of a minute ('150700' = 25:07), and
+    -- a trip that starts after midnight carries the calendar date as start_date, not its service
+    -- day: move it back one day so it matches the timetable of the day it belongs to.
+    SELECT 'subway', trip_id,
+           CASE WHEN TRY_CAST(split_part(trip_id, '_', 1) AS INT) >= 144000
+                THEN strftime(try_strptime(start_date, '%Y%m%d') - INTERVAL 1 DAY, '%Y%m%d')
+                ELSE start_date END,
+           route_id, stop_id,
            coalesce(nullif(vehicle_id, ''), trip_id),
            coalesce(arrival_time, departure_time), feed_timestamp
     FROM read_parquet($subway_tu)
@@ -45,7 +52,9 @@ SELECT grp, trip_id, start_date AS service_date, unit, stop_id,
        arg_max(predicted, feed_timestamp::HUGEINT * 10000000000 + predicted)::BIGINT
            AS last_prediction
 FROM tu
-WHERE trip_id IS NOT NULL AND trip_id <> '' AND stop_id IS NOT NULL AND predicted IS NOT NULL
+-- A prediction must be a real epoch second (0 or absurd values would corrupt the arg_max key).
+WHERE trip_id IS NOT NULL AND trip_id <> '' AND stop_id IS NOT NULL
+  AND predicted > 0 AND predicted < 10000000000
   AND unit IS NOT NULL
   AND start_date IN (SELECT service_date FROM service_days)
 GROUP BY ALL;
