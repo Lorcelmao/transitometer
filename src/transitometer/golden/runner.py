@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -219,10 +220,22 @@ def run(
     return result
 
 
+# Kept only in the data folder (together ~90 % of the output); their checksums are committed.
+LARGE_TABLES = ("stop_events", "headways", "segments")
+
+
 def write_repo_artifacts(result: GoldenResult, repo_dir: Path) -> None:
-    """Commit-sized outputs: summary numbers and checksums of the Parquet results."""
+    """Commit-sized outputs: summary numbers, checksums of every Parquet result, and byte copies
+    of all but the large tables (golden/tables/)."""
     repo_dir.mkdir(parents=True, exist_ok=True)
     for name, body in (("summary.json", result.summary), ("checksums.json", result.checksums)):
         (repo_dir / name).write_text(
             json.dumps(body, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
         )
+    tables = repo_dir / "tables"
+    tables.mkdir(exist_ok=True)
+    for stale in tables.glob("*.parquet"):
+        stale.unlink()
+    for table in EXPORTED_TABLES:
+        if table not in LARGE_TABLES:
+            shutil.copyfile(result.out_dir / f"{table}.parquet", tables / f"{table}.parquet")

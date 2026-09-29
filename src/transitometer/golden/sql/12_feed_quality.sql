@@ -90,10 +90,11 @@ SELECT local_day(feed_ts) AS day, vehicle_id, prev_ts, ts, distance_m,
        distance_m > 200 AND distance_m / (ts - prev_ts) > 30 AS jump
 FROM measured;
 
+-- The golden days only: the archive partitions read also cover parts of the neighbouring days.
 CREATE OR REPLACE TABLE position_jumps AS
 SELECT day, vehicle_id, prev_ts, ts, round(distance_m) AS distance_m,
        round(distance_m / (ts - prev_ts), 1) AS speed_mps
-FROM fix_steps WHERE jump;
+FROM fix_steps WHERE jump AND day IN (SELECT service_date FROM service_days);
 
 CREATE OR REPLACE TABLE feed_quality_metrics AS
 WITH snaps AS (

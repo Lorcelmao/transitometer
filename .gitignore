@@ -27,6 +27,10 @@ config/.env
 *.vhdx
 # Small deterministic test fixtures are the exception.
 !/tests/fixtures/**
+# The frozen golden reference: small table copies and query answers (the large tables stay in the
+# data folder; every checksum is in golden/checksums.json).
+!/golden/tables/*.parquet
+!/golden/queries/*.parquet
 
 # Local agent/review working notes (not project deliverables)
 plans/reports/

@@ -7,6 +7,7 @@ Engine-starting tasks run the soft storage guard first (PROJECT_PLAN.md §1.3).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -201,7 +202,7 @@ def task_golden(_: argparse.Namespace) -> int:
     """Golden reference KPIs (DuckDB SQL on landing) for the golden window."""
     import time
 
-    from transitometer.golden import runner
+    from transitometer.golden import runner, suite
     from transitometer.ingest.sources import load_sources
 
     started = time.perf_counter()
@@ -212,7 +213,12 @@ def task_golden(_: argparse.Namespace) -> int:
         log=lambda message: print(message, flush=True),  # visible progress when redirected
     )
     runner.write_repo_artifacts(result, ROOT / "golden")
+    answers = suite.run(result.out_dir, ROOT / "golden" / "queries")
+    (ROOT / "golden" / "queries" / "checksums.json").write_text(
+        json.dumps(answers, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     print(f"row counts: {result.row_counts}")
+    print(f"query suite: {len(answers)} answers frozen in golden/queries/")
     for row in result.summary["otp_summary"]:
         print(
             f"OTP {row['grp']:<6} {row['service_date']} {row['scope']:<10} "
@@ -222,6 +228,25 @@ def task_golden(_: argparse.Namespace) -> int:
         print(f"bus VP cross-check {row['service_date']}: {row['agreement_share']:.1%} agree")
     print(f"outputs: {result.out_dir}  ({time.perf_counter() - started:.0f}s)")
     return 0
+
+
+def task_golden_check(args: argparse.Namespace) -> int:
+    """Check result tables against the frozen golden reference (exit 1 on any failure)."""
+    from transitometer.golden import harness
+    from transitometer.ingest.sources import load_sources
+
+    window = load_sources(SOURCES_FILE).golden_window
+    golden_dir = (
+        Path(host_settings()["TRANSITOMETER_DATA_ROOT"])
+        / "golden"
+        / f"{window.start:%Y%m%d}_{window.end:%Y%m%d}"
+    )
+    actual = Path(args.tables) if args.tables else None
+    print(f"checking {actual or golden_dir} against the golden reference", flush=True)
+    report = harness.run(golden_dir, ROOT / "golden", actual)
+    print("\n".join(report.lines))
+    print(f"{report.failures} failure(s)")
+    return 1 if report.failures else 0
 
 
 def task_skeleton(args: argparse.Namespace) -> int:
@@ -306,6 +331,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--accept-changes", action="store_true", help="adopt upstream content changes"
     )
     fetch.set_defaults(func=task_fetch)
+
+    gcheck = sub.add_parser(
+        "golden-check",
+        help="check golden outputs (or --tables DIR of an engine) against the frozen reference",
+    )
+    gcheck.add_argument("--tables", help="directory of an engine's exported Parquet tables")
+    gcheck.set_defaults(func=task_golden_check)
 
     skel = sub.add_parser("skeleton", help="walking skeleton end to end + storage calibration")
     skel.add_argument("--allow-peak", action="store_true", help="proceed above the block threshold")

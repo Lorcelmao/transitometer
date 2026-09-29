@@ -26,7 +26,7 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-transitometer = ["golden/sql/*.sql"]
+transitometer = ["golden/sql/*.sql", "golden/queries/*.sql"]
 
 [tool.ruff]
 line-length = 100
