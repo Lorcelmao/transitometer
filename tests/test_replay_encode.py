@@ -53,9 +53,9 @@ def test_roundtrip_preserves_every_populated_field() -> None:
             assert decoded[column] == value, column
 
 
-def test_null_and_empty_fields_stay_absent() -> None:
+def test_nulls_stay_absent_and_empty_strings_survive() -> None:
     decoded = _roundtrip(_row(bearing=None, stop_id="", vehicle_id=None, route_id=None))
-    assert decoded["bearing"] is None and decoded["stop_id"] is None
+    assert decoded["bearing"] is None and decoded["stop_id"] == ""
     assert decoded["vehicle_id"] is None and decoded["route_id"] is None
 
 

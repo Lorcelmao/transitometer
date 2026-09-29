@@ -1,0 +1,58 @@
+{
+  "prefix": "rt",
+  "days": [
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24"
+  ],
+  "speed": 0.0,
+  "minutes": 0.0,
+  "faults": "none",
+  "feeds": [
+    {
+      "feed": "trip_updates.bus",
+      "topic": "rt.trip_updates.bus",
+      "faults": "none",
+      "snapshots": 8640,
+      "rows": 528801318,
+      "messages": 31781054,
+      "acknowledged": 31781054,
+      "payload_bytes": 18840990923,
+      "max_message_bytes": 3354,
+      "elapsed_s": 1247.0,
+      "pacing_lag_p50_s": null,
+      "pacing_lag_p99_s": null,
+      "pacing_lag_max_s": null
+    },
+    {
+      "feed": "trip_updates.subway",
+      "topic": "rt.trip_updates.subway",
+      "faults": "none",
+      "snapshots": 12956,
+      "rows": 60186868,
+      "messages": 2878632,
+      "acknowledged": 2878632,
+      "payload_bytes": 1542522033,
+      "max_message_bytes": 1497,
+      "elapsed_s": 773.6,
+      "pacing_lag_p50_s": null,
+      "pacing_lag_p99_s": null,
+      "pacing_lag_max_s": null
+    },
+    {
+      "feed": "vehicle_positions.bus",
+      "topic": "rt.vehicle_positions.bus",
+      "faults": "none",
+      "snapshots": 8638,
+      "rows": 18088514,
+      "messages": 18097152,
+      "acknowledged": 18097152,
+      "payload_bytes": 2266393026,
+      "max_message_bytes": 133,
+      "elapsed_s": 291.0,
+      "pacing_lag_p50_s": null,
+      "pacing_lag_p99_s": null,
+      "pacing_lag_max_s": null
+    }
+  ]
+}

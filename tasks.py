@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 from collections.abc import Sequence
+from datetime import timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -292,6 +293,95 @@ def task_skeleton(args: argparse.Namespace) -> int:
     return 0 if outcome.ok else 1
 
 
+def _replay_days(args: argparse.Namespace) -> list[str]:
+    """Explicit --days, else the UTC archive days that hold the golden window."""
+    if args.days:
+        return list(args.days)
+    from transitometer.ingest.sources import DateRange, load_sources
+
+    golden = load_sources(SOURCES_FILE).golden_window
+    spill = DateRange(
+        golden.start, golden.end + timedelta(days=1)
+    )  # service days spill past UTC midnight
+    return [f"{day:%Y-%m-%d}" for day in spill.days()]
+
+
+def _in_spark(module: str, arguments: list[str], report: Path) -> int:
+    """Run a replay module in the Spark tooling container; keep its JSON result in results/."""
+    code = run(compose_cmd("--profile", "spark", "up", "-d", "--wait", "kafka", "spark"))
+    if code:
+        return code
+    report.unlink(missing_ok=True)  # never leave an earlier report behind a failed run
+    cmd = compose_cmd("exec", "-T", "spark", "python3", "-m", module, *arguments)
+    print("$ " + " ".join(cmd[-len(arguments) - 3 :]), flush=True)
+    returncode, stdout, stderr = _stream(cmd)
+    errors = report.with_suffix(".stderr.log")
+    errors.write_text(stderr, encoding="utf-8", newline="\n")  # full detail, every run
+    lines = [line for line in stdout.splitlines() if line.startswith("{")]
+    if lines:
+        result = json.loads(lines[-1])
+        report.parent.mkdir(exist_ok=True)
+        report.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(json.dumps(result, indent=2))
+    if returncode:
+        print(stderr[:4000])  # the first error; later lines are shutdown noise
+        print(f"full error output: {errors}")
+        reason = " (killed: out of memory?)" if returncode == 137 else ""
+        print(f"FAILED: {module} exited with {returncode}{reason}")
+    return returncode
+
+
+def _stream(cmd: list[str]) -> tuple[int, str, str]:
+    """Run a command, echoing its `progress` lines live; return exit code, stdout, stderr."""
+    import threading
+
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8"
+    )
+    captured: list[str] = []
+
+    def drain_stdout() -> None:
+        assert process.stdout is not None
+        captured.append(process.stdout.read())
+
+    reader = threading.Thread(target=drain_stdout)
+    reader.start()
+    stderr_lines = []
+    assert process.stderr is not None
+    for line in process.stderr:
+        stderr_lines.append(line)
+        if line.startswith("progress"):
+            print(line.rstrip(), flush=True)
+    reader.join()
+    return process.wait(), "".join(captured), "".join(stderr_lines)
+
+
+def task_replay(args: argparse.Namespace) -> int:
+    """Replay archived feeds into Kafka (default: the golden window's UTC archive days)."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    arguments = ["--days", *_replay_days(args), "--speed", str(args.speed)]
+    arguments += ["--workers", str(args.workers), "--prefix", args.prefix]
+    arguments += ["--minutes", str(args.minutes)]
+    if args.feeds:
+        arguments += ["--feeds", *args.feeds]
+    if args.recreate:
+        arguments.append("--recreate")
+    code = _in_spark("transitometer.replay.run", arguments, ROOT / "results" / "replay-report.json")
+    task_storage_report(args)  # the Kafka footprint of the kept replay, for the storage log
+    return code
+
+
+def task_replay_verify(args: argparse.Namespace) -> int:
+    """Check the kept replay against the archive: counts, markers, sampled fidelity."""
+    arguments = ["--days", *_replay_days(args), "--sample", str(args.sample)]
+    arguments += ["--prefix", args.prefix, "--minutes", str(args.minutes)]
+    return _in_spark(
+        "transitometer.replay.verify", arguments, ROOT / "results" / "replay-verification.json"
+    )
+
+
 def task_down(_: argparse.Namespace) -> int:
     """Stop every service; named volumes are kept (use Docker directly for deliberate resets)."""
     return run(compose_cmd("--profile", "*", "down"))
@@ -338,6 +428,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gcheck.add_argument("--tables", help="directory of an engine's exported Parquet tables")
     gcheck.set_defaults(func=task_golden_check)
+
+    replay = sub.add_parser("replay", help="replay archived feeds into Kafka (kept for engines)")
+    replay.add_argument("--days", nargs="+", help="UTC archive days (default: golden window)")
+    replay.add_argument("--feeds", nargs="*", help="subset of feeds")
+    replay.add_argument("--speed", type=float, default=0.0, help="x real time; 0 = at once")
+    replay.add_argument("--workers", type=int, default=5, help="encoders for bus trip updates")
+    replay.add_argument("--recreate", action="store_true", help="delete and recreate the topics")
+    replay.add_argument("--prefix", default="rt", help="topic prefix (rt = the kept real replay)")
+    replay.add_argument("--minutes", type=float, default=0, help="only the first N minutes")
+    replay.add_argument(
+        "--allow-peak", action="store_true", help="proceed above the block threshold"
+    )
+    replay.set_defaults(func=task_replay)
+
+    rverify = sub.add_parser("replay-verify", help="check the kept replay against the archive")
+    rverify.add_argument("--days", nargs="+", help="UTC archive days (default: golden window)")
+    rverify.add_argument("--sample", type=int, default=20, help="snapshots decoded per feed")
+    rverify.add_argument("--prefix", default="rt", help="topic prefix of the replay")
+    rverify.add_argument("--minutes", type=float, default=0, help="as passed to the replay")
+    rverify.set_defaults(func=task_replay_verify)
 
     skel = sub.add_parser("skeleton", help="walking skeleton end to end + storage calibration")
     skel.add_argument("--allow-peak", action="store_true", help="proceed above the block threshold")

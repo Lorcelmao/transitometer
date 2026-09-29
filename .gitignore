@@ -31,6 +31,8 @@ config/.env
 # data folder; every checksum is in golden/checksums.json).
 !/golden/tables/*.parquet
 !/golden/queries/*.parquet
+# Full error output of container runs (the JSON reports next to them are committed).
+/results/*.stderr.log
 
 # Local agent/review working notes (not project deliverables)
 plans/reports/

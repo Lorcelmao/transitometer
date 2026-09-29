@@ -198,7 +198,8 @@ def run(
         # partial hash tables built in parallel.
         con.execute("SET preserve_insertion_order = false")
         con.execute(f"SET threads = {threads}")
-        for step in SQL_STEPS:
+        for number, step in enumerate(SQL_STEPS, start=1):
+            log(f"{step} started ({number}/{len(SQL_STEPS)})")
             started = time.perf_counter()
             con.execute(render(step, values))
             log(f"{step} done in {time.perf_counter() - started:.0f}s")
