@@ -26,7 +26,7 @@ flowchart LR
 | Ingest | Python, gtfs-realtime-bindings, Kafka | Archived snapshots are re-encoded to GTFS-RT protobuf, one message per trip or vehicle, keyed by trip/vehicle id. The replay is paced by feed time (×speed) with an idempotent producer and records per-snapshot offset lineage. |
 | Silver | Spark Structured Streaming, Delta | `from_protobuf` decoding; exact-duplicate removal within a 10 min event-time watermark; a dead-letter table for undecodable or incomplete messages; a conservation check (in = kept + duplicates + late + dead-lettered); exactly-once Delta sink (re-runs append nothing). |
 | Silver events | Spark (batch) | Stop arrivals inferred from successive predictions, matched to the timetable in three tiers, with service-day handling for trips past midnight. |
-| Gold | Spark (batch), Delta | BR1 on-time performance (−1/+5 min band) per route and hour, including bus terminal arrivals measured from GPS; BR2 observed headways classified as regular, bunched or gap; BR3 every scheduled trip classified as delivered, partial, missing, not run or unknown; BR7 twelve feed-quality checks per feed and day with a conformance score. |
+| Gold | Spark (batch), Delta | BR1 on-time performance (−1/+5 min band) per route and hour, including bus terminal arrivals measured from GPS; BR2 observed headways classified as regular, bunched or gap; BR3 every scheduled trip classified as delivered, partial, missing, not run or unknown; BR4 segment travel times and exact delay attribution; BR5 route scorecards with bootstrap confidence and rank intervals; BR6 rule-based early warning against a naive baseline on a held-out day; BR7 twelve feed-quality checks with a conformance score; BR8 stop-level reliability by hour with Wilson intervals. |
 | Serve | DuckDB + Streamlit | The app reads Gold Delta tables (or the frozen golden tables) through one data-access layer. |
 
 ## Quickstart
@@ -78,7 +78,7 @@ Every number below is read from a committed result file (named in each row). The
 | Layer | Tables equal / compared | Largest table | Evidence |
 |---|---|---|---|
 | Silver (stop events, matching, statuses) | 4 / 4 | `stop_events`: 2,955,606 rows | `results/validation-silver.json` |
-| Gold (BR1, BR2, BR3, BR7, bus terminal arrivals) | 14 / 14 | `headways`: 2,956,930 rows | `results/validation-gold.json` |
+| Gold (BR1–BR8, bus terminal arrivals) | 23 / 23 | `stop_hour_reliability`: 392,788 rows; `headways`: 2,956,930 rows | `results/validation-gold.json` |
 
 Rows are matched on their keys; every other column must be equal, floats within the declared tolerance ([`golden/tolerance.json`](golden/tolerance.json)). Re-running the golden pipeline reproduces every frozen golden file byte for byte (checksums in `golden/checksums.json`).
 
@@ -87,12 +87,12 @@ Rows are matched on their keys; every other column must be equal, floats within 
 | Step | Time | Evidence |
 |---|---|---|
 | Replay of the golden window into Kafka (3 feeds in parallel, unpaced) | 1,247 s (longest feed) | `results/replay-report.json` |
-| Spark: stop events, timetable matching, statuses (Silver) | 446.5 s | `results/silver-events.json` |
-| Spark: Gold KPI tables (BR1, BR2, BR3, BR7, terminals) | 313.4 s | `results/gold-kpis.json` |
-| DuckDB golden, the same rules (steps 01–05, 07, 08, 12) | 592.0 s | `results/golden-run.json` |
+| Spark: stop events, timetable matching, statuses (Silver) | 481.8 s | `results/silver-events.json` |
+| Spark: Gold KPI tables (BR1–BR8, terminals) | 348.8 s | `results/gold-kpis.json` |
+| DuckDB golden, the same rules (all steps but the 06 cross-check; sum of step times) | 711.0 s | `results/golden-run.json` |
 | DuckDB golden, all 12 steps (BR1–BR8) | 892.1 s | `results/golden-run.json` |
 
-This is the MVP's alternative-solution comparison: a single-node batch engine (DuckDB, over the raw archive Parquet) against a distributed streaming/batch engine (Spark in Docker, over Silver Delta tables already decoded from Kafka). They are not like-for-like: DuckDB's time includes reading the raw archive, while Spark's times include JVM start-up and Delta writes but not the Kafka → Silver ingest that precedes them. The full benchmark suite (Flink, ClickHouse, scaling) is on the roadmap.
+This is the current alternative-solution comparison: a single-node batch engine (DuckDB, over the raw archive Parquet) against a distributed streaming/batch engine (Spark in Docker, over Silver Delta tables already decoded from Kafka). They are not like-for-like: DuckDB's time includes reading the raw archive, while Spark's times include JVM start-up and Delta writes but not the Kafka → Silver ingest that precedes them. The full benchmark suite (Flink, ClickHouse, scaling) is on the roadmap.
 
 ## Tasks
 
@@ -121,7 +121,7 @@ Runs on any topic prefix other than `rt` (for example the demo) write to their o
 
 ## Roadmap
 
-The MVP covers BR1 (on-time performance), BR2 (headways and bunching), BR3 (missing trips) and BR7 (feed health). Next: BR4–BR6 and BR8. After that come the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
+All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. Next: the public showcase deployment, then the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
 
 ## Storage rules
 

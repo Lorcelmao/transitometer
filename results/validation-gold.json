@@ -57,6 +57,42 @@
     "feed_quality_score": {
       "ok": true,
       "detail": "feed_quality_score: OK (6 rows)"
+    },
+    "route_scorecard": {
+      "ok": true,
+      "detail": "route_scorecard: OK (353 rows)"
+    },
+    "route_hour_scorecard": {
+      "ok": true,
+      "detail": "route_hour_scorecard: OK (7275 rows)"
+    },
+    "stop_hour_reliability": {
+      "ok": true,
+      "detail": "stop_hour_reliability: OK (392788 rows)"
+    },
+    "segments": {
+      "ok": true,
+      "detail": "segments: OK (2845556 rows)"
+    },
+    "trip_delay_attribution": {
+      "ok": true,
+      "detail": "trip_delay_attribution: OK (110050 rows)"
+    },
+    "delay_attribution_summary": {
+      "ok": true,
+      "detail": "delay_attribution_summary: OK (4 rows)"
+    },
+    "segment_travel_stats": {
+      "ok": true,
+      "detail": "segment_travel_stats: OK (380506 rows)"
+    },
+    "warning_decisions": {
+      "ok": true,
+      "detail": "warning_decisions: OK (105488 rows)"
+    },
+    "early_warning_summary": {
+      "ok": true,
+      "detail": "early_warning_summary: OK (16 rows)"
     }
   },
   "ok": true

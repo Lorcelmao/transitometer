@@ -10,6 +10,16 @@
     "headways": 2956930,
     "headway_regularity": 13891,
     "headway_summary": 4,
+    "route_scorecard": 353,
+    "route_hour_scorecard": 7275,
+    "stop_hour_reliability": 392788,
+    "stop_names": 14949,
+    "segments": 2845556,
+    "trip_delay_attribution": 110050,
+    "delay_attribution_summary": 4,
+    "segment_travel_stats": 380506,
+    "warning_decisions": 105488,
+    "early_warning_summary": 16,
     "trip_delivery": 117076,
     "missing_trip_summary": 4,
     "missing_by_route": 708,
@@ -17,5 +27,5 @@
     "feed_quality_metrics": 46,
     "feed_quality_score": 6
   },
-  "elapsed_s": 313.4
+  "elapsed_s": 348.8
 }

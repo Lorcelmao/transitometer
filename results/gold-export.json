@@ -15,7 +15,16 @@
     "missing_by_route": 708,
     "position_jumps": 5377,
     "feed_quality_metrics": 46,
-    "feed_quality_score": 6
+    "feed_quality_score": 6,
+    "route_scorecard": 353,
+    "route_hour_scorecard": 7275,
+    "stop_hour_reliability": 392788,
+    "segments": 2845556,
+    "trip_delay_attribution": 110050,
+    "delay_attribution_summary": 4,
+    "segment_travel_stats": 380506,
+    "warning_decisions": 105488,
+    "early_warning_summary": 16
   },
-  "elapsed_s": 2.3
+  "elapsed_s": 4.4
 }
