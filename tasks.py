@@ -1,7 +1,7 @@
 """Cross-platform task runner for Transitometer (stdlib only): `python tasks.py <task>`.
 
 Replaces a Makefile so every team member runs the same commands on Windows, macOS and Linux.
-Engine-starting tasks run the soft storage guard first (PROJECT_PLAN.md §1.3).
+Engine-starting tasks run the soft storage guard first (PROJECT_PLAN.md Â§1.3).
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from collections.abc import Callable, Sequence
 from datetime import timedelta
 from pathlib import Path
@@ -126,7 +127,7 @@ def task_storage_check(args: argparse.Namespace) -> int:
     if report.status is storage_check.Status.BLOCK and not args.allow_peak:
         print(
             "Refusing: Docker usage is above the block threshold. Clean up the finished phase "
-            "(IMPLEMENTATION_PLAN.md §4.5) or pass --allow-peak during a scheduled peak."
+            "(IMPLEMENTATION_PLAN.md Â§4.5) or pass --allow-peak during a scheduled peak."
         )
         return 2
     return 0
@@ -209,7 +210,7 @@ def task_validate_landing(_: argparse.Namespace) -> int:
 
 def task_golden(_: argparse.Namespace) -> int:
     """Golden reference KPIs (DuckDB SQL on landing) for the golden window."""
-    import time
+    import duckdb
 
     from transitometer.golden import runner, suite
     from transitometer.ingest.sources import load_sources
@@ -225,6 +226,14 @@ def task_golden(_: argparse.Namespace) -> int:
     answers = suite.run(result.out_dir, ROOT / "golden" / "queries")
     (ROOT / "golden" / "queries" / "checksums.json").write_text(
         json.dumps(answers, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    timing = {
+        "engine": f"DuckDB {duckdb.__version__}",
+        "elapsed_s": round(time.perf_counter() - started, 1),
+        "step_seconds": result.step_seconds,
+    }
+    (ROOT / "results" / "golden-run.json").write_text(
+        json.dumps(timing, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     print(f"row counts: {result.row_counts}")
     print(f"query suite: {len(answers)} answers frozen in golden/queries/")
@@ -324,6 +333,7 @@ def _in_spark(module: str, arguments: list[str], report: Path, submit: bool = Fa
     if code:
         return code
     report.unlink(missing_ok=True)  # never leave an earlier report behind a failed run
+    started = time.perf_counter()
     if submit:
         from transitometer.ops.skeleton import SPARK_SUBMIT, SRC
 
@@ -339,6 +349,7 @@ def _in_spark(module: str, arguments: list[str], report: Path, submit: bool = Fa
     lines = [line for line in stdout.splitlines() if line.startswith("{")]
     if lines:
         result = json.loads(lines[-1])
+        result["elapsed_s"] = round(time.perf_counter() - started, 1)  # wall time incl. startup
         report.parent.mkdir(exist_ok=True)
         report.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(json.dumps(result, indent=2))
@@ -431,6 +442,12 @@ def task_silver(args: argparse.Namespace) -> int:
 SILVER_COMPARED = ("stop_events", "event_status_summary", "trip_match_summary", "ambiguous_summary")
 
 
+def _golden_service_dates() -> list[str]:
+    from transitometer.ingest.sources import load_sources
+
+    return [f"{d:%Y%m%d}" for d in load_sources(SOURCES_FILE).golden_window.days()]
+
+
 def _golden_dir() -> Path:
     from transitometer.ingest.sources import load_sources
 
@@ -466,7 +483,7 @@ def task_silver_events(args: argparse.Namespace) -> int:
     from transitometer.ingest.sources import load_sources, schedule_dir
 
     sources = load_sources(SOURCES_FILE)
-    dates = args.service_dates or [f"{d:%Y%m%d}" for d in sources.golden_window.days()]
+    dates = args.service_dates or _golden_service_dates()
     arguments = ["--prefix", args.prefix, "--service-dates", *dates]
     for version in sources.schedules:
         arguments += ["--schedule", f"{version.group}=/data/landing/{schedule_dir(version)}"]
@@ -497,14 +514,23 @@ GOLD_COMPARED = (
     "headways",
     "headway_regularity",
     "headway_summary",
+    "terminal_events",
+    "terminal_summary",
+    "trip_delivery",
+    "missing_trip_summary",
+    "missing_by_route",
+    "position_jumps",
+    "feed_quality_metrics",
+    "feed_quality_score",
 )
 
 
 def task_gold(args: argparse.Namespace) -> int:
     """Gold KPI tables from Silver stop events, exported and compared with golden."""
+    dates = args.service_dates or _golden_service_dates()
     code = _in_spark(
         "transitometer.pipeline.gold_kpis",
-        ["--prefix", args.prefix],
+        ["--prefix", args.prefix, "--service-dates", *dates],
         _report("gold-kpis", args.prefix),
         submit=True,
     )
@@ -529,7 +555,7 @@ DEMO_SERVICE_DATES = ["20260921", "20260922"]  # that hour is the evening of 21 
 
 def task_demo(args: argparse.Namespace) -> int:
     """One real hour end to end: replay -> Silver -> stop events -> Gold -> app (~10 min)."""
-    prefix = argparse.Namespace(prefix=DEMO_PREFIX)
+    silver_args = argparse.Namespace(prefix=DEMO_PREFIX, feeds=None)
     steps: list[tuple[str, Callable[[], int]]] = [
         (
             "replay one real hour into Kafka",
@@ -546,14 +572,19 @@ def task_demo(args: argparse.Namespace) -> int:
                 )
             ),
         ),
-        ("Silver: decode, deduplicate, dead-letter", lambda: task_silver(prefix)),
+        ("Silver: decode, deduplicate, dead-letter", lambda: task_silver(silver_args)),
         (
             "Silver: stop events from the timetable",
             lambda: task_silver_events(
                 argparse.Namespace(prefix=DEMO_PREFIX, service_dates=DEMO_SERVICE_DATES)
             ),
         ),
-        ("Gold: on-time performance and headways", lambda: task_gold(prefix)),
+        (
+            "Gold: on-time performance, headways, missing trips, feed health",
+            lambda: task_gold(
+                argparse.Namespace(prefix=DEMO_PREFIX, service_dates=DEMO_SERVICE_DATES)
+            ),
+        ),
     ]
     if args.fresh:
         code = run(
@@ -662,8 +693,9 @@ def build_parser() -> argparse.ArgumentParser:
     events.add_argument("--prefix", default="rt")
     events.add_argument("--service-dates", nargs="*", help="YYYYMMDD (default: golden window)")
     events.set_defaults(func=task_silver_events)
-    gold = sub.add_parser("gold", help="Gold KPI tables (BR1, BR2), compared with golden")
+    gold = sub.add_parser("gold", help="Gold KPI tables (BR1-BR3, BR7), compared with golden")
     gold.add_argument("--prefix", default="rt")
+    gold.add_argument("--service-dates", nargs="*", help="YYYYMMDD (default: golden window)")
     gold.set_defaults(func=task_gold)
     demo = sub.add_parser("demo", help="one real hour end to end, then open the app")
     demo.add_argument("--workers", type=int, default=4)

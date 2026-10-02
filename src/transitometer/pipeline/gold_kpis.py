@@ -22,6 +22,8 @@ import sys
 from pyspark.sql import Column, DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
 
+from transitometer.pipeline import gold_delivery as delivery
+from transitometer.pipeline import gold_feed_quality as quality
 from transitometer.pipeline.layout import lakehouse_root
 
 EARLY_S = 60
@@ -39,12 +41,17 @@ def share(condition: Column) -> Column:
     return F.round(F.avg(condition.cast("int")), 4)
 
 
-def otp_tables(events: DataFrame) -> dict[str, DataFrame]:
+def otp_tables(events: DataFrame, terminals: DataFrame) -> dict[str, DataFrame]:
+    """BR1 tables; otp_summary also scores bus terminal arrivals as their own scope."""
     klass = otp_class(F.col("delay_s"))
     scoped = events.select("grp", "service_date", F.lit("all_stops").alias("scope"), "delay_s")
     scoped = scoped.unionByName(
         events.where("timepoint").select(
             "grp", "service_date", F.lit("timepoints").alias("scope"), "delay_s"
+        )
+    ).unionByName(
+        terminals.where(F.col("observations") == 1).select(
+            "grp", "service_date", F.lit("terminals").alias("scope"), "delay_s"
         )
     )
     return {
@@ -222,6 +229,7 @@ def build_session() -> SparkSession:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prefix", default="rt")
+    parser.add_argument("--service-dates", nargs="+", required=True)
     parser.add_argument("--lakehouse", default=os.environ.get("LAKEHOUSE_DIR", "/data/lakehouse"))
     args = parser.parse_args(argv)
     root = lakehouse_root(args.lakehouse, args.prefix)
@@ -231,21 +239,71 @@ def main(argv: list[str] | None = None) -> int:
     def silver(name: str) -> DataFrame:
         return spark.read.format("delta").load(f"{root}/silver/{name}")
 
-    tables = {
-        **otp_tables(silver("stop_events")),
-        **headway_tables(
-            silver("trip_stop_events"),
-            silver("observed_events"),
-            silver("matched_trips"),
-            silver("scheduled_stops"),
-        ),
-    }
-    counts = {}
-    for name, frame in tables.items():
+    counts: dict[str, int] = {}
+
+    def save(name: str, frame: DataFrame) -> DataFrame:
+        """Write one Gold table and continue from what was written (keeps plans short)."""
         print(f"progress gold {name}", file=sys.stderr, flush=True)
         path = f"{root}/gold/{name}"
         frame.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(path)
-        counts[name] = spark.read.format("delta").load(path).count()
+        written = spark.read.format("delta").load(path)
+        counts[name] = written.count()
+        return written
+
+    dates = args.service_dates
+    stops, observed = silver("scheduled_stops"), silver("observed_events")
+    matched, trip_stops = silver("matched_trips"), silver("trip_stop_events")
+    static = silver("static_stops")
+
+    # Bus arrivals at the last stop (BR1 'terminals' scope and BR3 'arrived').
+    targets = delivery.terminal_targets(
+        matched, stops, delivery.stop_geo(static.where(F.col("grp") == "bus"))
+    )
+    candidates = save(
+        "terminal_candidates",
+        delivery.terminal_candidates(targets, observed, silver("vehicle_positions"), dates),
+    )
+    terminals = save("terminal_events", delivery.terminal_events(candidates))
+    save("terminal_summary", delivery.terminal_summary(targets, terminals))
+
+    for name, frame in {
+        **otp_tables(silver("stop_events"), terminals),
+        **headway_tables(trip_stops, observed, matched, stops),
+    }.items():
+        save(name, frame)
+
+    # BR3: promised vs delivered trips.
+    trips = save(
+        "trip_delivery",
+        delivery.trip_delivery(
+            stops, silver("active_trips"), matched, trip_stops, candidates, silver("feed_snapshots")
+        ),
+    )
+    missing = save("missing_trip_summary", delivery.delivery_counts(trips, "grp", "service_date"))
+    save("missing_by_route", delivery.delivery_counts(trips, "grp", "service_date", "route_id"))
+
+    # BR7: feed health.
+    fix = quality.fixes(silver("vehicle_positions"))
+    steps = quality.fix_steps(fix)
+    save("position_jumps", quality.position_jumps(steps, dates))
+    values = (
+        quality.snapshot_metrics(silver("feed_snapshots"))
+        .unionByName(quality.position_metrics(fix, steps))
+        .unionByName(
+            quality.trip_update_metrics(
+                observed,
+                static.select("grp", "stop_id").distinct(),
+                silver("trip_match_summary"),
+                silver("event_status_summary"),
+                missing,
+                silver("ambiguous_summary"),
+            )
+        )
+    )
+    metrics = save(
+        "feed_quality_metrics", quality.feed_quality_metrics(quality.checks(spark, dates), values)
+    )
+    save("feed_quality_score", quality.feed_quality_score(metrics))
     spark.stop()
     print(json.dumps({"prefix": args.prefix, "rows": counts}))
     return 0

@@ -120,6 +120,7 @@ class GoldenResult:
     row_counts: dict[str, int] = field(default_factory=dict)
     checksums: dict[str, str] = field(default_factory=dict)
     summary: dict[str, Any] = field(default_factory=dict)
+    step_seconds: dict[str, float] = field(default_factory=dict)  # wall time per SQL step
 
 
 def _sql_list(paths: list[Path]) -> str:
@@ -202,7 +203,8 @@ def run(
             log(f"{step} started ({number}/{len(SQL_STEPS)})")
             started = time.perf_counter()
             con.execute(render(step, values))
-            log(f"{step} done in {time.perf_counter() - started:.0f}s")
+            result.step_seconds[step] = round(time.perf_counter() - started, 1)
+            log(f"{step} done in {result.step_seconds[step]:.0f}s")
         for table in EXPORTED_TABLES:
             target = out_dir / f"{table}.parquet"
             con.execute(

@@ -181,6 +181,23 @@ def _union(frames: list[DataFrame]) -> DataFrame:
     return union
 
 
+def static_stops(spark: SparkSession, schedules: dict[str, list[str]]) -> DataFrame:
+    """Every stop id of every timetable version, with its coordinates as published."""
+    frames = []
+    for group, dirs in schedules.items():
+        for folder in dirs:
+            frame = spark.read.parquet(f"{folder}/stops.parquet")
+            frames.append(
+                frame.select(
+                    F.lit(group).alias("grp"),
+                    F.col("stop_id").cast("string").alias("stop_id"),
+                    F.col("stop_lat").cast("double").alias("lat"),
+                    F.col("stop_lon").cast("double").alias("lon"),
+                )
+            )
+    return _union(frames)
+
+
 def trip_update_rows(spark: SparkSession, silver: str, dates: list[str]) -> DataFrame:
     """Bus and subway stop rows reduced to what inference needs, on their service day."""
 
@@ -429,6 +446,7 @@ def main(argv: list[str] | None = None) -> int:
     trips_frame, stops_frame = timetable(spark, schedules, args.service_dates)
     counts["active_trips"] = write(trips_frame, f"{silver}/active_trips")
     counts["scheduled_stops"] = write(stops_frame, f"{silver}/scheduled_stops")
+    counts["static_stops"] = write(static_stops(spark, schedules), f"{silver}/static_stops")
     active_trips = spark.read.format("delta").load(f"{silver}/active_trips")
     stops = spark.read.format("delta").load(f"{silver}/scheduled_stops")
     progress("observed_events")
