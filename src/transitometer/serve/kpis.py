@@ -112,7 +112,7 @@ def headway_overview(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[s
 def most_bunched_routes(
     con: duckdb.DuckDBPyConnection, src: Source, grp: str, service_date: str, limit: int = 15
 ) -> list[dict[str, Any]]:
-    """BR2 ranking: routes by share of bunched headways (outside -20 % of the scheduled one)."""
+    """BR2 ranking: routes by share of bunched headways (at most 25 % of the scheduled one)."""
     sql = (
         f"SELECT route_id, sum(headways) AS headways, sum(bunched) AS bunched, sum(gaps) AS gaps,"
         f" round(sum(bunched) / sum(headways), 4) AS bunched_share,"
@@ -159,6 +159,18 @@ def least_delivered_routes(
 def feed_scores(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:
     """BR7 headline: conformance score per feed and day, with the failed checks."""
     return _rows(con, f"SELECT * FROM {src.table('feed_quality_score')} ORDER BY feed, day")
+
+
+def feed_metric(
+    con: duckdb.DuckDBPyConnection, src: Source, feed: str, day: str, metric: str
+) -> float | None:
+    """One feed-quality metric value (NULL when the check had no data)."""
+    sql = (
+        f"SELECT value FROM {src.table('feed_quality_metrics')}"
+        f" WHERE feed = ? AND day = ? AND metric = ?"
+    )
+    rows = _rows(con, sql, [feed, day, metric])
+    return rows[0]["value"] if rows else None
 
 
 def feed_checks(

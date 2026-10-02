@@ -1,0 +1,16 @@
+# Streamlit theme for the Transitometer app (read when Streamlit runs from the repository root,
+# locally or on a hosting service; the Docker app service mounts this folder).
+[theme]
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#f8fafc"
+secondaryBackgroundColor = "#eef2f7"
+textColor = "#1e293b"
+borderColor = "#dbe2ea"
+showWidgetBorder = true
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

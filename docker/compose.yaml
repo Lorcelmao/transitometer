@@ -100,6 +100,7 @@ services:
       # gold = the Spark Gold Delta tables; golden = the frozen reference (no pipeline run needed).
       TRANSITOMETER_APP_SOURCE: ${TRANSITOMETER_APP_SOURCE:-gold}
       TRANSITOMETER_PREFIX: ${TRANSITOMETER_PREFIX:-rt}  # demo = the one-hour demo replay
+    working_dir: /opt/transitometer  # Streamlit reads .streamlit/config.toml from here
     command: ["streamlit", "run", "/opt/transitometer/src/transitometer/app/main.py",
               "--server.port=8501", "--server.address=0.0.0.0"]
     ports:
@@ -108,6 +109,9 @@ services:
       - lakehouse:/data/lakehouse:ro
       - ../src:/opt/transitometer/src:ro
       - ../golden:/opt/transitometer/golden:ro
+      # Validation evidence (committed results/*.json) and the app theme.
+      - ../results:/opt/transitometer/results:ro
+      - ../.streamlit:/opt/transitometer/.streamlit:ro
 
   # Axis A alternative engine (phase-scoped: built in S8, removed after results are exported).
   flink-jobmanager:
