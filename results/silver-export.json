@@ -1,0 +1,11 @@
+{
+  "layer": "silver",
+  "prefix": "rt",
+  "exported": {
+    "stop_events": 2955606,
+    "event_status_summary": 20,
+    "trip_match_summary": 10,
+    "ambiguous_summary": 4
+  },
+  "elapsed_s": 2.9
+}

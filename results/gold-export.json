@@ -1,0 +1,21 @@
+{
+  "layer": "gold",
+  "prefix": "rt",
+  "exported": {
+    "otp_summary": 8,
+    "otp_route_hour": 14476,
+    "delay_sanity_summary": 4,
+    "headways": 2956930,
+    "headway_regularity": 13891,
+    "headway_summary": 4,
+    "terminal_events": 73874,
+    "terminal_summary": 2,
+    "trip_delivery": 117076,
+    "missing_trip_summary": 4,
+    "missing_by_route": 708,
+    "position_jumps": 5377,
+    "feed_quality_metrics": 46,
+    "feed_quality_score": 6
+  },
+  "elapsed_s": 2.3
+}

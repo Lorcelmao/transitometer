@@ -1,0 +1,20 @@
+{
+  "prefix": "rt",
+  "service_dates": [
+    "20260922",
+    "20260923"
+  ],
+  "rows": {
+    "active_trips": 127312,
+    "scheduled_stops": 3965336,
+    "static_stops": 15920,
+    "observed_events": 4258957,
+    "matched_trips": 114365,
+    "stop_events_with_ambiguous": 3002914,
+    "stop_events": 2955606,
+    "event_status_summary": 20,
+    "trip_match_summary": 10,
+    "ambiguous_summary": 4
+  },
+  "elapsed_s": 446.5
+}

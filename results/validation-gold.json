@@ -1,0 +1,63 @@
+{
+  "layer": "gold",
+  "prefix": "rt",
+  "tables": {
+    "otp_summary": {
+      "ok": true,
+      "detail": "otp_summary: OK (8 rows)"
+    },
+    "otp_route_hour": {
+      "ok": true,
+      "detail": "otp_route_hour: OK (14476 rows)"
+    },
+    "delay_sanity_summary": {
+      "ok": true,
+      "detail": "delay_sanity_summary: OK (4 rows)"
+    },
+    "headways": {
+      "ok": true,
+      "detail": "headways: OK (2956930 rows)"
+    },
+    "headway_regularity": {
+      "ok": true,
+      "detail": "headway_regularity: OK (13891 rows)"
+    },
+    "headway_summary": {
+      "ok": true,
+      "detail": "headway_summary: OK (4 rows)"
+    },
+    "terminal_events": {
+      "ok": true,
+      "detail": "terminal_events: OK (73874 rows)"
+    },
+    "terminal_summary": {
+      "ok": true,
+      "detail": "terminal_summary: OK (2 rows)"
+    },
+    "trip_delivery": {
+      "ok": true,
+      "detail": "trip_delivery: OK (117076 rows)"
+    },
+    "missing_trip_summary": {
+      "ok": true,
+      "detail": "missing_trip_summary: OK (4 rows)"
+    },
+    "missing_by_route": {
+      "ok": true,
+      "detail": "missing_by_route: OK (708 rows)"
+    },
+    "position_jumps": {
+      "ok": true,
+      "detail": "position_jumps: OK (5377 rows)"
+    },
+    "feed_quality_metrics": {
+      "ok": true,
+      "detail": "feed_quality_metrics: OK (46 rows)"
+    },
+    "feed_quality_score": {
+      "ok": true,
+      "detail": "feed_quality_score: OK (6 rows)"
+    }
+  },
+  "ok": true
+}

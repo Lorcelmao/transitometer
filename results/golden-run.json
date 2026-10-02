@@ -1,0 +1,18 @@
+{
+  "engine": "DuckDB 1.5.5",
+  "elapsed_s": 892.1,
+  "step_seconds": {
+    "01_schedule.sql": 1.5,
+    "02_stop_events.sql": 176.1,
+    "03_matching.sql": 1.0,
+    "04_otp.sql": 11.1,
+    "05_headways.sql": 17.6,
+    "06_crosscheck.sql": 63.3,
+    "07_terminals.sql": 34.1,
+    "08_missing_trips.sql": 50.5,
+    "09_segments.sql": 34.2,
+    "10_scorecards.sql": 51.2,
+    "11_early_warning.sql": 33.6,
+    "12_feed_quality.sql": 300.1
+  }
+}

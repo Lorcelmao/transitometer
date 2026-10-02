@@ -26,7 +26,7 @@ flowchart LR
 | Ingest | Python, gtfs-realtime-bindings, Kafka | Archived snapshots are re-encoded to GTFS-RT protobuf, one message per trip or vehicle, keyed by trip/vehicle id. The replay is paced by feed time (×speed) with an idempotent producer and records per-snapshot offset lineage. |
 | Silver | Spark Structured Streaming, Delta | `from_protobuf` decoding; exact-duplicate removal within a 10 min event-time watermark; a dead-letter table for undecodable or incomplete messages; a conservation check (in = kept + duplicates + late + dead-lettered); exactly-once Delta sink (re-runs append nothing). |
 | Silver events | Spark (batch) | Stop arrivals inferred from successive predictions, matched to the timetable in three tiers, with service-day handling for trips past midnight. |
-| Gold | Spark (batch), Delta | BR1 on-time performance (−1/+5 min band) per route and hour; BR2 observed headways classified as regular, bunched or gap. |
+| Gold | Spark (batch), Delta | BR1 on-time performance (−1/+5 min band) per route and hour, including bus terminal arrivals measured from GPS; BR2 observed headways classified as regular, bunched or gap; BR3 every scheduled trip classified as delivered, partial, missing, not run or unknown; BR7 twelve feed-quality checks per feed and day with a conformance score. |
 | Serve | DuckDB + Streamlit | The app reads Gold Delta tables (or the frozen golden tables) through one data-access layer. |
 
 ## Quickstart
@@ -61,7 +61,38 @@ python tasks.py golden            # (re)build the golden reference with DuckDB
 
 ## Results
 
-<!-- results: filled from results/*.json -->
+Every number below is read from a committed result file (named in each row). The golden window is the service days 22–23 September 2026, read from the UTC archive days 22–24.
+
+**Source integrity: the stream is the archive, complete and unaltered**
+
+| Check | Result | Evidence |
+|---|---|---|
+| Messages replayed into Kafka (3 feeds, incl. one marker per snapshot) | 52,756,838, all broker-acknowledged | `results/replay-report.json` |
+| Archive rows they carry | 607,076,700 (bus trip updates 528,801,318 · subway 60,186,868 · bus positions 18,088,514) | `results/replay-report.json` |
+| Read back from Kafka = acknowledged = archive entity count | equal for every feed; 0 timestamps backwards; 0 lineage overlaps | `results/replay-verification.json` |
+| Sampled snapshots decoded field for field vs the archive | 60 of 60 equal (20 per feed) | `results/replay-verification.json` |
+| Silver rows = archive rows | equal for every feed; 0 duplicates, 0 late, 0 dead-lettered; conservation balanced | `results/silver-ingest.json` |
+
+**Golden-reference parity: Spark equals an independent DuckDB implementation**
+
+| Layer | Tables equal / compared | Largest table | Evidence |
+|---|---|---|---|
+| Silver (stop events, matching, statuses) | 4 / 4 | `stop_events`: 2,955,606 rows | `results/validation-silver.json` |
+| Gold (BR1, BR2, BR3, BR7, bus terminal arrivals) | 14 / 14 | `headways`: 2,956,930 rows | `results/validation-gold.json` |
+
+Rows are matched on their keys; every other column must be equal, floats within the declared tolerance ([`golden/tolerance.json`](golden/tolerance.json)). Re-running the golden pipeline reproduces every frozen golden file byte for byte (checksums in `golden/checksums.json`).
+
+**Performance (one laptop, wall time; Spark `local[8]`, DuckDB 8 threads)**
+
+| Step | Time | Evidence |
+|---|---|---|
+| Replay of the golden window into Kafka (3 feeds in parallel, unpaced) | 1,247 s (longest feed) | `results/replay-report.json` |
+| Spark: stop events, timetable matching, statuses (Silver) | 446.5 s | `results/silver-events.json` |
+| Spark: Gold KPI tables (BR1, BR2, BR3, BR7, terminals) | 313.4 s | `results/gold-kpis.json` |
+| DuckDB golden, the same rules (steps 01–05, 07, 08, 12) | 592.0 s | `results/golden-run.json` |
+| DuckDB golden, all 12 steps (BR1–BR8) | 892.1 s | `results/golden-run.json` |
+
+This is the MVP's alternative-solution comparison: a single-node batch engine (DuckDB, over the raw archive Parquet) against a distributed streaming/batch engine (Spark in Docker, over Silver Delta tables already decoded from Kafka). They are not like-for-like: DuckDB's time includes reading the raw archive, while Spark's times include JVM start-up and Delta writes but not the Kafka → Silver ingest that precedes them. The full benchmark suite (Flink, ClickHouse, scaling) is on the roadmap.
 
 ## Tasks
 
@@ -73,7 +104,7 @@ All commands go through `python tasks.py <task>` (works on every OS):
 | `fetch`, `validate-landing` | download and validate the pinned sources (manifest with SHA-256) |
 | `build`, `up <profile>`, `down` | build the image, start services, stop everything (volumes kept) |
 | `replay`, `replay-verify` | replay archived feeds into Kafka; verify the stream against the archive |
-| `silver`, `silver-events`, `gold` | Spark jobs; `silver-events` and `gold` also compare with golden |
+| `silver`, `silver-events`, `gold` | Spark jobs; `silver-events` and `gold` also export their tables and compare them with golden |
 | `demo [--fresh]` | one real hour end to end, then the app |
 | `golden`, `golden-check` | build the DuckDB golden reference; check result tables against it |
 | `storage-check`, `storage-report` | storage guard (warn at 30 GB, refuse engine starts at 35 GB) and usage log |
@@ -90,7 +121,7 @@ Runs on any topic prefix other than `rt` (for example the demo) write to their o
 
 ## Roadmap
 
-The MVP covers BR1 (on-time performance), BR2 (headways and bunching) and the data-quality foundation for BR7. Next: BR3 missing trips and the BR7 feed-quality score, then BR4–BR6 and BR8. After that come the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
+The MVP covers BR1 (on-time performance), BR2 (headways and bunching), BR3 (missing trips) and BR7 (feed health). Next: BR4–BR6 and BR8. After that come the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
 
 ## Storage rules
 
