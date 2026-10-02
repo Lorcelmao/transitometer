@@ -182,7 +182,7 @@ def _union(frames: list[DataFrame]) -> DataFrame:
 
 
 def static_stops(spark: SparkSession, schedules: dict[str, list[str]]) -> DataFrame:
-    """Every stop id of every timetable version, with its coordinates as published."""
+    """Every stop id of every timetable version, with its name and coordinates as published."""
     frames = []
     for group, dirs in schedules.items():
         for folder in dirs:
@@ -193,6 +193,11 @@ def static_stops(spark: SparkSession, schedules: dict[str, list[str]]) -> DataFr
                     F.col("stop_id").cast("string").alias("stop_id"),
                     F.col("stop_lat").cast("double").alias("lat"),
                     F.col("stop_lon").cast("double").alias("lon"),
+                    (
+                        F.col("stop_name").cast("string")
+                        if "stop_name" in frame.columns
+                        else F.lit(None).cast("string")
+                    ).alias("stop_name"),
                 )
             )
     return _union(frames)

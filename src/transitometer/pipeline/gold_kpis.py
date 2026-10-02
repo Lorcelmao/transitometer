@@ -24,6 +24,9 @@ from pyspark.sql import functions as F
 
 from transitometer.pipeline import gold_delivery as delivery
 from transitometer.pipeline import gold_feed_quality as quality
+from transitometer.pipeline import gold_scorecards as scorecards
+from transitometer.pipeline import gold_segments as segments
+from transitometer.pipeline import gold_warnings as warnings
 from transitometer.pipeline.layout import lakehouse_root
 
 EARLY_S = 60
@@ -271,6 +274,37 @@ def main(argv: list[str] | None = None) -> int:
         **headway_tables(trip_stops, observed, matched, stops),
     }.items():
         save(name, frame)
+
+    # BR5 and BR8: scorecards with uncertainty, pooled over the service days.
+    events = scorecards.scored_events(silver("stop_events"))
+    weights = scorecards.bootstrap_weights(spark, events)
+    save("route_scorecard", scorecards.route_scorecard(events, weights))
+    save("route_hour_scorecard", scorecards.route_hour_scorecard(events, weights))
+    save("stop_hour_reliability", scorecards.stop_hour_reliability(events))
+    # Display names for the app (one per stop id; versions rarely disagree, the first wins).
+    save(
+        "stop_names",
+        static.where(F.col("stop_name").isNotNull())
+        .groupBy("grp", "stop_id")
+        .agg(F.min("stop_name").alias("stop_name")),
+    )
+
+    # BR4: segment travel times and delay attribution.
+    segs = save("segments", segments.segments(silver("stop_events"), stops))
+    attribution = save(
+        "trip_delay_attribution", segments.trip_delay_attribution(silver("stop_events"), segs)
+    )
+    save("delay_attribution_summary", segments.delay_attribution_summary(attribution))
+    save("segment_travel_stats", segments.segment_travel_stats(segs))
+
+    # BR6: rule-based early warning against its naive baseline.
+    decisions = save(
+        "warning_decisions",
+        warnings.warning_decisions(
+            silver("stop_events"), stops, spark.read.format("delta").load(f"{root}/gold/headways")
+        ),
+    )
+    save("early_warning_summary", warnings.early_warning_summary(decisions))
 
     # BR3: promised vs delivered trips.
     trips = save(

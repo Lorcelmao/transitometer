@@ -522,6 +522,15 @@ GOLD_COMPARED = (
     "position_jumps",
     "feed_quality_metrics",
     "feed_quality_score",
+    "route_scorecard",
+    "route_hour_scorecard",
+    "stop_hour_reliability",
+    "segments",
+    "trip_delay_attribution",
+    "delay_attribution_summary",
+    "segment_travel_stats",
+    "warning_decisions",
+    "early_warning_summary",
 )
 
 
@@ -693,7 +702,7 @@ def build_parser() -> argparse.ArgumentParser:
     events.add_argument("--prefix", default="rt")
     events.add_argument("--service-dates", nargs="*", help="YYYYMMDD (default: golden window)")
     events.set_defaults(func=task_silver_events)
-    gold = sub.add_parser("gold", help="Gold KPI tables (BR1-BR3, BR7), compared with golden")
+    gold = sub.add_parser("gold", help="Gold KPI tables (BR1-BR8), compared with golden")
     gold.add_argument("--prefix", default="rt")
     gold.add_argument("--service-dates", nargs="*", help="YYYYMMDD (default: golden window)")
     gold.set_defaults(func=task_gold)
