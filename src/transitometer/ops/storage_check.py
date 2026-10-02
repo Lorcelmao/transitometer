@@ -32,8 +32,8 @@ class Status(str, Enum):
 
 @dataclass(frozen=True)
 class Thresholds:
-    warn_gb: float = 25.0
-    block_gb: float = 30.0
+    warn_gb: float = 30.0
+    block_gb: float = 35.0
 
     def __post_init__(self) -> None:
         if not 0 < self.warn_gb < self.block_gb:

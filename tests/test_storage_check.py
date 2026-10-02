@@ -61,10 +61,10 @@ def test_parse_system_df_empty_engine() -> None:
     ("gb", "status"),
     [
         (0, Status.OK),
-        (24.99, Status.OK),
-        (25, Status.WARN),
-        (29.99, Status.WARN),
-        (30, Status.BLOCK),
+        (29.99, Status.OK),
+        (30, Status.WARN),
+        (34.99, Status.WARN),
+        (35, Status.BLOCK),
     ],
 )
 def test_classify_threshold_edges(gb: float, status: Status) -> None:
@@ -78,9 +78,9 @@ def test_thresholds_must_be_ordered() -> None:
 
 def test_compaction_advised_only_when_image_far_above_live_usage() -> None:
     limits = Thresholds()
-    bloated = build_report({"Images": 5 * GB}, vhdx_bytes=35 * GB, thresholds=limits)
+    bloated = build_report({"Images": 5 * GB}, vhdx_bytes=40 * GB, thresholds=limits)
     healthy = build_report({"Images": 5 * GB}, vhdx_bytes=8 * GB, thresholds=limits)
-    busy = build_report({"Images": 27 * GB}, vhdx_bytes=35 * GB, thresholds=limits)
+    busy = build_report({"Images": 32 * GB}, vhdx_bytes=40 * GB, thresholds=limits)
     unknown = build_report({"Images": 5 * GB}, vhdx_bytes=None, thresholds=limits)
     assert bloated.compaction_advised
     assert not healthy.compaction_advised

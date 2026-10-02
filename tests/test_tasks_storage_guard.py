@@ -41,7 +41,7 @@ def compose_calls(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
     return calls
 
 
-@pytest.mark.parametrize(("gb", "code"), [(10, 0), (26, 0), (31, 2)])
+@pytest.mark.parametrize(("gb", "code"), [(10, 0), (31, 0), (36, 2)])
 def test_storage_check_exit_codes(monkeypatch: pytest.MonkeyPatch, gb: float, code: int) -> None:
     monkeypatch.setattr(tasks, "measure_storage", fake_measure(gb))
     assert tasks.main(["storage-check"]) == code
@@ -55,7 +55,7 @@ def test_allow_peak_overrides_block(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_up_refuses_to_start_when_blocked(
     monkeypatch: pytest.MonkeyPatch, compose_calls: list[list[str]]
 ) -> None:
-    monkeypatch.setattr(tasks, "measure_storage", fake_measure(31))
+    monkeypatch.setattr(tasks, "measure_storage", fake_measure(36))
     assert tasks.main(["up", "spark"]) == 2
     assert compose_calls == []
 
