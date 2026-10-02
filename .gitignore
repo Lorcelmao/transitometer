@@ -33,6 +33,8 @@ config/.env
 !/golden/queries/*.parquet
 # Full error output of container runs (the JSON reports next to them are committed).
 /results/*.stderr.log
+# Reports of runs on scratch topic prefixes (demo, trials).
+/results/scratch/
 
 # Local agent/review working notes (not project deliverables)
 plans/reports/

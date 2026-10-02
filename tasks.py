@@ -11,7 +11,7 @@ import json
 import os
 import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from pathlib import Path
 
@@ -63,8 +63,8 @@ def compose_cmd(*args: str) -> list[str]:
 
 def thresholds(settings: dict[str, str]) -> storage_check.Thresholds:
     return storage_check.Thresholds(
-        warn_gb=float(settings.get("TRANSITOMETER_STORAGE_WARN_GB", "25")),
-        block_gb=float(settings.get("TRANSITOMETER_STORAGE_BLOCK_GB", "30")),
+        warn_gb=float(settings.get("TRANSITOMETER_STORAGE_WARN_GB", "30")),
+        block_gb=float(settings.get("TRANSITOMETER_STORAGE_BLOCK_GB", "35")),
     )
 
 
@@ -139,6 +139,14 @@ def task_storage_report(_: argparse.Namespace) -> int:
     storage_check.append_log(report, log_path)
     print(f"Appended to {log_path}")
     return 0
+
+
+def task_build(args: argparse.Namespace) -> int:
+    """Build the Spark tooling image (Spark, Delta, Kafka connector, DuckDB, Streamlit)."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    return run(compose_cmd("--profile", "spark", "build", "spark"))
 
 
 def task_up(args: argparse.Namespace) -> int:
@@ -306,17 +314,28 @@ def _replay_days(args: argparse.Namespace) -> list[str]:
     return [f"{day:%Y-%m-%d}" for day in spill.days()]
 
 
-def _in_spark(module: str, arguments: list[str], report: Path) -> int:
-    """Run a replay module in the Spark tooling container; keep its JSON result in results/."""
+def _in_spark(module: str, arguments: list[str], report: Path, submit: bool = False) -> int:
+    """Run a module in the Spark tooling container; keep its JSON result in results/.
+
+    Plain tools run under python3; Spark jobs (submit=True) go through spark-submit, which is
+    what puts PySpark and the connector jars on the path.
+    """
     code = run(compose_cmd("--profile", "spark", "up", "-d", "--wait", "kafka", "spark"))
     if code:
         return code
     report.unlink(missing_ok=True)  # never leave an earlier report behind a failed run
-    cmd = compose_cmd("exec", "-T", "spark", "python3", "-m", module, *arguments)
+    if submit:
+        from transitometer.ops.skeleton import SPARK_SUBMIT, SRC
+
+        script = f"{SRC}/{module.removeprefix('transitometer.').replace('.', '/')}.py"
+        cmd = compose_cmd("exec", "-T", "spark", *SPARK_SUBMIT, script, *arguments)
+    else:
+        cmd = compose_cmd("exec", "-T", "spark", "python3", "-m", module, *arguments)
     print("$ " + " ".join(cmd[-len(arguments) - 3 :]), flush=True)
     returncode, stdout, stderr = _stream(cmd)
     errors = report.with_suffix(".stderr.log")
-    errors.write_text(stderr, encoding="utf-8", newline="\n")  # full detail, every run
+    # Full detail, every run. Spark jobs print their Python traceback on stdout.
+    errors.write_text(stderr + "\n--- stdout ---\n" + stdout, encoding="utf-8", newline="\n")
     lines = [line for line in stdout.splitlines() if line.startswith("{")]
     if lines:
         result = json.loads(lines[-1])
@@ -325,6 +344,9 @@ def _in_spark(module: str, arguments: list[str], report: Path) -> int:
         print(json.dumps(result, indent=2))
     if returncode:
         print(stderr[:4000])  # the first error; later lines are shutdown noise
+        if submit:
+            traceback = stdout[stdout.rfind("Traceback") :] if "Traceback" in stdout else ""
+            print(traceback[:4000])
         print(f"full error output: {errors}")
         reason = " (killed: out of memory?)" if returncode == 137 else ""
         print(f"FAILED: {module} exited with {returncode}{reason}")
@@ -341,8 +363,12 @@ def _stream(cmd: list[str]) -> tuple[int, str, str]:
     captured: list[str] = []
 
     def drain_stdout() -> None:
+        # spark-submit merges the Python driver's stderr into stdout, so echo progress here too.
         assert process.stdout is not None
-        captured.append(process.stdout.read())
+        for line in process.stdout:
+            captured.append(line)
+            if line.startswith("progress"):
+                print(line.rstrip(), flush=True)
 
     reader = threading.Thread(target=drain_stdout)
     reader.start()
@@ -368,7 +394,7 @@ def task_replay(args: argparse.Namespace) -> int:
         arguments += ["--feeds", *args.feeds]
     if args.recreate:
         arguments.append("--recreate")
-    code = _in_spark("transitometer.replay.run", arguments, ROOT / "results" / "replay-report.json")
+    code = _in_spark("transitometer.replay.run", arguments, _report("replay-report", args.prefix))
     task_storage_report(args)  # the Kafka footprint of the kept replay, for the storage log
     return code
 
@@ -378,8 +404,186 @@ def task_replay_verify(args: argparse.Namespace) -> int:
     arguments = ["--days", *_replay_days(args), "--sample", str(args.sample)]
     arguments += ["--prefix", args.prefix, "--minutes", str(args.minutes)]
     return _in_spark(
-        "transitometer.replay.verify", arguments, ROOT / "results" / "replay-verification.json"
+        "transitometer.replay.verify", arguments, _report("replay-verification", args.prefix)
     )
+
+
+def _report(name: str, prefix: str) -> Path:
+    """Where a run report goes: committed for the kept replay, scratch for any other prefix."""
+    if prefix == "rt":
+        return ROOT / "results" / f"{name}.json"
+    scratch = ROOT / "results" / "scratch" / prefix
+    scratch.mkdir(parents=True, exist_ok=True)
+    return scratch / f"{name}.json"
+
+
+def task_silver(args: argparse.Namespace) -> int:
+    """Decode the kept replay into Silver Delta tables (re-runs append only new messages)."""
+    arguments = ["--prefix", args.prefix] + (["--feeds", *args.feeds] if args.feeds else [])
+    return _in_spark(
+        "transitometer.pipeline.silver_ingest",
+        arguments,
+        _report("silver-ingest", args.prefix),
+        submit=True,
+    )
+
+
+SILVER_COMPARED = ("stop_events", "event_status_summary", "trip_match_summary", "ambiguous_summary")
+
+
+def _golden_dir() -> Path:
+    from transitometer.ingest.sources import load_sources
+
+    window = load_sources(SOURCES_FILE).golden_window
+    root = Path(host_settings()["TRANSITOMETER_DATA_ROOT"])
+    return root / "golden" / f"{window.start:%Y%m%d}_{window.end:%Y%m%d}"
+
+
+def compare_with_golden(layer: str, prefix: str, tables: tuple[str, ...], report: Path) -> int:
+    """Compare exported lakehouse tables with the golden ones under golden/tolerance.json."""
+    from transitometer.golden import compare
+
+    policy = compare.Policy.load(ROOT / "golden" / "tolerance.json")
+    actual = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / prefix / layer
+    results = {}
+    for table in tables:
+        diff = compare.compare_table(table, _golden_dir(), actual, policy)
+        print(diff.describe(), flush=True)
+        results[table] = {"ok": diff.ok, "detail": diff.describe()}
+    body = {
+        "layer": layer,
+        "prefix": prefix,
+        "tables": results,
+        "ok": all(r["ok"] for r in results.values()),
+    }
+    report.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"{sum(not r['ok'] for r in results.values())} table(s) differ; report: {report}")
+    return 0 if body["ok"] else 1
+
+
+def task_silver_events(args: argparse.Namespace) -> int:
+    """Infer stop events from Silver + the timetable, export them, compare with golden."""
+    from transitometer.ingest.sources import load_sources, schedule_dir
+
+    sources = load_sources(SOURCES_FILE)
+    dates = args.service_dates or [f"{d:%Y%m%d}" for d in sources.golden_window.days()]
+    arguments = ["--prefix", args.prefix, "--service-dates", *dates]
+    for version in sources.schedules:
+        arguments += ["--schedule", f"{version.group}=/data/landing/{schedule_dir(version)}"]
+    code = _in_spark(
+        "transitometer.pipeline.silver_events",
+        arguments,
+        _report("silver-events", args.prefix),
+        submit=True,
+    )
+    if code:
+        return code
+    code = _in_spark(
+        "transitometer.pipeline.export",
+        ["--prefix", args.prefix, "--layer", "silver", "--tables", *SILVER_COMPARED],
+        _report("silver-export", args.prefix),
+    )
+    if code or args.prefix != "rt":
+        return code  # only the kept replay covers the golden window
+    return compare_with_golden(
+        "silver", args.prefix, SILVER_COMPARED, ROOT / "results" / "validation-silver.json"
+    )
+
+
+GOLD_COMPARED = (
+    "otp_summary",
+    "otp_route_hour",
+    "delay_sanity_summary",
+    "headways",
+    "headway_regularity",
+    "headway_summary",
+)
+
+
+def task_gold(args: argparse.Namespace) -> int:
+    """Gold KPI tables from Silver stop events, exported and compared with golden."""
+    code = _in_spark(
+        "transitometer.pipeline.gold_kpis",
+        ["--prefix", args.prefix],
+        _report("gold-kpis", args.prefix),
+        submit=True,
+    )
+    if code:
+        return code
+    code = _in_spark(
+        "transitometer.pipeline.export",
+        ["--prefix", args.prefix, "--layer", "gold", "--tables", *GOLD_COMPARED],
+        _report("gold-export", args.prefix),
+    )
+    if code or args.prefix != "rt":
+        return code  # only the kept replay covers the golden window
+    return compare_with_golden(
+        "gold", args.prefix, GOLD_COMPARED, ROOT / "results" / "validation-gold.json"
+    )
+
+
+DEMO_PREFIX = "demo"
+DEMO_DAY = "2026-09-22"  # the demo replays this archive day's first hour (UTC)
+DEMO_SERVICE_DATES = ["20260921", "20260922"]  # that hour is the evening of 21 Sep in New York
+
+
+def task_demo(args: argparse.Namespace) -> int:
+    """One real hour end to end: replay -> Silver -> stop events -> Gold -> app (~10 min)."""
+    prefix = argparse.Namespace(prefix=DEMO_PREFIX)
+    steps: list[tuple[str, Callable[[], int]]] = [
+        (
+            "replay one real hour into Kafka",
+            lambda: task_replay(
+                argparse.Namespace(
+                    days=[DEMO_DAY],
+                    speed=0.0,
+                    workers=args.workers,
+                    prefix=DEMO_PREFIX,
+                    minutes=60.0,
+                    feeds=None,
+                    recreate=True,
+                    allow_peak=args.allow_peak,
+                )
+            ),
+        ),
+        ("Silver: decode, deduplicate, dead-letter", lambda: task_silver(prefix)),
+        (
+            "Silver: stop events from the timetable",
+            lambda: task_silver_events(
+                argparse.Namespace(prefix=DEMO_PREFIX, service_dates=DEMO_SERVICE_DATES)
+            ),
+        ),
+        ("Gold: on-time performance and headways", lambda: task_gold(prefix)),
+    ]
+    if args.fresh:
+        code = run(
+            compose_cmd(
+                "--profile",
+                "spark",
+                "exec",
+                "-T",
+                "spark",
+                "rm",
+                "-rf",
+                f"/data/lakehouse/scratch/{DEMO_PREFIX}",
+                f"/data/checkpoints/scratch/{DEMO_PREFIX}",
+            )
+        )
+        if code:
+            return code
+    for number, (label, step) in enumerate(steps, start=1):
+        print(f"\n== demo step {number}/{len(steps) + 1}: {label}", flush=True)
+        code = step()
+        if code:
+            print(f"demo stopped at step {number}: {label}")
+            return code
+    print(f"\n== demo step {len(steps) + 1}/{len(steps) + 1}: start the app", flush=True)
+    os.environ["TRANSITOMETER_APP_SOURCE"] = "gold"
+    os.environ["TRANSITOMETER_PREFIX"] = DEMO_PREFIX
+    code = run(compose_cmd("--profile", "app", "up", "-d", "--force-recreate", "app"))
+    if not code:
+        print("Transitometer is running at http://localhost:8501 (python tasks.py down to stop)")
+    return code
 
 
 def task_down(_: argparse.Namespace) -> int:
@@ -448,6 +652,24 @@ def build_parser() -> argparse.ArgumentParser:
     rverify.add_argument("--prefix", default="rt", help="topic prefix of the replay")
     rverify.add_argument("--minutes", type=float, default=0, help="as passed to the replay")
     rverify.set_defaults(func=task_replay_verify)
+    silver = sub.add_parser("silver", help="decode the kept replay into Silver Delta tables")
+    silver.add_argument("--prefix", default="rt")
+    silver.add_argument("--feeds", nargs="*")
+    silver.set_defaults(func=task_silver)
+    events = sub.add_parser(
+        "silver-events", help="stop events from Silver + timetable, compared with golden"
+    )
+    events.add_argument("--prefix", default="rt")
+    events.add_argument("--service-dates", nargs="*", help="YYYYMMDD (default: golden window)")
+    events.set_defaults(func=task_silver_events)
+    gold = sub.add_parser("gold", help="Gold KPI tables (BR1, BR2), compared with golden")
+    gold.add_argument("--prefix", default="rt")
+    gold.set_defaults(func=task_gold)
+    demo = sub.add_parser("demo", help="one real hour end to end, then open the app")
+    demo.add_argument("--workers", type=int, default=4)
+    demo.add_argument("--fresh", action="store_true", help="drop earlier demo tables first")
+    demo.add_argument("--allow-peak", action="store_true", help="proceed above the block threshold")
+    demo.set_defaults(func=task_demo)
 
     skel = sub.add_parser("skeleton", help="walking skeleton end to end + storage calibration")
     skel.add_argument("--allow-peak", action="store_true", help="proceed above the block threshold")
@@ -457,6 +679,11 @@ def build_parser() -> argparse.ArgumentParser:
     up.add_argument("profile", choices=("kafka", *PROFILES))
     up.add_argument("--allow-peak", action="store_true", help="proceed above the block threshold")
     up.set_defaults(func=task_up)
+    image = sub.add_parser("build", help="storage guard, then build the Spark tooling image")
+    image.add_argument(
+        "--allow-peak", action="store_true", help="proceed above the block threshold"
+    )
+    image.set_defaults(func=task_build)
     return parser
 
 
