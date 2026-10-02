@@ -120,7 +120,7 @@ Extracted verbatim in `00-requirements/instructor-project-requirements.md`.
 
 | ID | Requirement (from spec) | How Transitometer satisfies it |
 |---|---|---|
-| C1 | Unique Transportation domain framing | Urban transit reliability intelligence, NYC MTA core + Hanoi case study |
+| C1 | Unique Transportation domain framing | Urban transit reliability intelligence, NYC MTA core + HCMC case study |
 | C2 | Named key user groups / stakeholders | 7 user groups, each with a specific decision (§5) |
 | C3 | ≥ 2n = **≥8 business requirements**, tied to objectives, demonstrable | **11 BRs** (8 core + 3 desirable/optional) (§7) |
 | C4 | Rationale for how data engineering supports each BR | Full chain per BR (§7.3, §15.4) |
@@ -196,7 +196,7 @@ two honest benchmark axes with externally anchored correctness references.
 | U4 | **Transit authority / performance manager** | Incentive/penalty; public reliability reporting | Scorecards, trends (BR5, BR9, BR10) |
 | U5 | **Rider / rider-information analyst** | Whether to attempt a trip; what to surface at a stop | Departure-confidence explorer (BR8) |
 | U6 | **Data / feed steward** | Which feeds to trust; when a feed regressed | Feed conformance / staleness / gaps (BR7, BR3) |
-| U7 | **Hanoi transit planner** *(case study)* | Static network coverage & accessibility baseline | Hanoi GTFS analysis (BR11) |
+| U7 | **HCMC transit planner** *(case study)* | Static network coverage & accessibility baseline | HCMC bus GTFS (from OSM) analysis (BR11) |
 
 **Business objectives:** reduce excess passenger wait time · raise on-time performance · eliminate bunched service ·
 make reliability transparent and comparable · cut the cost of bad data via quality gates.
@@ -210,7 +210,7 @@ One **Streamlit** application reading Gold/Silver Delta tables through **DuckDB*
 - **Reliability workspace** (U1–U4): replay-time map, route/stop scorecards, bunching and early-warning lists, trend explorer.
 - **Departure-confidence explorer** (U5): per-stop/hour reliability for the next hour.
 - **Feed health console** (U6): per-feed conformance, staleness, gap and regression indicators.
-- **Hanoi network study** (U7, case study): static coverage/accessibility map via DuckDB Spatial.
+- **HCMC network study** (U7, case study): static coverage/accessibility map via DuckDB Spatial.
 
 The app's per-BR views are the *data-exploitation evidence*. A separate BI tool (Metabase) is optional (§20).
 
@@ -237,7 +237,7 @@ The app's per-BR views are the *data-exploitation evidence*. A separate BI tool 
 |---|---|---|---|
 | **BR9** | **Historical corridor reliability trends** over the archive period (Jan 2026 →) for a selected corridor (batch path) | U2,U4 | Desirable |
 | **BR10** | **Weather/context correlation** with reliability degradation (Open-Meteo) | U3,U4 | Desirable |
-| **BR11** | **Hanoi static network coverage & accessibility baseline** — same static pipeline, DuckDB Spatial | U7 | Optional (case study) |
+| **BR11** | **HCMC static network coverage & accessibility baseline** — same static pipeline, DuckDB Spatial | U7 | Optional (case study) |
 
 ### 7.3 The full data-engineering chain (representative: BR2 bunching)
 
@@ -282,9 +282,10 @@ Tags: **[V]** verified against primary source · **[M]** measured on this host 2
 | **MTA Bus GTFS static** (5 boroughs + MTA Bus Co.) | Schedule truth for bus | Versioned Parquet tables in the gtfsrt.io archive (`schedules/…/_feed_digest=`), pinned by digest | MTA ToU | 10⁵–10⁶ stop_times | **[M]** — S1: version 2026-09-06 → 2027-01-02 covers the window |
 | **MTA live GTFS-RT** | Optional live mode only | Subway keyless; Bus Time needs free key | MTA ToU | 15–30 s cadence | **[V]** optional (§20) |
 | **Mobility Database catalogue** | Feed metadata; historical static versions | Bulk JSON/CSV | Apache-2.0 repo; feeds own licences | 6,000+ feeds | **[V]** |
-| **OpenStreetMap / Geofabrik** | Hanoi geospatial reference (BR11) | Bulk download | **ODbL 1.0** | VN extract ~hundreds of MB | **[V]** |
+| **OpenStreetMap / Geofabrik** | HCMC geospatial reference (BR11) | Bulk download | **ODbL 1.0** | VN extract ~hundreds of MB | **[V]** |
 | **Open-Meteo** | Weather enrichment (BR10) | No key | CC-BY 4.0 | small | **[V]** |
-| **World Bank Hanoi GTFS (0038236)** | Vietnam case study (BR11) | ZIP download | **CC-BY 4.0** | ~1.55 MB | **[V]** |
+| **OSM HCMC bus routes → GTFS** (Overpass/Geofabrik route relations, converted with a small script) | Vietnam case study (BR11), primary | Overpass / extract | **ODbL 1.0** (attribution + share-alike on the derived database) | 341 route relations, 177 route numbers, 235 with ordered stops (PTv2), 340 with `interval`/`opening_hours`/`duration` (checked 2026-09-29) | **[V]** |
+| **World Bank Hanoi GTFS (0038236)** | Vietnam case study (BR11), fallback | ZIP download | **CC-BY 4.0** | ~1.55 MB | **[V]** |
 | NYC Open Data ridership | Demand context (optional) | Socrata, no auth | NYC Open Data | 10⁶–10⁷ rows | **[V]** optional |
 | TfL Unified API | Fallback agency only | Free key | TfL terms | London-wide | **[V]** fallback |
 | MinIO / Uber Movement / TransitFeeds / HCMC RT | — | — | — | — | **[X]** discontinued / nonexistent |
@@ -303,7 +304,7 @@ window into the landing zone early (S1) with checksums.
 | Archive vehicle positions | Parquet, one row per vehicle per snapshot (lat/lon, stop status) | MTA Bus ≈ 0.14 GB/day **[M]** | ~20–30 s | teleports, stale positions, null trip_id |
 | Replayed stream | GTFS-RT protobuf, one Kafka message per entity | derived; bounded by replay window | paced (×1…×N real time) | injected lateness/duplicates only in fault tests |
 | GTFS static | CSV-in-ZIP | 10–200 MB per feed | versions change every weeks–months | service calendars, `>24:00` times, ID churn across versions |
-| Hanoi GTFS | CSV-in-ZIP | ~1.5 MB | one-off | provenance likely reconstructed |
+| HCMC bus GTFS (derived from OSM) | CSV-in-ZIP (generated) | < 5 MB | one-off snapshot | frequency-based (headways from OSM `interval`), not an official timetable |
 | Weather | JSON API | small | hourly | gap-filling |
 
 **Row counts (measured in S1).** The 7-service-day window (2026-09-17 → 09-23, fetched as 8 UTC partitions) holds
@@ -324,7 +325,7 @@ need a cluster. Every performance number is a single-machine result.
  gtfsrt.io Parquet ─► landing/ (immutable, manifest, ─► replay harness ─► Kafka ─► Spark-SS ─► decoded, deduped, ──► BR KPIs ──► DuckDB ──► Streamlit
                       checksums) = file-based Bronze    (re-encode to      (protobuf,  observations; inferred    (OTP, headway,  (Delta +
  GTFS static zips ──► landing/                          GTFS-RT pb,        per-entity) stop events; schedule-    bunching,       Spatial ext)
- Hanoi GTFS, OSM ───► landing/                          paced, faults)                 joined; quality-gated     missing trips,
+ HCMC GTFS, OSM  ───► landing/                          paced, faults)                 joined; quality-gated     missing trips,
  Open-Meteo ───────► landing/                                                         + lineage table           attribution,
                                                                                                                  scorecards, DQ)
  Batch path: landing/ Parquet (history corridor) ───────────────────────► Spark batch (same KPI code) ─► Silver/Gold
@@ -347,7 +348,7 @@ need a cluster. Every performance number is a single-machine result.
 ```mermaid
 flowchart TB
   subgraph HOST["Host zone — D:\\Transitometer-data (NTFS)"]
-    L1["landing/: archive Parquet (MTA Bus, subway group), GTFS static, Hanoi GTFS, OSM, weather<br/>manifest + SHA-256 = file-based Bronze"]
+    L1["landing/: archive Parquet (MTA Bus, subway group), GTFS static, HCMC bus GTFS (from OSM), OSM, weather<br/>manifest + SHA-256 = file-based Bronze"]
     GD["golden/: DuckDB reference results"]
     RS["results/, exports/: benchmark CSVs, Gold snapshots"]
   end
@@ -406,7 +407,7 @@ Windows 11 Home, Docker Desktop 4.54.0 (engine 29.1.2, Compose v2.40.3, WSL2 bac
 | Table format / lakehouse | **Delta Lake on a local named volume** | ACID, schema enforcement, time travel (correction evidence), `OPTIMIZE`/`VACUUM`; native with Spark; readable by DuckDB. The lakehouse value is the table format, not S3. | ✅ (Databricks/lakehouse) |
 | Processing (production) | **Spark 4.x Structured Streaming + batch (PySpark), Java 17 container** | One codebase for streaming and batch; event-time + watermark; arbitrary stateful processing for trip reconstruction; Python-first. | ✅ |
 | Processing (alternative) | **Apache Flink 2.x (PyFlink), Java 17 container** | True per-event engine with event-time timers and side outputs → a real trade-off vs micro-batch, measured on an identical workload. | ✅ |
-| Golden reference + app query engine | **DuckDB** (+ `delta`, `spatial` extensions) | Zero-infra independent oracle over landing Parquet; reads Delta for the app; spatial joins for stops/shapes and Hanoi. | (adjacent) |
+| Golden reference + app query engine | **DuckDB** (+ `delta`, `spatial` extensions) | Zero-infra independent oracle over landing Parquet; reads Delta for the app; spatial joins for stops/shapes and HCMC. | (adjacent) |
 | Serving alternative | **ClickHouse** | Columnar OLAP server; Axis B arm (latency, freshness, compression vs Delta-direct serving). | (adjacent) |
 | Application | **Streamlit** | Fast to build; per-BR exploitation evidence; talks to DuckDB directly. | — |
 | Correctness tooling | **pytest + Hypothesis-style property tests** | Turns correctness into numbers. | — |
@@ -491,7 +492,7 @@ PostGIS/pgRouting vs Neo4j routing is **discussion-only** (§12.2).
 | Authority reporting | U4 | reliability trends, exportable scorecards | BR5, BR9, BR10 |
 | Departure confidence | U5 | stop-level next-hour reliability explorer | BR8 |
 | Feed health console | U6 | per-feed conformance/staleness/gap/jump indicators | BR3, BR7 |
-| Hanoi network study | U7 | static coverage/accessibility map (DuckDB Spatial) | BR11 |
+| HCMC network study | U7 | static coverage/accessibility map (DuckDB Spatial) | BR11 |
 
 **UI guidance (rubric "User Interface Design 2/10"):** fit each user group (controller = glanceable alerts; planner =
 dense charts; rider = simple confidence indicator); consistent navigation, colour semantics, no clutter.
@@ -533,7 +534,7 @@ freshness (age of KPI at view time) · BR coverage vs required 8.
 | BR8 | per-stop reliability | rider explorer | parity with BR1 for same stop/hour | serving latency |
 | BR9 | corridor trends | trend explorer | batch vs golden parity on corridor | batch scaling on real slices |
 | BR10 | weather correlation | correlation view | rain-day attribution check | join cost |
-| BR11 | Hanoi coverage | VN map | GTFS validity report | static load time |
+| BR11 | HCMC coverage | VN map | GTFS validity report | static load time |
 
 ---
 
@@ -544,7 +545,7 @@ Delta · **BR1–BR8** · DuckDB golden + correctness suite · **Axis A** (Spark
 vs ClickHouse) · Streamlit app for U1–U6 · evaluation (correctness, performance, exploitation) · one-command reproducible
 stack within the storage policy.
 
-**DESIRABLE:** BR9 (corridor history) · BR10 (weather) · BR11 Hanoi static study · G1-lite feed-quality comparison across
+**DESIRABLE:** BR9 (corridor history) · BR10 (weather) · BR11 HCMC static study · G1-lite feed-quality comparison across
 several archived agencies.
 
 **OPTIONAL / STRETCH (must not endanger core):** SeaweedFS S3 variant · PostGIS/pgRouting · Metabase · Airflow · live
@@ -655,7 +656,7 @@ capable Docker host. **Group ID naming** is required on all submissions.
 
 ## 20. Optional extensions (post-core)
 
-SeaweedFS S3 substrate · PostGIS/pgRouting isochrones for Hanoi · Metabase dashboards · Airflow orchestration · live
+SeaweedFS S3 substrate · PostGIS/pgRouting isochrones for HCMC · Metabase dashboards · Airflow orchestration · live
 polling mode (MTA Bus Time key, subway keyless) · ML early warning (BR6+) · multi-agency federation from the archive ·
 equity/safety overlays · natural-language query over Gold KPIs.
 
@@ -667,7 +668,7 @@ equity/safety overlays · natural-language query over Gold KPIs.
 
 **Data & standards:** gtfs.org/documentation/realtime/reference · gtfsrt.io (archive layout, no-auth Parquet) ·
 parquet.gtfsrt.io bucket listing + schedules.json (measured 2026-09-24/25) · mobilitydatabase.org · mta.info/developers ·
-download.geofabrik.de · open-meteo.com · World Bank dataset 0038236 (Hanoi GTFS) · data.cityofnewyork.us.
+download.geofabrik.de · open-meteo.com · OSM Overpass (HCMC bus routes) · World Bank dataset 0038236 (Hanoi GTFS, fallback) · data.cityofnewyork.us.
 
 **Technology (v2 verification, accessed 2026-09-25):**
 - Spark 4.0 release notes (Java 17 default, Java 21 support): spark.apache.org/releases/spark-release-4-0-0.html
@@ -692,7 +693,7 @@ Transit Equity".
 2. ~~MTA Bus GTFS static historical versions~~ — **resolved in S1:** versioned bus schedules are archived by gtfsrt.io; the 7-day window sits inside one bus and one subway version.
 3. **Corridor selection for BR9** — which subway lines / bus routes; decided in S1 from measured volume.
 4. **Data-set freeze date** — planned end of week 6; confirm against the course calendar.
-5. **Instructor confirmation** that a NYC-core + Hanoi case-study framing is acceptable under "domain = Transportation".
+5. **Instructor confirmation** that a NYC-core + HCMC case-study framing is acceptable under "domain = Transportation".
 6. **Instructor confirmation** on the ">3 illustrative examples" interpretation.
 7. ~~Git remote~~ — **resolved:** `github.com/Lorcelmao/transitometer`; branch/PR policy per `IMPLEMENTATION_PLAN.md` §7; visibility (public/private) to confirm at creation.
 8. **Host availability windows** for benchmark runs; **emergency fallback host** identified via Git.

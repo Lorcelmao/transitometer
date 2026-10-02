@@ -8,12 +8,12 @@
 | **Course / domain** | CO5173 Data Engineering · Transportation |
 | **Team** | 4 students — logical ownership only; **one runtime machine** |
 | **Host** | ASUS TUF F15 · i7-12700H (14C/20T) · 31.6 GB RAM · Win 11 Home · Docker Desktop 4.54.0 (engine 29.1.2, Compose v2.40.3) |
-| **Status** | Plan **v2.1** — host prerequisites done; no implementation started; S0 starts on owner go-ahead |
+| **Status** | S0–S5 and S3 done. **Current order (2026-10-02): end-to-end MVP first** — S6 Silver → S7 Gold for BR1, BR2, BR7 → S11 app for those BRs → demo + README; see `plans/261002-1516-mvp-end-to-end/plan.md`. MVP alternative = DuckDB batch vs Spark streaming; S8 Flink, S9 ClickHouse, S10 benchmarks, remaining BRs and S13 follow the MVP. |
 | **Date** | v1 2026-09-23 · v2 2026-09-25 · **v2.1 2026-09-25** (renamed Transitometer; soft storage guard) |
 | **Repository** | `github.com/Lorcelmao/transitometer` (created in S0) |
 
 > **Binding constraints from `PROJECT_PLAN.md`:** real data for all BR results and acceptance (§1.1) · single machine,
-> one engine profile at a time (§1.2) · two-zone storage, Docker ≤ 25 GB steady, soft guard at 25/30 GB (§1.3) ·
+> one engine profile at a time (§1.2) · two-zone storage, Docker ≤ 25 GB steady, soft guard at 30/35 GB (§1.3; raised from 25/30 by the owner on 2026-10-02) ·
 > core = BR1–BR8 + Axis A + Axis B (§16).
 
 ---
@@ -102,8 +102,9 @@ The host needs **no JDK**. Host Java 23 is irrelevant to the stack.
 **Verdict:** ≤ 25 GB is **sustainable in normal development** with the controls above; it is **not** sustainable
 through the scaling/compaction peak. **Compromise target:** ≤ 25 GB steady, peaks confined to scheduled windows and followed by cleanup + compaction.
 Docker Desktop 4.54 (WSL2 mode) offers **no hard disk-usage limit**, so the ceiling is enforced by the **soft storage
-guard** `python tasks.py storage-check` (reads `docker system df` + VHDX file size): **warn ≥ 25 GB**, **refuse to start new
-engine runs ≥ 30 GB** (override only via an explicit flag during a scheduled peak phase). Every `tasks.py up <profile>`,
+guard** `python tasks.py storage-check` (reads `docker system df` + VHDX file size): **warn ≥ 30 GB**, **refuse to start new
+engine runs ≥ 35 GB** (owner decision 2026-10-02, after the full-window Silver run brought
+Docker to about 27 GB; 35 GB is the hard limit, not a target) (override only via an explicit flag during a scheduled peak phase). Every `tasks.py up <profile>`,
 `tasks.py replay` and `tasks.py bench` task calls it first.
 
 ### 4.4 Docker disk image behaviour (measured)
@@ -137,7 +138,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Exit:** fresh clone → `python tasks.py check` green; Docker disk verified on D:.
 
 ### S1 — Real-data acquisition & landing zone — host
-- **Status (2026-09-25):** ✅ implemented and verified. Owner-approved scope changes: **7 service days 2026-09-17 → 09-23** (not 14); BR9 history, Hanoi/OSM and Open-Meteo **deferred to S13** (same fetch code, new `config/sources.json` entries); manifest is **JSON** (`data-manifest.json`, stdlib) instead of YAML; GTFS validity is checked with DuckDB/pyarrow (the archive serves schedules as Parquet tables, so `gtfs_kit` does not apply).
+- **Status (2026-09-25):** ✅ implemented and verified. Owner-approved scope changes: **7 service days 2026-09-17 → 09-23** (not 14); BR9 history, Vietnam case-study data and Open-Meteo **deferred to S13** (same fetch code, new `config/sources.json` entries); manifest is **JSON** (`data-manifest.json`, stdlib) instead of YAML; GTFS validity is checked with DuckDB/pyarrow (the archive serves schedules as Parquet tables, so `gtfs_kit` does not apply).
 - **Measured results** (`results/landing-volume-report.json`):
   - **1.48 × 10⁹ real-time rows, 12.3 GB** (94 files incl. schedules). Weekday ≈ 1.66 GB/day, weekend ≈ 1.1 GB/day.
   - Archive `date=` partitions are **UTC days**; the window is NYC service days, so the fetch includes the following UTC day (window.end + 1).
@@ -150,7 +151,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
   - gtfsrt.io Parquet: **MTA Bus** trip updates + vehicle positions and **one subway feed group** (default `nyct/gtfs`) for the **core window** (7 service days, see status above);
   - GTFS static: subway versions from gtfsrt.io `schedules/` covering the window; MTA Bus static from MTA (+ Mobility Database historical versions if needed);
   - BR9 history: **corridor subset** (default: the subway group, Jan 2026 →, filtered at download with pyarrow predicates) — size capped;
-  - Hanoi GTFS + OSM extract (BR11), Open-Meteo (BR10) — small.
+  - HCMC bus GTFS derived from OSM route relations + OSM extract (BR11; owner chose HCMC 2026-09-29, fallback Hanoi World Bank GTFS if the conversion fails), Open-Meteo (BR10) — small.
   - **Golden window:** 48 h sub-window of the core window (no separate download).
 - **Decision gates:** (1) static-schedule versions exist for every core-window date (else move the window into one static version); (2) measured size of window + history within ~30 GB host-zone target (else shrink window/corridor).
 - **Tests:** checksum verification; schema presence per file; GTFS validity (`gtfs_kit`); licence per source; rows/bytes per day recorded.
@@ -254,7 +255,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 
 ### S11 — Application — host dev + Docker (`app`)
 - **Goal:** demonstrate data exploitation per BR.
-- **Deliverables:** Streamlit app: U1 reliability console, U2 diagnostics, U3/U4 scorecards and trends, U5 departure confidence, U6 feed health, U7 Hanoi map; data-access layer over DuckDB (Delta + Spatial). Development starts from golden/Gold exports on the host; integration reads the live `lakehouse` volume in the `app` profile.
+- **Deliverables:** Streamlit app: U1 reliability console, U2 diagnostics, U3/U4 scorecards and trends, U5 departure confidence, U6 feed health, U7 HCMC map; data-access layer over DuckDB (Delta + Spatial). Development starts from golden/Gold exports on the host; integration reads the live `lakehouse` volume in the `app` profile.
 - **Tests:** data-access unit tests; UI smoke tests; **per-BR acceptance tests on real data** (§6.3); time-to-insight task timings.
 - **Exit:** every core BR (BR1–BR8) demonstrable in-app with recorded evidence.
 
@@ -264,7 +265,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Exit:** E2E passes from a clean clone; evaluation chapter complete.
 
 ### S13 — Desirable / optional
-- **BR9** corridor history (batch path, subway group by default); **BR10** weather join; **BR11** Hanoi static coverage (DuckDB Spatial); optional extras from `PROJECT_PLAN.md` §20 (SeaweedFS, PostGIS, Metabase, live polling) only if the core is complete and the storage log allows.
+- **BR9** corridor history (batch path, subway group by default); **BR10** weather join; **BR11** HCMC static coverage (frequency-based GTFS built from OSM; Hanoi World Bank GTFS as fallback) (DuckDB Spatial); optional extras from `PROJECT_PLAN.md` §20 (SeaweedFS, PostGIS, Metabase, live polling) only if the core is complete and the storage log allows.
 - **Tests:** parity with core static handling; GTFS validity; licence attribution (ODbL, CC-BY).
 
 ### S14 — Submission artifacts — host
