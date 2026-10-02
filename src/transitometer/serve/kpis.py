@@ -20,6 +20,7 @@ from transitometer.pipeline.layout import lakehouse_root
 
 REPO = Path(__file__).resolve().parents[3]
 MIN_EVENTS = 30  # route rankings ignore route-hours with fewer observed events
+MIN_TRIPS = 10  # delivery rankings ignore routes with fewer observable scheduled trips
 
 
 @dataclass(frozen=True)
@@ -133,6 +134,26 @@ def headway_route_hour(
         f" ORDER BY route_id, service_hour"
     )
     return _rows(con, sql, [grp, service_date])
+
+
+def delivery_overview(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:
+    """BR3 headline: scheduled trips per delivery class, per mode and day."""
+    sql = f"SELECT * FROM {src.table('missing_trip_summary')} ORDER BY grp, service_date"
+    return _rows(con, sql)
+
+
+def least_delivered_routes(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, service_date: str, limit: int = 15
+) -> list[dict[str, Any]]:
+    """BR3 ranking: routes by share of observable scheduled trips not delivered."""
+    sql = (
+        f"SELECT route_id, scheduled, delivered, partial, missing, not_run, unknown,"
+        f" not_delivered_share"
+        f" FROM {src.table('missing_by_route')}"
+        f" WHERE grp = ? AND service_date = ? AND scheduled - unknown >= ?"
+        f" ORDER BY not_delivered_share DESC, route_id LIMIT ?"
+    )
+    return _rows(con, sql, [grp, service_date, MIN_TRIPS, limit])
 
 
 def feed_scores(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:

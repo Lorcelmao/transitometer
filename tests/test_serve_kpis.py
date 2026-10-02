@@ -72,6 +72,19 @@ def test_feed_score_is_the_share_of_passed_checks(con) -> None:  # type: ignore[
         assert score["score"] == pytest.approx(100 * score["passed"] / score["checks"], abs=0.05)
 
 
+def test_delivery_classes_add_up_to_scheduled(con) -> None:  # type: ignore[no-untyped-def]
+    for row in kpis.delivery_overview(con, SRC):
+        classes = ("delivered", "partial", "missing", "not_run", "unknown")
+        assert sum(row[c] for c in classes) == row["scheduled"]
+
+
+def test_least_delivered_routes_are_sorted(con) -> None:  # type: ignore[no-untyped-def]
+    rows = kpis.least_delivered_routes(con, SRC, "bus", "20260922", limit=10)
+    shares = [row["not_delivered_share"] for row in rows]
+    assert shares == sorted(shares, reverse=True)
+    assert all(row["scheduled"] - row["unknown"] >= kpis.MIN_TRIPS for row in rows)
+
+
 def test_unknown_source_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TRANSITOMETER_APP_SOURCE", "silver")
     with pytest.raises(ValueError, match="golden"):

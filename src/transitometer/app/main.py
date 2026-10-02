@@ -132,13 +132,13 @@ def page_otp() -> None:
         )
     )
     st.subheader(f"{HEATMAP_ROUTES} least punctual routes, by hour")
-    st.altair_chart(heatmap, use_container_width=True)
+    st.altair_chart(heatmap, width="stretch")
     st.subheader("Least punctual routes")
     st.altair_chart(
-        ranking_chart(worst.head(15), "on_time_share", "On-time share"), use_container_width=True
+        ranking_chart(worst.head(15), "on_time_share", "On-time share"), width="stretch"
     )
     with st.expander("Table"):
-        st.dataframe(worst, hide_index=True, use_container_width=True)
+        st.dataframe(worst, hide_index=True, width="stretch")
 
 
 def page_headways() -> None:
@@ -162,10 +162,37 @@ def page_headways() -> None:
     st.subheader("Most bunched routes")
     st.altair_chart(
         ranking_chart(bunched, "bunched_share", "Share of headways bunched"),
-        use_container_width=True,
+        width="stretch",
     )
     with st.expander("Table"):
-        st.dataframe(bunched, hide_index=True, use_container_width=True)
+        st.dataframe(bunched, hide_index=True, width="stretch")
+
+
+def page_missing_trips() -> None:
+    st.header("Missing trips")
+    st.caption(
+        "BR3 · every scheduled trip, classified: delivered, partial, missing (never reported), "
+        "not run (announced but never seen moving) or unknown (the feed could not tell)."
+    )
+    grp, day = filters("missing")
+    summary = frame(kpis.delivery_overview(CON, SRC))
+    row = summary[(summary["grp"] == grp) & (summary["service_date"] == day)].iloc[0]
+    a, b, c, d = st.columns(4)
+    a.metric("Scheduled trips", f"{row['scheduled']:,}")
+    b.metric("Delivered", f"{row['delivered']:,}")
+    c.metric("Missing", f"{row['missing']:,}")
+    d.metric("Not delivered", pct(row["not_delivered_share"]), help="missing + not run")
+    routes = frame(kpis.least_delivered_routes(CON, SRC, grp, day))
+    if routes.empty:
+        st.warning("No routes with enough observable trips for this selection.")
+        return
+    st.subheader("Routes with the most undelivered trips")
+    st.altair_chart(
+        ranking_chart(routes, "not_delivered_share", "Share of trips not delivered"),
+        width="stretch",
+    )
+    with st.expander("Table"):
+        st.dataframe(routes, hide_index=True, width="stretch")
 
 
 def page_feed_health() -> None:
@@ -187,13 +214,14 @@ def page_feed_health() -> None:
     day = right.selectbox("Day", list(scores["day"].unique()), format_func=day_label)
     checks = frame(kpis.feed_checks(CON, SRC, feed, day))
     checks.insert(0, "status", checks.pop("passed").map({True: "✅ pass", False: "❌ fail"}))
-    st.dataframe(checks, hide_index=True, use_container_width=True)
+    st.dataframe(checks, hide_index=True, width="stretch")
 
 
 PAGES = {
     "Overview": page_overview,
     "On-time performance": page_otp,
     "Headways and bunching": page_headways,
+    "Missing trips": page_missing_trips,
     "Feed health": page_feed_health,
 }
 choice = st.sidebar.radio("Page", list(PAGES))
