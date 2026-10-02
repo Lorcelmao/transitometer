@@ -85,6 +85,56 @@ def test_least_delivered_routes_are_sorted(con) -> None:  # type: ignore[no-unty
     assert all(row["scheduled"] - row["unknown"] >= kpis.MIN_TRIPS for row in rows)
 
 
+def test_route_scorecards_put_ranked_routes_first_with_valid_intervals(con) -> None:  # type: ignore[no-untyped-def]
+    rows = kpis.route_scorecards(con, SRC, "bus")
+    ranked = [r for r in rows if r["sufficient"]]
+    assert ranked and rows[: len(ranked)] == ranked
+    assert [r["rank"] for r in ranked] == sorted(r["rank"] for r in ranked)
+    for r in ranked:
+        assert r["ci_low"] <= r["on_time_share"] <= r["ci_high"]
+        assert r["rank_low"] <= r["rank_high"]
+
+
+def test_stop_explorer_queries_chain_from_route_to_hours(con) -> None:  # type: ignore[no-untyped-def]
+    route = kpis.stop_routes(con, SRC, "subway")[0]
+    stops = kpis.route_stops(con, SRC, "subway", route)
+    assert stops and all(s["scored_hours"] > 0 for s in stops)
+    first = stops[0]
+    hours = kpis.stop_hours(con, SRC, "subway", route, first["direction_id"], first["stop_id"])
+    assert sum(h["events"] for h in hours) == first["events"]
+    for h in hours:
+        assert h["ci_low"] <= h["on_time_share"] <= h["ci_high"]
+        assert h["sufficient"] == (h["events"] >= 10)
+
+
+def test_optional_tables_are_detected_per_source() -> None:
+    assert SRC.has("route_scorecard")
+    assert not SRC.has("no_such_table")
+
+
+def test_delay_attribution_reconciles_exactly(con) -> None:  # type: ignore[no-untyped-def]
+    for row in kpis.delay_overview(con, SRC):
+        assert row["attribution_mismatches"] == 0
+        assert row["mean_final_delay_s"] == pytest.approx(
+            row["mean_inherited_delay_s"] + row["mean_gained_delay_s"], abs=0.11
+        )
+
+
+def test_costly_segments_are_ranked_by_excess(con) -> None:  # type: ignore[no-untyped-def]
+    rows = kpis.costly_segments(con, SRC, "bus", 20, limit=10)
+    excess = [r["median_excess_s"] for r in rows]
+    assert excess == sorted(excess, reverse=True)
+    assert all(r["segments"] >= 20 for r in rows)
+
+
+def test_warning_summary_has_rule_and_baseline_per_outcome(con) -> None:  # type: ignore[no-untyped-def]
+    rows = kpis.warning_summary(con, SRC)
+    keys = {(r["grp"], r["service_date"], r["outcome"], r["method"]) for r in rows}
+    assert len(keys) == len(rows) == 16
+    for r in rows:
+        assert r["tp"] + r["fn"] == r["positives"]
+
+
 def test_unknown_source_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TRANSITOMETER_APP_SOURCE", "silver")
     with pytest.raises(ValueError, match="golden"):

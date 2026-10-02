@@ -34,6 +34,12 @@ class Source:
             return _quoted(f"{self.root}/{name}.parquet")
         return f"delta_scan({_quoted(f'{self.root}/gold/{name}')})"
 
+    def has(self, name: str) -> bool:
+        """Whether a table exists in this source (optional tables, e.g. stop display names)."""
+        if self.kind == "golden":
+            return Path(self.root, f"{name}.parquet").exists()
+        return Path(self.root, "gold", name, "_delta_log").exists()
+
 
 def _quoted(path: str) -> str:
     return "'" + path.replace("\\", "/").replace("'", "''") + "'"
@@ -159,6 +165,112 @@ def least_delivered_routes(
 def feed_scores(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:
     """BR7 headline: conformance score per feed and day, with the failed checks."""
     return _rows(con, f"SELECT * FROM {src.table('feed_quality_score')} ORDER BY feed, day")
+
+
+def route_scorecards(con: duckdb.DuckDBPyConnection, src: Source, grp: str) -> list[dict[str, Any]]:
+    """BR5: every route's pooled on-time share with its 95 % bootstrap interval and rank interval.
+
+    Sufficiently observed routes first, by rank; the others follow without a rank.
+    """
+    sql = (
+        f"SELECT route_id, events, trips, on_time_share, ci_low, ci_high, sufficient, rank,"
+        f" rank_low, rank_high FROM {src.table('route_scorecard')} WHERE grp = ?"
+        f" ORDER BY sufficient DESC, rank NULLS LAST, route_id"
+    )
+    return _rows(con, sql, [grp])
+
+
+def stop_routes(con: duckdb.DuckDBPyConnection, src: Source, grp: str) -> list[str]:
+    """BR8: routes with at least one stop-hour observed often enough to be scored."""
+    sql = (
+        f"SELECT DISTINCT route_id FROM {src.table('stop_hour_reliability')}"
+        f" WHERE grp = ? AND sufficient ORDER BY route_id"
+    )
+    return [row["route_id"] for row in _rows(con, sql, [grp])]
+
+
+def route_stops(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, route_id: str
+) -> list[dict[str, Any]]:
+    """BR8: the stops of a route with their observed arrivals, named when names are available."""
+    name = "n.stop_name" if src.has("stop_names") else "NULL"
+    join = (
+        f" LEFT JOIN {src.table('stop_names')} n ON n.grp = r.grp AND n.stop_id = r.stop_id"
+        if src.has("stop_names")
+        else ""
+    )
+    sql = (
+        f"SELECT r.direction_id, r.stop_id, any_value({name}) AS stop_name,"
+        f" sum(r.events) AS events, count(*) FILTER (WHERE r.sufficient) AS scored_hours"
+        f" FROM {src.table('stop_hour_reliability')} r{join}"
+        f" WHERE r.grp = ? AND r.route_id = ?"
+        f" GROUP BY ALL HAVING scored_hours > 0"
+        f" ORDER BY r.direction_id NULLS LAST, stop_name NULLS LAST, r.stop_id"
+    )
+    return _rows(con, sql, [grp, route_id])
+
+
+def stop_hours(
+    con: duckdb.DuckDBPyConnection,
+    src: Source,
+    grp: str,
+    route_id: str,
+    direction_id: int | None,
+    stop_id: str,
+) -> list[dict[str, Any]]:
+    """BR8: hour by hour at one stop: on-time share, Wilson interval and typical delays."""
+    sql = (
+        f"SELECT service_hour, events, on_time, on_time_share, ci_low, ci_high, late, early,"
+        f" p50_delay_s, p90_delay_s, sufficient FROM {src.table('stop_hour_reliability')}"
+        f" WHERE grp = ? AND route_id = ? AND direction_id IS NOT DISTINCT FROM ? AND stop_id = ?"
+        f" ORDER BY service_hour"
+    )
+    return _rows(con, sql, [grp, route_id, direction_id, stop_id])
+
+
+def delay_overview(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:
+    """BR4 headline: mean delay inherited at the first observed stop, gained en route, and final."""
+    sql = f"SELECT * FROM {src.table('delay_attribution_summary')} ORDER BY grp, service_date"
+    return _rows(con, sql)
+
+
+def costly_segments(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, min_segments: int, limit: int = 15
+) -> list[dict[str, Any]]:
+    """BR4: stop-to-stop segments (one route, direction and hour) that lose the most time.
+
+    Ranked by median excess travel time over the timetable; stop names when available.
+    """
+    names = src.has("stop_names")
+    label = (
+        "coalesce(f.stop_name, s.from_stop) AS from_name,"
+        " coalesce(t.stop_name, s.to_stop) AS to_name"
+        if names
+        else "s.from_stop AS from_name, s.to_stop AS to_name"
+    )
+    joins = (
+        f" LEFT JOIN {src.table('stop_names')} f ON f.grp = s.grp AND f.stop_id = s.from_stop"
+        f" LEFT JOIN {src.table('stop_names')} t ON t.grp = s.grp AND t.stop_id = s.to_stop"
+        if names
+        else ""
+    )
+    sql = (
+        f"SELECT s.route_id, s.direction_id, s.service_hour, s.from_stop, s.to_stop, {label},"
+        f" s.segments, s.sched_travel_s, s.p50_travel_s, s.p90_travel_s, s.median_excess_s"
+        f" FROM {src.table('segment_travel_stats')} s{joins}"
+        f" WHERE s.grp = ? AND s.segments >= ?"
+        f" ORDER BY s.median_excess_s DESC, s.route_id, s.from_stop, s.service_hour LIMIT ?"
+    )
+    return _rows(con, sql, [grp, min_segments, limit])
+
+
+def warning_summary(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:
+    """BR6: precision, recall and F1 of each warning rule and its naive baseline."""
+    sql = (
+        f"SELECT * FROM {src.table('early_warning_summary')}"
+        f" ORDER BY grp, service_date, outcome, method DESC"
+    )
+    return _rows(con, sql)
 
 
 def feed_metric(

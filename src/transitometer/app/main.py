@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from transitometer.app import overview, quality, reliability
+from transitometer.app import diagnostics, overview, quality, reliability, scorecards
 
 st.set_page_config(
     page_title="Transitometer · transit reliability",
@@ -44,6 +44,30 @@ pages = {
         icon=":material/remove_road:",
         url_path="missing-trips",
     ),
+    "scorecards": st.Page(
+        scorecards.page_route_scorecards,
+        title="Route scorecards",
+        icon=":material/leaderboard:",
+        url_path="route-scorecards",
+    ),
+    "stop": st.Page(
+        scorecards.page_stop_reliability,
+        title="Stop reliability",
+        icon=":material/location_on:",
+        url_path="stop-reliability",
+    ),
+    "delay": st.Page(
+        diagnostics.page_delay_attribution,
+        title="Where delay builds up",
+        icon=":material/trending_up:",
+        url_path="delay-attribution",
+    ),
+    "warning": st.Page(
+        diagnostics.page_early_warning,
+        title="Early warning",
+        icon=":material/notifications_active:",
+        url_path="early-warning",
+    ),
     "feed": st.Page(
         quality.page_feed_health,
         title="Feed health",
@@ -63,6 +87,7 @@ navigation = st.navigation(
     {
         "Start": [pages["home"]],
         "Reliability": [pages["otp"], pages["headways"], pages["missing"]],
+        "Diagnostics": [pages["scorecards"], pages["stop"], pages["delay"], pages["warning"]],
         "Data quality": [pages["feed"], pages["validation"]],
     }
 )
