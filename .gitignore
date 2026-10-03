@@ -31,6 +31,8 @@ config/.env
 # data folder; every checksum is in golden/checksums.json).
 !/golden/tables/*.parquet
 !/golden/queries/*.parquet
+# The validated snapshot the hosted apps serve (copies of exported Gold tables; tasks.py snapshot).
+!/showcase/data/*.parquet
 # Full error output of container runs (the JSON reports next to them are committed).
 /results/*.stderr.log
 # Reports of runs on scratch topic prefixes (demo, trials).
