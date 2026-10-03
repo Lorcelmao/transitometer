@@ -4,7 +4,7 @@
     "replay-report.json": "1e32871678f0d1d64e101cdd69052b4b2dfac98f1294b5defed34160d793e796",
     "replay-verification.json": "ae917bb8f15bc5afa13807a67ef834bcc9f8ec7165349d5a9b5426c79fec90c3",
     "silver-ingest.json": "5c9c2f8bd12756f3f1a23ac2ab7aaa2dc8eaef4c629d5cb47a57618ab62830ec",
-    "test-summary.json": "a87c16a6e1757b685209e4c0dbef5897e063aa5505a39a13c9ba76726a6738e6",
+    "test-summary.json": "57b8b2e328e1ff97da181ec8ad0d52ef5a3a91ef76672deff7d7abffa1e9247a",
     "tolerance.json": "b06ae784b0cad067a6a53ab63d9616ff130f332f4ac3f653426cc9e23a858ea2",
     "validation-gold.json": "e6e9381f75fe57a6a42bcf0d1b9a1ef2b66d257358aa83d44f0e7b5f4c731d8e",
     "validation-silver.json": "0b5a6e65d8a9666c90bb72805e07b35677ee2ce777923fd36be89c5b043c9766"
@@ -111,7 +111,7 @@
       "validated": false
     }
   },
-  "validated_commit": "6232159f9eb7185f9bd2cf810c7b388495265cfc",
+  "validated_commit": "774e95103e579153b67d50613eee76cee71ea3d2",
   "validated_on": "2026-10-03",
   "validation": {
     "gold": {

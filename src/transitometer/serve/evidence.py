@@ -38,6 +38,11 @@ def tolerance_policy(folder: Path) -> str:
     return policy
 
 
+def load(folder: Path, name: str) -> dict[str, Any] | None:
+    """One evidence file by name (without .json), or None when the run did not record it."""
+    return _load(folder, name)
+
+
 def _load(folder: Path, name: str) -> dict[str, Any] | None:
     path = folder / f"{name}.json"
     if not path.exists():

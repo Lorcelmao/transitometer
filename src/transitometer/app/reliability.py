@@ -168,7 +168,7 @@ def page_headways() -> None:
 
 
 def page_missing_trips() -> None:
-    st.header("Missing trips")
+    st.header("Trip delivery")
     st.markdown(
         "Was every scheduled trip actually run? Each trip in the timetable gets exactly one "
         "outcome, from what the real-time feed reported."
@@ -204,25 +204,25 @@ def page_missing_trips() -> None:
         ),
         width="stretch",
     )
-    st.caption("Red bars are the trips counted as not delivered.")
+    st.caption("Red bars are the trips counted as not seen running.")
     if view["caveat"] is not None:
         st.warning(view["caveat"]["text"], icon=":material/warning:")
 
     routes = frame(view["routes"])
     if not routes.empty:
-        st.subheader("Routes with the most undelivered trips")
+        st.subheader("Routes with the most trips not seen running")
         st.altair_chart(
             ranking_chart(
                 routes,
                 "not_delivered_share",
-                "Share of observable trips not delivered",
+                "Share of observable trips not seen running",
                 [
                     alt.Tooltip("route_id", title="Route"),
                     alt.Tooltip("scheduled", title="Scheduled", format=","),
-                    alt.Tooltip("missing", title="Missing", format=","),
-                    alt.Tooltip("not_run", title="Not run", format=","),
-                    alt.Tooltip("unknown", title="Unknown", format=","),
-                    alt.Tooltip("not_delivered_share", title="Not delivered", format=".1%"),
+                    alt.Tooltip("missing", title="Never reported", format=","),
+                    alt.Tooltip("not_run", title="Announced, never moved", format=","),
+                    alt.Tooltip("unknown", title="Could not be judged", format=","),
+                    alt.Tooltip("not_delivered_share", title="Not seen running", format=".1%"),
                 ],
             ),
             width="stretch",

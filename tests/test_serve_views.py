@@ -144,3 +144,74 @@ def test_the_stop_map_pools_each_stop_and_puts_the_least_reliable_first(grp: str
     assert [s["stop_id"] for s in view["worst"]] == [
         s["stop_id"] for s in view["stops"][: len(view["worst"])]
     ]
+
+
+def _all_stops(con, grp: str, day: str) -> dict[str, Any]:  # type: ignore[no-untyped-def]
+    return next(
+        r
+        for r in kpis.otp_overview(con, SRC)
+        if r["grp"] == grp and r["service_date"] == day and r["scope"] == "all_stops"
+    )
+
+
+@pytest.mark.parametrize("grp", ["bus", "subway"])
+@pytest.mark.parametrize("day", DAYS)
+def test_the_hourly_profile_adds_up_to_the_day(con, grp, day) -> None:  # type: ignore[no-untyped-def]
+    """Arrivals-weighted hours reproduce the all-stops figure the overview headline shows."""
+    view = views.overview(con, SRC, grp, day)
+    hours = view["hours"]
+    total = _all_stops(con, grp, day)
+    assert sum(h["events"] for h in hours) == total["events"]
+    weighted = sum(h["on_time_share"] * h["events"] for h in hours) / total["events"]
+    assert weighted == pytest.approx(total["on_time_share"], abs=5e-5)
+    assert all(h["sufficient"] == (h["events"] >= views.HOURLY_MIN_EVENTS) for h in hours)
+    assert all(f["basis"] for f in view["figures"])
+
+
+def test_delivery_labels_say_what_the_feed_showed() -> None:
+    labels = dict(views.OUTCOMES)
+    assert labels["missing"] == "Never reported"
+    assert labels["not_run"] == "Announced, never moved"
+    assert "not proof" in views.MISSING_DEFINITIONS
+
+
+@pytest.mark.skipif(
+    not SNAPSHOT_SRC.has("stop_locations"), reason="snapshot without stop locations yet"
+)
+def test_hero_cells_keep_every_stop_and_arrival() -> None:
+    with kpis.connect(SNAPSHOT_SRC) as con:
+        hero = views.hero_map(con, SNAPSHOT_SRC)
+        stops = [s for grp in views.GROUPS for s in kpis.stop_map(con, SNAPSHOT_SRC, grp)]
+    assert hero["stops"] == len(stops)
+    assert sum(c["events"] for c in hero["cells"]) == sum(s["events"] for s in stops)
+    assert all(c["sufficient"] == (c["events"] >= views.MIN_CELL_EVENTS) for c in hero["cells"])
+
+
+@pytest.mark.skipif(
+    not SNAPSHOT_SRC.has("stop_locations"), reason="snapshot without stop locations yet"
+)
+def test_findings_are_backed_by_the_tables() -> None:
+    with kpis.connect(SNAPSHOT_SRC) as con:
+        found = {f["key"]: f for f in views.findings(con, SNAPSHOT_SRC)}
+        ranked = views.route_scorecards(con, SNAPSHOT_SRC, "bus")["ranked"]
+        hours = [
+            h
+            for h in kpis.hourly_on_time(con, SNAPSHOT_SRC, "bus")
+            if h["events"] >= views.HOURLY_MIN_EVENTS
+        ]
+    assert set(found) == {"modes", "hours", "route", "warning"}
+    assert ranked[-1]["route_id"] in found["route"]["headline"]
+    worst = min(hours, key=lambda h: (h["on_time_share"], h["service_hour"]))
+    assert found["hours"]["value"] == fmt.pct(worst["on_time_share"])
+
+
+def test_pipeline_facts_come_from_the_evidence_files() -> None:
+    folder = kpis.SNAPSHOT_DIR / "evidence"
+    if not (folder / "replay-report.json").exists():
+        pytest.skip("no snapshot evidence yet")
+    facts = views.pipeline(folder)
+    replay = json.loads((folder / "replay-report.json").read_text(encoding="utf-8"))
+    assert facts["messages"] == fmt.count(sum(f["messages"] for f in replay["feeds"]))
+    gold = json.loads((folder / "validation-gold.json").read_text(encoding="utf-8"))
+    passed = sum(t["ok"] for t in gold["tables"].values())
+    assert facts["gold"] == f"{passed} / {len(gold['tables'])}"

@@ -24,6 +24,10 @@ def _scorecard(grp: str, day: str) -> dict[str, Any]:
     view = views.overview(con, src, grp, day)
     for column, figure in zip(st.columns(4), view["figures"], strict=True):
         column.metric(figure["label"], figure["display"], help=figure["help"], border=True)
+        if figure["basis"]:
+            column.caption(figure["basis"])
+    if view["caveat"] is not None:
+        st.warning(view["caveat"]["text"], icon=":material/warning:")
     return view
 
 
@@ -52,7 +56,7 @@ def page() -> None:
     with cols[1]:
         _link("headways", "Headways and bunching")
     with cols[2]:
-        _link("missing", "Missing trips")
+        _link("missing", "Trip delivery")
     with cols[3]:
         _link("feed", "Feed health")
 
@@ -91,7 +95,7 @@ def page() -> None:
     with right, st.container(border=True):
         if parity["available"]:
             st.markdown(
-                f"**Golden-reference parity: {parity['display']} tables equal**  \nEvery Spark "
+                f"**Golden-reference parity: tables equal in {parity['display']}**  \nEvery Spark "
                 f"result table was compared with an independent DuckDB implementation of the same "
                 f"rules."
             )

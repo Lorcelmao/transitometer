@@ -50,7 +50,17 @@ PAGES = {
     "overview": Page(
         "Overview",
         "/",
-        ("otp_summary", "headway_summary", "missing_trip_summary", "feed_quality_score"),
+        (
+            "otp_summary",
+            "otp_route_hour",
+            "headway_summary",
+            "missing_trip_summary",
+            "feed_quality_score",
+            "route_scorecard",
+            "early_warning_summary",
+            "stop_hour_reliability",
+            "stop_locations",
+        ),
     ),
     "on-time": Page("On-time performance", "/reliability/on-time/", ("otp_route_hour",)),
     "headways": Page(
@@ -247,9 +257,29 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
                 view = views.overview(con, src, grp, day)
                 overview[f"{grp}/{day}"] = view
                 writer.expect(f"overview/{grp}/{day}", view["figures"])
+        hero = views.hero_map(con, src)
+        found = views.findings(con, src)
         writer.write(
-            "overview", "overview.json", {}, {"views": overview, "trust": views.trust(folder)}
+            "overview",
+            "overview.json",
+            {},
+            {
+                "views": overview,
+                "trust": views.trust(folder),
+                "findings": found,
+                "pipeline": views.pipeline(folder),
+                "hero": {
+                    "columns": ["lat", "lon", "events", "on_time_share", "sufficient"],
+                    "cells": [
+                        [c["lat"], c["lon"], c["events"], c["on_time_share"], c["sufficient"]]
+                        for c in hero["cells"]
+                    ],
+                    "stops": hero["stops"],
+                    "caption": hero["caption"],
+                },
+            },
         )
+        writer.parity["findings"] = {f["key"]: f["value"] for f in found}
 
         per_day: dict[str, Callable[[Any, kpis.Source, str, str], dict[str, Any]]] = {
             "on-time": views.on_time,
@@ -322,6 +352,7 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
         validation = views.validation(folder)
         writer.write("validation", "validation.json", {}, validation)
         trust = views.trust(folder)
+        writer.parity["pipeline"] = views.pipeline(folder)
         writer.parity["validation"] = {
             "parity": trust["parity"]["display"],
             "archive_rows": trust["integrity"]["archive_rows_display"],

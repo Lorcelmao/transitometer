@@ -73,6 +73,12 @@
     "bus_vp": "100.0 / 100",
     "subway_tu": "62.5 / 100"
   },
+  "findings": {
+    "hours": "40.3 %",
+    "modes": "68.2 %",
+    "route": "19.9 %",
+    "warning": "0.79"
+  },
   "headways/bus/20260922": [
     {
       "display": "1,376,197",
@@ -299,6 +305,15 @@
       "key": "feed_score"
     }
   ],
+  "pipeline": {
+    "archive_rows": "607,076,700",
+    "gold": "23 / 23",
+    "gold_seconds": "310 s",
+    "messages": "52,756,838",
+    "silver": "4 / 4",
+    "stop_events": "2,955,606",
+    "tests": "220 / 221"
+  },
   "scorecards/bus": {
     "least": "QM42",
     "most": "BX29",
@@ -339,7 +354,7 @@
   ],
   "validation": {
     "archive_rows": "607,076,700",
-    "parity": "27 / 27",
-    "tests": "212 / 213"
+    "parity": "Silver 4 / 4 · Gold 23 / 23",
+    "tests": "220 / 221"
   }
 }

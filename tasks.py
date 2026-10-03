@@ -658,9 +658,18 @@ def task_demo(args: argparse.Namespace) -> int:
 
 
 def _validated_origin() -> tuple[str, str]:
-    """Commit and date that recorded the validated Gold run (last change to its report)."""
+    """Commit and date that recorded the validated Gold run: the last change to its run report or
+    its golden comparison (both are written by `tasks.py gold`)."""
     out = subprocess.check_output(
-        ["git", "log", "-1", "--format=%H %cs", "--", "results/validation-gold.json"],
+        [
+            "git",
+            "log",
+            "-1",
+            "--format=%H %cs",
+            "--",
+            "results/gold-kpis.json",
+            "results/validation-gold.json",
+        ],
         cwd=ROOT,
         text=True,
     ).split()

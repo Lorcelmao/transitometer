@@ -56,7 +56,7 @@ pages = {
     ),
     "missing": st.Page(
         reliability.page_missing_trips,
-        title="Missing trips",
+        title="Trip delivery",
         icon=":material/remove_road:",
         url_path="missing-trips",
     ),

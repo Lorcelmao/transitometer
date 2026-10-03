@@ -125,6 +125,24 @@ def otp_route_hour(
     return _rows(con, sql, [grp, service_date])
 
 
+def hourly_on_time(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, service_date: str | None = None
+) -> list[dict[str, Any]]:
+    """BR1 by hour of the service day: arrivals and their on-time share over all routes.
+
+    Weighted by arrivals, so the hours add up to the day's all-stops figure in otp_summary. With
+    no service date, both days are pooled.
+    """
+    day = "AND service_date = ?" if service_date else ""
+    sql = (
+        f"SELECT service_hour, sum(events)::BIGINT AS events,"
+        f" sum(on_time_share * events) / sum(events) AS on_time_share"
+        f" FROM {src.table('otp_route_hour')} WHERE grp = ? {day}"
+        f" GROUP BY service_hour ORDER BY service_hour"
+    )
+    return _rows(con, sql, [grp, service_date] if service_date else [grp])
+
+
 def least_punctual_routes(
     con: duckdb.DuckDBPyConnection, src: Source, grp: str, service_date: str, limit: int = 15
 ) -> list[dict[str, Any]]:
