@@ -144,3 +144,11 @@ def test_unknown_source_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_gold_source_reads_delta_tables_under_the_lakehouse() -> None:
     gold = kpis.Source("gold", "/data/lakehouse")
     assert gold.table("otp_summary") == "delta_scan('/data/lakehouse/gold/otp_summary')"
+
+
+def test_snapshot_source_reads_parquet_from_its_folder(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRANSITOMETER_APP_SOURCE", "snapshot")
+    monkeypatch.delenv("TRANSITOMETER_SNAPSHOT_DIR", raising=False)
+    src = kpis.source_from_env()
+    assert src == kpis.Source("snapshot", str(kpis.SNAPSHOT_DIR))
+    assert src.table("otp_summary").endswith("/showcase/data/otp_summary.parquet'")

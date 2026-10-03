@@ -1,0 +1,23 @@
+{
+  "layer": "silver",
+  "prefix": "rt",
+  "tables": {
+    "stop_events": {
+      "ok": true,
+      "detail": "stop_events: OK (2955606 rows)"
+    },
+    "event_status_summary": {
+      "ok": true,
+      "detail": "event_status_summary: OK (20 rows)"
+    },
+    "trip_match_summary": {
+      "ok": true,
+      "detail": "trip_match_summary: OK (10 rows)"
+    },
+    "ambiguous_summary": {
+      "ok": true,
+      "detail": "ambiguous_summary: OK (4 rows)"
+    }
+  },
+  "ok": true
+}

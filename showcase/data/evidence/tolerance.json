@@ -1,0 +1,41 @@
+{
+  "policy": "Engine results are compared with the golden tables after the engine has fully processed the golden window (a streaming job is compared once drained). Rows are matched on the table's key columns; every other column must be equal, except floating-point columns, which may differ by at most float_abs (absolute). Integer seconds, counts, classes, flags and discrete quantiles are exact: every engine applies the same rules to the same data. Bootstrap intervals are floats compared like the others; their resampling weights are reproducible, so they agree in practice. A tolerance equal to a rounding step accepts a one-step difference (the per-route mean delays are rounded to 0.1 s, so their tolerance is one step: 0.1). Any other difference fails the check unless it is explained in writing.",
+  "float_abs": 0.0001,
+  "tables": {
+    "ambiguous_summary": {"keys": ["grp", "service_date"]},
+    "crosscheck_summary": {"keys": ["service_date"]},
+    "delay_attribution_summary": {
+      "keys": ["grp", "service_date"],
+      "float_abs": {"mean_inherited_delay_s": 0.1, "mean_gained_delay_s": 0.1, "mean_final_delay_s": 0.1}
+    },
+    "delay_sanity_summary": {"keys": ["grp", "service_date"]},
+    "early_warning_summary": {"keys": ["grp", "service_date", "outcome", "method"]},
+    "end_of_trip_summary": {"keys": ["grp", "service_date", "position"]},
+    "event_status_summary": {"keys": ["grp", "service_date", "status"]},
+    "feed_quality_metrics": {"keys": ["feed", "day", "metric"]},
+    "feed_quality_score": {"keys": ["feed", "day"]},
+    "headway_regularity": {"keys": ["grp", "service_date", "route_id", "service_hour"]},
+    "headway_summary": {"keys": ["grp", "service_date"]},
+    "headways": {"keys": ["grp", "service_date", "route_id", "stop_id", "trip_key"]},
+    "missing_by_route": {"keys": ["grp", "service_date", "route_id"]},
+    "missing_trip_summary": {"keys": ["grp", "service_date"]},
+    "multi_unit_summary": {"keys": ["grp", "service_date"]},
+    "otp_route_hour": {"keys": ["grp", "service_date", "route_id", "service_hour"]},
+    "otp_summary": {"keys": ["grp", "service_date", "scope"]},
+    "position_jumps": {"keys": ["vehicle_id", "ts"], "float_abs": {"distance_m": 1.0, "speed_mps": 0.1}},
+    "route_hour_scorecard": {"keys": ["grp", "route_id", "service_hour"]},
+    "route_scorecard": {"keys": ["grp", "route_id"]},
+    "segment_travel_stats": {"keys": ["grp", "route_id", "direction_id", "from_stop", "to_stop", "service_hour"]},
+    "segments": {"keys": ["grp", "service_date", "static_trip_id", "unit", "to_stop"]},
+    "stale_summary": {"keys": ["grp", "service_date", "position"]},
+    "stop_events": {"keys": ["grp", "service_date", "static_trip_id", "stop_id"]},
+    "stop_hour_reliability": {"keys": ["grp", "route_id", "direction_id", "stop_id", "service_hour"]},
+    "terminal_events": {"keys": ["grp", "service_date", "static_trip_id"]},
+    "terminal_summary": {"keys": ["grp", "service_date"]},
+    "trip_delay_attribution": {"keys": ["grp", "service_date", "static_trip_id", "unit"]},
+    "trip_delivery": {"keys": ["grp", "service_date", "trip_id"]},
+    "trip_match_summary": {"keys": ["grp", "service_date", "tier"]},
+    "warning_decisions": {"keys": ["grp", "service_date", "static_trip_id", "unit"]}
+  },
+  "queries": "Query answers are compared row by row in sorted order (every answer is sorted on all columns), with the same float_abs."
+}

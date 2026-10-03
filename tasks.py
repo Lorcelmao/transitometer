@@ -90,8 +90,36 @@ def task_typecheck(_: argparse.Namespace) -> int:
     return run([sys.executable, "-m", "mypy"])
 
 
-def task_test(_: argparse.Namespace) -> int:
-    return run([sys.executable, "-m", "pytest"])
+TEST_SUMMARY = ROOT / "results" / "test-summary.json"
+
+
+def task_test(args: argparse.Namespace) -> int:
+    """pytest; with --record, also write the counts to results/test-summary.json (evidence)."""
+    if not getattr(args, "record", False):
+        return run([sys.executable, "-m", "pytest"])
+    import tempfile
+    import xml.etree.ElementTree as ElementTree
+
+    with tempfile.TemporaryDirectory() as tmp:
+        report = Path(tmp) / "pytest.xml"
+        code = run([sys.executable, "-m", "pytest", f"--junitxml={report}"])
+        root = ElementTree.parse(report).getroot()
+    suite = root.find("testsuite") if root.tag == "testsuites" else root
+    if suite is None:
+        print("error: pytest wrote no test suite")
+        return 1
+    counts = {k: int(suite.get(k, "0")) for k in ("tests", "failures", "errors", "skipped")}
+    body = {
+        "command": "python tasks.py test",
+        "total": counts["tests"],
+        "passed": counts["tests"] - counts["failures"] - counts["errors"] - counts["skipped"],
+        "failed": counts["failures"] + counts["errors"],
+        "skipped": counts["skipped"],
+        "ok": code == 0,
+    }
+    TEST_SUMMARY.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"test summary: {body['passed']}/{body['total']} passed -> {TEST_SUMMARY}")
+    return code
 
 
 def task_check(args: argparse.Namespace) -> int:
@@ -532,22 +560,25 @@ GOLD_COMPARED = (
     "warning_decisions",
     "early_warning_summary",
 )
+# Reference tables the app reads that have no golden counterpart: exported, never compared.
+GOLD_REFERENCE = ("stop_names", "stop_locations")
 
 
 def task_gold(args: argparse.Namespace) -> int:
     """Gold KPI tables from Silver stop events, exported and compared with golden."""
-    dates = args.service_dates or _golden_service_dates()
-    code = _in_spark(
-        "transitometer.pipeline.gold_kpis",
-        ["--prefix", args.prefix, "--service-dates", *dates],
-        _report("gold-kpis", args.prefix),
-        submit=True,
-    )
-    if code:
-        return code
+    if not getattr(args, "export_only", False):
+        dates = args.service_dates or _golden_service_dates()
+        code = _in_spark(
+            "transitometer.pipeline.gold_kpis",
+            ["--prefix", args.prefix, "--service-dates", *dates],
+            _report("gold-kpis", args.prefix),
+            submit=True,
+        )
+        if code:
+            return code
     code = _in_spark(
         "transitometer.pipeline.export",
-        ["--prefix", args.prefix, "--layer", "gold", "--tables", *GOLD_COMPARED],
+        ["--prefix", args.prefix, "--layer", "gold", "--tables", *GOLD_COMPARED, *GOLD_REFERENCE],
         _report("gold-export", args.prefix),
     )
     if code or args.prefix != "rt":
@@ -626,6 +657,66 @@ def task_demo(args: argparse.Namespace) -> int:
     return code
 
 
+def _validated_origin() -> tuple[str, str]:
+    """Commit and date that recorded the validated Gold run (last change to its report)."""
+    out = subprocess.check_output(
+        ["git", "log", "-1", "--format=%H %cs", "--", "results/validation-gold.json"],
+        cwd=ROOT,
+        text=True,
+    ).split()
+    if len(out) != 2:
+        raise ValueError("results/validation-gold.json is not committed; commit the run first")
+    return out[0], out[1]
+
+
+def task_snapshot(_: argparse.Namespace) -> int:
+    """Copy the validated Gold tables the app reads into showcase/data/ (host, no Docker)."""
+    from transitometer.serve import kpis, snapshot
+
+    commit, date = _validated_origin()
+    exports = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "rt" / "gold"
+    try:
+        manifest = snapshot.build(
+            exports,
+            ROOT / "results",
+            ROOT / "golden" / "tolerance.json",
+            kpis.SNAPSHOT_DIR,
+            snapshot.Origin(commit, date),
+        )
+    except snapshot.SnapshotError as exc:
+        print(f"snapshot refused: {exc}")
+        return 1
+    size = sum(t["bytes"] for t in manifest["tables"].values())
+    print(
+        f"snapshot: {len(manifest['tables'])} tables ({size / 1e6:.1f} MB), "
+        f"validated run {commit[:7]} on {date} -> {kpis.SNAPSHOT_DIR}"
+    )
+    return 0
+
+
+def task_web_data(args: argparse.Namespace) -> int:
+    """JSON for the Next.js site from the validated snapshot (host, no Docker)."""
+    from transitometer.serve import web_export
+
+    try:
+        if args.check:
+            stale = web_export.check()
+            if stale:
+                print("web data is out of date with the snapshot; run `python tasks.py web-data`:")
+                print("\n".join(f"  {path}" for path in stale[:20]))
+                return 1
+            print("web data matches the snapshot")
+            return 0
+        summary = web_export.export()
+    except web_export.ExportError as exc:
+        print(f"web-data refused: {exc}")
+        return 1
+    print(
+        f"web data: {summary['files']} files ({summary['bytes'] / 1e6:.1f} MB) -> web/public/data"
+    )
+    return 0
+
+
 def task_down(_: argparse.Namespace) -> int:
     """Stop every service; named volumes are kept (use Docker directly for deliberate resets)."""
     return run(compose_cmd("--profile", "*", "down"))
@@ -637,8 +728,6 @@ def build_parser() -> argparse.ArgumentParser:
     simple = {
         "lint": (task_lint, "ruff lint + format check"),
         "typecheck": (task_typecheck, "mypy (strict)"),
-        "test": (task_test, "pytest"),
-        "check": (task_check, "lint + typecheck + test"),
         "compose-config": (task_compose_config, "validate docker/compose.yaml for every profile"),
         "verify-lock": (task_verify_lock, "check pinned image digests against the registry"),
         "storage-report": (
@@ -647,10 +736,25 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         "validate-landing": (task_validate_landing, "validate landing data, write volume report"),
         "golden": (task_golden, "golden reference KPIs (DuckDB) for the golden window"),
+        "snapshot": (task_snapshot, "copy the validated Gold app tables into showcase/data/"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }
     for name, (func, help_text) in simple.items():
         sub.add_parser(name, help=help_text).set_defaults(func=func)
+
+    web = sub.add_parser("web-data", help="JSON for the Next.js site from the snapshot")
+    web.add_argument("--check", action="store_true", help="fail if the committed JSON is stale")
+    web.set_defaults(func=task_web_data)
+
+    for test_name, test_task, test_help in (
+        ("test", task_test, "pytest"),
+        ("check", task_check, "lint + typecheck + test"),
+    ):
+        tests = sub.add_parser(test_name, help=test_help)
+        tests.add_argument(
+            "--record", action="store_true", help="write results/test-summary.json (evidence)"
+        )
+        tests.set_defaults(func=test_task)
 
     check = sub.add_parser("storage-check", help="soft storage guard (exit 2 when blocked)")
     check.add_argument(
@@ -705,6 +809,9 @@ def build_parser() -> argparse.ArgumentParser:
     gold = sub.add_parser("gold", help="Gold KPI tables (BR1-BR8), compared with golden")
     gold.add_argument("--prefix", default="rt")
     gold.add_argument("--service-dates", nargs="*", help="YYYYMMDD (default: golden window)")
+    gold.add_argument(
+        "--export-only", action="store_true", help="re-export and compare without the Spark job"
+    )
     gold.set_defaults(func=task_gold)
     demo = sub.add_parser("demo", help="one real hour end to end, then open the app")
     demo.add_argument("--workers", type=int, default=4)

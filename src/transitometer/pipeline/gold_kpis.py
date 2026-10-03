@@ -288,6 +288,15 @@ def main(argv: list[str] | None = None) -> int:
         .groupBy("grp", "stop_id")
         .agg(F.min("stop_name").alias("stop_name")),
     )
+    # Coordinates for the app's stop map: one real (lat, lon) pair per stop id, the smallest pair
+    # when timetable versions disagree, so latitude and longitude never mix versions.
+    located = static.where(F.col("lat").isNotNull() & F.col("lon").isNotNull())
+    save(
+        "stop_locations",
+        located.groupBy("grp", "stop_id")
+        .agg(F.min(F.struct("lat", "lon")).alias("pos"))
+        .select("grp", "stop_id", F.col("pos.lat").alias("lat"), F.col("pos.lon").alias("lon")),
+    )
 
     # BR4: segment travel times and delay attribution.
     segs = save("segments", segments.segments(silver("stop_events"), stops))

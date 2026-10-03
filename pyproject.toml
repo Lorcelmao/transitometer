@@ -21,6 +21,13 @@ dev = [
     "mypy==2.3.1",
     "pytest==9.1.1",
 ]
+# The Streamlit app, pinned to the Spark image (docker/spark-tools/requirements.lock). The hosted
+# app installs the same pins from src/transitometer/app/requirements.txt (kept equal by a test).
+app = [
+    "streamlit==1.64.0",
+    "pandas==2.3.3",
+    "altair==6.2.2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -58,6 +65,12 @@ module = [
     "confluent_kafka.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Streamlit and Altair ship type information, but only some environments install them (the app
+# extra). Treat them as untyped everywhere so mypy gives the same result with or without them.
+module = ["streamlit", "streamlit.*", "altair", "altair.*"]
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

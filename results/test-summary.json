@@ -1,0 +1,8 @@
+{
+  "command": "python tasks.py test",
+  "total": 213,
+  "passed": 212,
+  "failed": 0,
+  "skipped": 1,
+  "ok": true
+}

@@ -1,0 +1,49 @@
+{
+  "feeds": [
+    {
+      "feed": "trip_updates.bus",
+      "prefix": "rt",
+      "messages_in": 31772414,
+      "messages_kept": 31772414,
+      "duplicates_dropped": 0,
+      "late_dropped": 0,
+      "dead_lettered": 0,
+      "balanced": true,
+      "rows_out": 528801318,
+      "rows_total": 528801318,
+      "snapshots_in": 8640,
+      "snapshots_out": 8640,
+      "finished_at": "2026-10-02T09:07:26+00:00"
+    },
+    {
+      "feed": "trip_updates.subway",
+      "prefix": "rt",
+      "messages_in": 2865676,
+      "messages_kept": 2865676,
+      "duplicates_dropped": 0,
+      "late_dropped": 0,
+      "dead_lettered": 0,
+      "balanced": true,
+      "rows_out": 60186868,
+      "rows_total": 60186868,
+      "snapshots_in": 12956,
+      "snapshots_out": 12956,
+      "finished_at": "2026-10-02T09:10:51+00:00"
+    },
+    {
+      "feed": "vehicle_positions.bus",
+      "prefix": "rt",
+      "messages_in": 18088514,
+      "messages_kept": 18088514,
+      "duplicates_dropped": 0,
+      "late_dropped": 0,
+      "dead_lettered": 0,
+      "balanced": true,
+      "rows_out": 18088514,
+      "rows_total": 18088514,
+      "snapshots_in": 8638,
+      "snapshots_out": 8638,
+      "finished_at": "2026-10-02T09:15:41+00:00"
+    }
+  ]
+}

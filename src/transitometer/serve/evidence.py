@@ -8,6 +8,9 @@ pipeline run, and a missing file yields `available: False` (shown as "not yet me
   golden parity     validation-silver, validation-gold: Spark equals the independent DuckDB
                     reference under golden/tolerance.json
   tests             test-summary (when recorded): automated test results
+
+The development apps read results/; a snapshot carries copies of the files of its own run in
+showcase/data/evidence/ (see serve/snapshot.py), so a hosted app shows exactly that run's evidence.
 """
 
 from __future__ import annotations
@@ -19,7 +22,20 @@ from typing import Any
 
 REPO = Path(__file__).resolve().parents[3]
 RESULTS = REPO / "results"
+POLICY = REPO / "golden" / "tolerance.json"
 ROW_COUNT = re.compile(r"\((\d+) rows\)")
+
+
+def folder_for(kind: str, root: str) -> Path:
+    """Where a source's evidence lives: its own copies for a snapshot, results/ otherwise."""
+    return Path(root) / "evidence" if kind == "snapshot" else RESULTS
+
+
+def tolerance_policy(folder: Path) -> str:
+    """The tolerance policy text the golden comparison applied (the snapshot's copy if any)."""
+    path = folder / "tolerance.json" if (folder / "tolerance.json").exists() else POLICY
+    policy: str = json.loads(path.read_text(encoding="utf-8"))["policy"]
+    return policy
 
 
 def _load(folder: Path, name: str) -> dict[str, Any] | None:

@@ -42,3 +42,13 @@ def test_a_failing_table_is_reported_as_failing(tmp_path: Path) -> None:
     result = evidence.golden_parity(tmp_path)
     assert result["ok"] is False
     assert result["layers"][0]["passed"] == 0 and result["layers"][0]["total"] == 1
+
+
+def test_a_snapshot_reads_its_own_evidence_copies(tmp_path: Path) -> None:
+    assert evidence.folder_for("snapshot", str(tmp_path)) == tmp_path / "evidence"
+    assert evidence.folder_for("golden", str(tmp_path)) == evidence.RESULTS
+    (tmp_path / "tolerance.json").write_text(json.dumps({"policy": "copied"}), encoding="utf-8")
+    assert evidence.tolerance_policy(tmp_path) == "copied"
+    assert evidence.tolerance_policy(tmp_path / "absent").startswith(
+        json.loads(evidence.POLICY.read_text(encoding="utf-8"))["policy"][:20]
+    )

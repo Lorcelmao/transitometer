@@ -9,9 +9,25 @@ Run: streamlit run src/transitometer/app/main.py
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-from transitometer.app import diagnostics, overview, quality, reliability, scorecards
+try:
+    import transitometer  # noqa: F401  (installed with `pip install -e .`)
+except ModuleNotFoundError:
+    # Hosted from a clone without installing the package (src/ layout): import it in place.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from transitometer.app import (  # noqa: E402
+    common,
+    diagnostics,
+    overview,
+    quality,
+    reliability,
+    scorecards,
+)
 
 st.set_page_config(
     page_title="Transitometer · transit reliability",
@@ -91,6 +107,7 @@ navigation = st.navigation(
         "Data quality": [pages["feed"], pages["validation"]],
     }
 )
+common.snapshot_banner()
 with st.sidebar:
     st.caption(
         "Real archived NYC bus and subway feeds, processed by a Kafka → Spark → Delta Lake "

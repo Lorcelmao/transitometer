@@ -1,0 +1,289 @@
+[
+ {
+  "fn": "pct",
+  "args": [
+   0.4741
+  ],
+  "expected": "47.4 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   null
+  ],
+  "expected": "—"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0
+  ],
+  "expected": "0.0 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   1
+  ],
+  "expected": "100.0 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0.5,
+   0
+  ],
+  "expected": "50 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0.12345,
+   2
+  ],
+  "expected": "12.35 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0.995,
+   0
+  ],
+  "expected": "100 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0.0625,
+   1
+  ],
+  "expected": "6.2 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0.00125,
+   1
+  ],
+  "expected": "0.1 %"
+ },
+ {
+  "fn": "pct",
+  "args": [
+   0.6,
+   0
+  ],
+  "expected": "60 %"
+ },
+ {
+  "fn": "count",
+  "args": [
+   0
+  ],
+  "expected": "0"
+ },
+ {
+  "fn": "count",
+  "args": [
+   1234567
+  ],
+  "expected": "1,234,567"
+ },
+ {
+  "fn": "count",
+  "args": [
+   null
+  ],
+  "expected": "—"
+ },
+ {
+  "fn": "count",
+  "args": [
+   999
+  ],
+  "expected": "999"
+ },
+ {
+  "fn": "minutes",
+  "args": [
+   198.6
+  ],
+  "expected": "3.3 min"
+ },
+ {
+  "fn": "minutes",
+  "args": [
+   -45
+  ],
+  "expected": "−0.8 min"
+ },
+ {
+  "fn": "minutes",
+  "args": [
+   0
+  ],
+  "expected": "0.0 min"
+ },
+ {
+  "fn": "minutes",
+  "args": [
+   null
+  ],
+  "expected": "—"
+ },
+ {
+  "fn": "minutes",
+  "args": [
+   3
+  ],
+  "expected": "0.1 min"
+ },
+ {
+  "fn": "decimal",
+  "args": [
+   0.613
+  ],
+  "expected": "0.61"
+ },
+ {
+  "fn": "decimal",
+  "args": [
+   0.125
+  ],
+  "expected": "0.12"
+ },
+ {
+  "fn": "decimal",
+  "args": [
+   0.375
+  ],
+  "expected": "0.38"
+ },
+ {
+  "fn": "decimal",
+  "args": [
+   null
+  ],
+  "expected": "—"
+ },
+ {
+  "fn": "decimal",
+  "args": [
+   0.6131,
+   3
+  ],
+  "expected": "0.613"
+ },
+ {
+  "fn": "score",
+  "args": [
+   87.5
+  ],
+  "expected": "87.5 / 100"
+ },
+ {
+  "fn": "score",
+  "args": [
+   62.5
+  ],
+  "expected": "62.5 / 100"
+ },
+ {
+  "fn": "score",
+  "args": [
+   100.0
+  ],
+  "expected": "100.0 / 100"
+ },
+ {
+  "fn": "score",
+  "args": [
+   null
+  ],
+  "expected": "—"
+ },
+ {
+  "fn": "score",
+  "args": [
+   0.25
+  ],
+  "expected": "0.2 / 100"
+ },
+ {
+  "fn": "day_label",
+  "args": [
+   "20260922"
+  ],
+  "expected": "Tue 22 Sep 2026"
+ },
+ {
+  "fn": "day_label",
+  "args": [
+   "20260923"
+  ],
+  "expected": "Wed 23 Sep 2026"
+ },
+ {
+  "fn": "day_label",
+  "args": [
+   "20261101"
+  ],
+  "expected": "Sun 1 Nov 2026"
+ },
+ {
+  "fn": "check_value",
+  "args": [
+   0.0123,
+   "%"
+  ],
+  "expected": "1.23 %"
+ },
+ {
+  "fn": "check_value",
+  "args": [
+   12.34,
+   "s"
+  ],
+  "expected": "12.3 s"
+ },
+ {
+  "fn": "check_value",
+  "args": [
+   null,
+   "%"
+  ],
+  "expected": "no data"
+ },
+ {
+  "fn": "check_value",
+  "args": [
+   1234.5,
+   "s"
+  ],
+  "expected": "1,234.5 s"
+ },
+ {
+  "fn": "check_threshold",
+  "args": [
+   0.05,
+   "%"
+  ],
+  "expected": "≤ 5.00 %"
+ },
+ {
+  "fn": "check_threshold",
+  "args": [
+   300,
+   "s"
+  ],
+  "expected": "≤ 300 s"
+ },
+ {
+  "fn": "check_threshold",
+  "args": [
+   1500,
+   "s"
+  ],
+  "expected": "≤ 1,500 s"
+ }
+]

@@ -24,7 +24,9 @@
     "delay_attribution_summary": 4,
     "segment_travel_stats": 380506,
     "warning_decisions": 105488,
-    "early_warning_summary": 16
+    "early_warning_summary": 16,
+    "stop_names": 14949,
+    "stop_locations": 14949
   },
-  "elapsed_s": 4.4
+  "elapsed_s": 3.9
 }

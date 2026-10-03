@@ -1,0 +1,8 @@
+# Hosted app (Streamlit Community Cloud reads this file next to the entrypoint, main.py).
+# The app runs on the committed snapshot (TRANSITOMETER_APP_SOURCE=snapshot) and imports the
+# package from the clone, so only these libraries are installed. Pins = pyproject.toml's app
+# extra plus its duckdb pin (tests/test_hosting.py keeps them equal).
+streamlit==1.64.0
+pandas==2.3.3
+altair==6.2.2
+duckdb==1.5.5

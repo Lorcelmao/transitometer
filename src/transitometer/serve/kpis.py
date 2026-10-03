@@ -1,9 +1,11 @@
-"""KPI queries behind the app pages, in DuckDB SQL over one of two interchangeable sources.
+"""KPI queries behind the app pages, in DuckDB SQL over one of three interchangeable sources.
 
-  golden  the frozen reference tables in golden/tables/*.parquet (host development, no Docker)
-  gold    the Spark Gold Delta tables in <lakehouse>/gold/<table> (the real pipeline output)
+  golden    the frozen reference tables in golden/tables/*.parquet (host development, no Docker)
+  gold      the Spark Gold Delta tables in <lakehouse>/gold/<table> (the real pipeline output)
+  snapshot  a validated copy of the Spark Gold tables in showcase/data/*.parquet, committed to
+            the repository so the public apps run without Docker, Delta or the lakehouse
 
-Both sources use the same table names and columns, so each page query is written once and the
+All sources use the same table names and columns, so each page query is written once and the
 app can show the pipeline output and the reference side by side.
 """
 
@@ -21,22 +23,47 @@ from transitometer.pipeline.layout import lakehouse_root
 REPO = Path(__file__).resolve().parents[3]
 MIN_EVENTS = 30  # route rankings ignore route-hours with fewer observed events
 MIN_TRIPS = 10  # delivery rankings ignore routes with fewer observable scheduled trips
+SNAPSHOT_DIR = REPO / "showcase" / "data"
+
+# Every table the queries below read: the snapshot copies exactly these (a test keeps the list
+# equal to the queries). stop_names is optional display data; the queries work without it.
+APP_TABLES = (
+    "otp_summary",
+    "otp_route_hour",
+    "headway_summary",
+    "headway_regularity",
+    "missing_trip_summary",
+    "missing_by_route",
+    "feed_quality_score",
+    "feed_quality_metrics",
+    "route_scorecard",
+    "stop_hour_reliability",
+    "delay_attribution_summary",
+    "segment_travel_stats",
+    "early_warning_summary",
+    "stop_names",
+    "stop_locations",
+)
 
 
 @dataclass(frozen=True)
 class Source:
-    kind: str  # "golden" or "gold"
-    root: str  # golden tables folder, or the lakehouse root holding gold/
+    kind: str  # "golden", "gold" or "snapshot"
+    root: str  # Parquet folder (golden, snapshot), or the lakehouse root holding gold/
+
+    @property
+    def parquet(self) -> bool:
+        return self.kind in ("golden", "snapshot")
 
     def table(self, name: str) -> str:
         """FROM-clause expression for one KPI table."""
-        if self.kind == "golden":
+        if self.parquet:
             return _quoted(f"{self.root}/{name}.parquet")
         return f"delta_scan({_quoted(f'{self.root}/gold/{name}')})"
 
     def has(self, name: str) -> bool:
         """Whether a table exists in this source (optional tables, e.g. stop display names)."""
-        if self.kind == "golden":
+        if self.parquet:
             return Path(self.root, f"{name}.parquet").exists()
         return Path(self.root, "gold", name, "_delta_log").exists()
 
@@ -53,7 +80,11 @@ def source_from_env() -> Source:
     if kind == "gold":
         base = os.environ.get("LAKEHOUSE_DIR", "/data/lakehouse")
         return Source("gold", lakehouse_root(base, os.environ.get("TRANSITOMETER_PREFIX", "rt")))
-    raise ValueError(f"TRANSITOMETER_APP_SOURCE must be 'golden' or 'gold', not {kind!r}")
+    if kind == "snapshot":
+        return Source("snapshot", os.environ.get("TRANSITOMETER_SNAPSHOT_DIR", str(SNAPSHOT_DIR)))
+    raise ValueError(
+        f"TRANSITOMETER_APP_SOURCE must be 'golden', 'gold' or 'snapshot', not {kind!r}"
+    )
 
 
 def connect(source: Source) -> duckdb.DuckDBPyConnection:
@@ -210,6 +241,12 @@ def route_stops(
     return _rows(con, sql, [grp, route_id])
 
 
+STOP_HOUR_COLUMNS = (
+    "service_hour, events, on_time, on_time_share, ci_low, ci_high, late, early,"
+    " p50_delay_s, p90_delay_s, sufficient"
+)
+
+
 def stop_hours(
     con: duckdb.DuckDBPyConnection,
     src: Source,
@@ -220,12 +257,49 @@ def stop_hours(
 ) -> list[dict[str, Any]]:
     """BR8: hour by hour at one stop: on-time share, Wilson interval and typical delays."""
     sql = (
-        f"SELECT service_hour, events, on_time, on_time_share, ci_low, ci_high, late, early,"
-        f" p50_delay_s, p90_delay_s, sufficient FROM {src.table('stop_hour_reliability')}"
+        f"SELECT {STOP_HOUR_COLUMNS} FROM {src.table('stop_hour_reliability')}"
         f" WHERE grp = ? AND route_id = ? AND direction_id IS NOT DISTINCT FROM ? AND stop_id = ?"
         f" ORDER BY service_hour"
     )
     return _rows(con, sql, [grp, route_id, direction_id, stop_id])
+
+
+def route_stop_hours(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, route_id: str
+) -> list[dict[str, Any]]:
+    """BR8: stop_hours for every stop of a route in one query (the static export's route files)."""
+    sql = (
+        f"SELECT direction_id, stop_id, {STOP_HOUR_COLUMNS}"
+        f" FROM {src.table('stop_hour_reliability')} WHERE grp = ? AND route_id = ?"
+        f" ORDER BY direction_id NULLS LAST, stop_id, service_hour"
+    )
+    return _rows(con, sql, [grp, route_id])
+
+
+def stop_map(con: duckdb.DuckDBPyConnection, src: Source, grp: str) -> list[dict[str, Any]]:
+    """BR8 map: every located stop with its arrivals and on-time arrivals pooled over all routes
+    and hours, the route (and direction) that serves it most, and its display name."""
+    name = "n.stop_name" if src.has("stop_names") else "NULL"
+    names = (
+        f" LEFT JOIN {src.table('stop_names')} n ON n.grp = l.grp AND n.stop_id = l.stop_id"
+        if src.has("stop_names")
+        else ""
+    )
+    sql = (
+        f"WITH per_route AS ("
+        f" SELECT stop_id, route_id, direction_id, sum(events) AS events, sum(on_time) AS on_time"
+        f" FROM {src.table('stop_hour_reliability')} WHERE grp = ? GROUP BY ALL),"
+        f" ranked AS (SELECT *, row_number() OVER (PARTITION BY stop_id"
+        f" ORDER BY events DESC, route_id, direction_id NULLS LAST) AS pick FROM per_route),"
+        f" per_stop AS (SELECT stop_id, sum(events)::BIGINT AS events,"
+        f" sum(on_time)::BIGINT AS on_time FROM per_route GROUP BY stop_id)"
+        f" SELECT s.stop_id, {name} AS stop_name, l.lat, l.lon, s.events, s.on_time,"
+        f" s.on_time / s.events AS on_time_share, r.route_id, r.direction_id"
+        f" FROM per_stop s JOIN ranked r ON r.stop_id = s.stop_id AND r.pick = 1"
+        f" JOIN {src.table('stop_locations')} l ON l.grp = ? AND l.stop_id = s.stop_id{names}"
+        f" ORDER BY s.stop_id"
+    )
+    return _rows(con, sql, [grp, grp])
 
 
 def delay_overview(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[str, Any]]:
