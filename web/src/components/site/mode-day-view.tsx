@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type * as z from "zod/mini";
 
 import { DaySelect, FilterBar, ModeToggle } from "@/components/site/filters";
@@ -58,9 +58,5 @@ export function ModeDayView<T>(props: {
   withDay?: boolean;
   render: (props: ViewProps<T>) => ReactNode;
 }) {
-  return (
-    <Suspense fallback={null}>
-      <Inner {...props} withDay={props.withDay ?? true} />
-    </Suspense>
-  );
+  return <Inner {...props} withDay={props.withDay ?? true} />;
 }

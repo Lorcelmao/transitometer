@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
 import { FeedHealthView } from "@/app/data/feed-health/feed-health-view";
 import { PageIntro } from "@/components/story/page-parts";
@@ -18,9 +17,7 @@ export default function Page() {
         checked every day against fixed thresholds; the <strong>score</strong> is the share of checks
         passed.
       </PageIntro>
-      <Suspense fallback={null}>
-        <FeedHealthView meta={meta} data={data} source={source} />
-      </Suspense>
+      <FeedHealthView meta={meta} data={data} source={source} />
     </>
   );
 }

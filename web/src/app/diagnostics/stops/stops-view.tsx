@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback } from "react";
+import { useCallback } from "react";
 
 import { EChart } from "@/charts/echart";
 import { hourlyIntervalOption } from "@/charts/options";
@@ -130,9 +130,5 @@ export function StopsView(props: {
   initialIndex: Initial<StopIndex>;
   initialRoute: Initial<StopRoute>;
 }) {
-  return (
-    <Suspense fallback={null}>
-      <Explorer {...props} />
-    </Suspense>
-  );
+  return <Explorer {...props} />;
 }
