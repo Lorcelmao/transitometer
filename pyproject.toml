@@ -71,6 +71,7 @@ ignore_missing_imports = true
 # extra). Treat them as untyped everywhere so mypy gives the same result with or without them.
 module = ["streamlit", "streamlit.*", "altair", "altair.*"]
 follow_imports = "skip"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
