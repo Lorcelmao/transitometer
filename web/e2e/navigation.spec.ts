@@ -72,3 +72,30 @@ test("the Content-Security-Policy of vercel.json blocks nothing the site uses", 
     expect(await page.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
   }
 });
+
+test("the intro plays once per session and never under reduced motion", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.locator("html")).not.toHaveAttribute("data-intro", "seen");
+  await page.goto("/reliability/on-time/");
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-intro", "seen");
+  await context.close();
+
+  const calm = await browser.newContext({ reducedMotion: "reduce" });
+  const still = await calm.newPage();
+  await still.goto("/");
+  const animation = await still.locator(".intro-sweep").first().evaluate((el) => getComputedStyle(el).animationName);
+  expect(animation).toBe("none");
+  await calm.close();
+});
+
+test("section menus open and lead to their pages", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Diagnostics" }).click();
+  await page.getByRole("link", { name: /Stop map/ }).first().click();
+  await expect(page).toHaveURL(/\/diagnostics\/map\/$/);
+  await expect(page.getByRole("navigation", { name: "Previous and next page" })).toBeVisible();
+});

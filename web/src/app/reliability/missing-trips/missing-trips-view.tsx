@@ -25,7 +25,7 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
       ) : null}
       <ChartFrame
         title="What happened to every scheduled trip"
-        summary="Each scheduled trip gets exactly one outcome. Bars in red (missing, not run) are the trips counted as not delivered."
+        summary="Each scheduled trip gets exactly one outcome. Bars in red (never reported; announced, never moved) are the trips counted as not seen running."
         chart={
           <BarList
             label="Scheduled trips by outcome"
@@ -35,7 +35,7 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
               label: o.outcome,
               share: o.trips,
               display: count(o.trips),
-              detail: o.not_delivered ? "not delivered" : undefined,
+              detail: o.not_delivered ? "not seen running" : undefined,
               emphasis: o.not_delivered,
             }))}
           />
@@ -48,7 +48,7 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
             columns={[
               { key: "outcome", label: "Outcome", render: (o) => o.outcome },
               { key: "trips", label: "Trips", numeric: true, render: (o) => count(o.trips) },
-              { key: "counted", label: "Counted as not delivered", render: (o) => (o.not_delivered ? "Yes" : "No") },
+              { key: "counted", label: "Counted as not seen running", render: (o) => (o.not_delivered ? "Yes" : "No") },
             ]}
           />
         }
@@ -56,11 +56,11 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
       />
       {data.routes.length ? (
         <ChartFrame
-          title="Routes with the most undelivered trips"
-          summary={`The ${data.routes.length} routes with the highest share of observable scheduled trips not delivered, among routes with at least ${data.min_trips} observable trips.`}
+          title="Routes with the most trips not seen running"
+          summary={`The ${data.routes.length} routes with the highest share of observable scheduled trips never seen running, among routes with at least ${data.min_trips} observable trips.`}
           chart={
             <BarList
-              label="Share of observable trips not delivered, by route"
+              label="Share of observable trips not seen running, by route"
               scaleMax={Math.max(...data.routes.map((r) => r.not_delivered_share))}
               rows={data.routes.map((r) => ({
                 key: r.route_id,
@@ -73,16 +73,16 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
           }
           table={
             <DataTable
-              caption="Routes with the most undelivered trips"
+              caption="Routes with the most trips not seen running"
               rows={data.routes}
               rowKey={(r) => r.route_id}
               columns={[
                 { key: "route", label: "Route", render: (r) => r.route_id },
                 { key: "scheduled", label: "Scheduled", numeric: true, render: (r) => count(r.scheduled) },
-                { key: "missing", label: "Missing", numeric: true, render: (r) => count(r.missing) },
-                { key: "not_run", label: "Not run", numeric: true, render: (r) => count(r.not_run) },
-                { key: "unknown", label: "Unknown", numeric: true, render: (r) => count(r.unknown) },
-                { key: "share", label: "Not delivered", numeric: true, render: (r) => pct(r.not_delivered_share) },
+                { key: "missing", label: "Never reported", numeric: true, render: (r) => count(r.missing) },
+                { key: "not_run", label: "Announced, never moved", numeric: true, render: (r) => count(r.not_run) },
+                { key: "unknown", label: "Could not be judged", numeric: true, render: (r) => count(r.unknown) },
+                { key: "share", label: "Not seen running", numeric: true, render: (r) => pct(r.not_delivered_share) },
               ]}
             />
           }

@@ -34,7 +34,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const days = meta.days.map((d) => d.label);
   const marker = `Archived data · ${days.join(" and ")} · not a live service`;
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+    // The intro animation plays once per browser session: this runs before first paint and marks
+    // later page loads as "seen" (the attribute differs from the server HTML on purpose).
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var s=window.sessionStorage;if(s.getItem('tm-intro'))document.documentElement.dataset.intro='seen';else s.setItem('tm-intro','1')}catch(e){}",
+          }}
+        />
+      </head>
       <body className="flex min-h-screen flex-col">
         <TooltipProvider>
           <SiteHeader marker={marker} />

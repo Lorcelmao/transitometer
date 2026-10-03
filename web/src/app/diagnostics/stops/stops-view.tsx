@@ -104,11 +104,12 @@ function Explorer({
             onChange={(value) => setState({ stop: value })}
           />
         ) : null}
-        <span aria-live="polite" className="text-xs text-muted-ink">
-          {pending ? "Loading…" : ""}
+        <span aria-live="polite" className="sr-only">
+          {pending ? "Loading the selected view" : ""}
         </span>
       </FilterBar>
-      <div className={pending ? "opacity-60" : ""} data-testid="view">
+      <div className={pending ? "loading-bar" : "h-0.5"} aria-hidden="true" />
+      <div className={pending ? "opacity-60 transition-opacity" : "transition-opacity"} data-testid="view">
         {stop ? (
           <StopDetail
             stop={stop}

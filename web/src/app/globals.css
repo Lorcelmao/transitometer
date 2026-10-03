@@ -131,3 +131,116 @@
     }
   }
 }
+
+/*
+ * Motion. Every animation lives inside prefers-reduced-motion: no-preference, so reduced-motion
+ * visitors get the final state at once. Nothing starts invisible: entries begin at partial
+ * opacity, and scroll reveals only run where the browser supports scroll-driven animations
+ * (elsewhere the content is simply shown).
+ */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Page change: a short rise into place (app/template.tsx re-mounts on every navigation). */
+  .page-enter {
+    animation: page-enter 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  /* A headline number that changed with the filters. */
+  .value-update {
+    animation: value-update 260ms ease-out both;
+  }
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+  /* Overview intro: stops appear outward from Lower Manhattan, once per browser session. */
+  .intro-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: intro-dot 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--delay, 0ms);
+  }
+  .intro-sweep {
+    animation: intro-sweep 1500ms cubic-bezier(0.3, 0.6, 0.2, 1) both;
+  }
+  .intro-line {
+    stroke-dasharray: var(--length);
+    animation: intro-line 1400ms cubic-bezier(0.6, 0, 0.2, 1) both;
+  }
+  html[data-intro="seen"] .intro-dot,
+  html[data-intro="seen"] .intro-sweep,
+  html[data-intro="seen"] .intro-line {
+    animation: none;
+  }
+  /* A real request in flight (a filter or route file being fetched). */
+  .loading-bar::after {
+    animation: loading-bar 1100ms ease-in-out infinite;
+  }
+}
+/* Movement only: the page is fully opaque from its first paint. */
+@keyframes page-enter {
+  from {
+    transform: translateY(6px);
+  }
+}
+@keyframes intro-sweep {
+  from {
+    clip-path: circle(0% at var(--ox) var(--oy));
+  }
+  to {
+    clip-path: circle(150% at var(--ox) var(--oy));
+  }
+}
+@keyframes value-update {
+  from {
+    opacity: 0.2;
+    transform: translateY(3px);
+  }
+}
+/* Movement only, never transparency: text below the fold stays fully readable (and contrast-safe). */
+@keyframes reveal {
+  from {
+    transform: translateY(24px);
+  }
+}
+@keyframes intro-dot {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+@keyframes intro-line {
+  from {
+    stroke-dashoffset: var(--length);
+  }
+}
+@keyframes loading-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.loading-bar {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--link);
+}

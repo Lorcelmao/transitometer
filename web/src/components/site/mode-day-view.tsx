@@ -35,10 +35,12 @@ function Inner<T>({
       <FilterBar>
         <ModeToggle modes={meta.modes} value={state.mode} onChange={(mode) => setState({ mode })} />
         {withDay ? <DaySelect days={meta.days} value={state.day} onChange={(day) => setState({ day })} /> : null}
-        <span aria-live="polite" className="text-xs text-muted-ink">
-          {pending ? "Loading…" : ""}
+        <span aria-live="polite" className="sr-only">
+          {pending ? "Loading the selected view" : ""}
         </span>
       </FilterBar>
+      {/* A real request in flight: the previous view stays, dimmed, under a progress line. */}
+      <div className={pending ? "loading-bar" : "h-0.5"} aria-hidden="true" />
       <div className={pending ? "opacity-60 transition-opacity" : "transition-opacity"} data-testid="view">
         {render({ data, source, mode: state.mode, day: state.day })}
       </div>

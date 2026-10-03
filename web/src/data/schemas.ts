@@ -19,8 +19,11 @@ export const figure = z.object({
   value: z.union([z.number(), z.null()]),
   display: z.string(),
   help: z.nullable(z.string()),
+  basis: z.optional(z.nullable(z.string())),
 });
 export type Figure = z.infer<typeof figure>;
+
+const caveat = z.nullable(z.object({ value: maybeNum, display: z.string(), text: z.string() }));
 
 /** Every exported file: schema version, view name, filters, provenance, then the view's data. */
 export const envelope = z.object({
@@ -91,8 +94,31 @@ export const overview = z.object({
       day: z.string(),
       day_label: z.string(),
       figures: z.array(figure),
+      hours: z.array(
+        z.object({ service_hour: num, events: num, on_time_share: maybeNum, display: z.string(), sufficient: z.boolean() }),
+      ),
+      hourly_min_events: num,
+      caveat,
     }),
   ),
+  findings: z.array(
+    z.object({ key: z.string(), kicker: z.string(), value: z.string(), headline: z.string(), detail: z.string(), page: z.string() }),
+  ),
+  pipeline: z.object({
+    messages: z.nullable(z.string()),
+    archive_rows: z.nullable(z.string()),
+    stop_events: z.string(),
+    silver: z.nullable(z.string()),
+    gold: z.nullable(z.string()),
+    gold_seconds: z.nullable(z.string()),
+    tests: z.nullable(z.string()),
+  }),
+  hero: z.object({
+    columns: z.array(z.string()).check(z.refine((c) => c.join() === "lat,lon,events,on_time_share,sufficient", "hero columns changed")),
+    cells: z.array(z.tuple([num, num, num, maybeNum, z.boolean()])),
+    stops: num,
+    caption: z.string(),
+  }),
   trust: z.object({
     integrity: z.object({
       available: z.boolean(),
@@ -176,7 +202,7 @@ export const missingTrips = z.object({
       not_delivered: z.boolean(),
     }),
   ),
-  caveat: z.nullable(z.object({ value: maybeNum, display: z.string(), text: z.string() })),
+  caveat,
   routes: z.array(
     z.object({
       route_id: z.string(),

@@ -67,9 +67,12 @@ test("feed health: every feed score equals the parity file on both days", async 
 
 test("validation: parity, archive rows and tests equal the parity file", async ({ page }) => {
   const expected = PARITY.validation as Record<string, string>;
+  const pipeline = PARITY.pipeline as Record<string, string>;
   await page.goto("/");
-  await expect(page.getByTestId("trust-parity")).toHaveText(expected.parity);
   await expect(page.getByTestId("trust-integrity")).toHaveText(expected.archive_rows);
+  await expect(page.getByTestId("trust-silver")).toHaveText(pipeline.silver);
+  await expect(page.getByTestId("trust-gold")).toHaveText(pipeline.gold);
+  await expect(page.getByTestId("trust-tests")).toHaveText(pipeline.tests);
   await page.goto("/data/validation/");
   await expect(page.getByTestId("tests-passed")).toHaveText(expected.tests);
 });
@@ -84,5 +87,12 @@ test("stop map: the least reliable stop equals the parity file in both modes", a
     await expect(first).toContainText(expected.worst);
     await expect(first).toContainText(expected.display);
     await page.getByRole("button", { name: "Show as chart" }).click();
+  }
+});
+
+test("overview findings show the values the views computed", async ({ page }) => {
+  await page.goto("/");
+  for (const [key, value] of Object.entries(PARITY.findings as Record<string, string>)) {
+    await expect(page.getByTestId(`finding-${key}`)).toContainText(value);
   }
 });
