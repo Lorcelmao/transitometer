@@ -72,3 +72,9 @@ jobs:
         env:
           CI: "true"
       - run: npm run lhci
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: web/.lighthouseci
+          retention-days: 7
