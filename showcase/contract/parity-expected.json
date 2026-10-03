@@ -1,0 +1,345 @@
+{
+  "delay/bus/20260922": [
+    {
+      "display": "3.3 min",
+      "key": "inherited"
+    },
+    {
+      "display": "3.4 min",
+      "key": "gained"
+    },
+    {
+      "display": "6.7 min",
+      "key": "final"
+    }
+  ],
+  "delay/bus/20260923": [
+    {
+      "display": "3.0 min",
+      "key": "inherited"
+    },
+    {
+      "display": "2.9 min",
+      "key": "gained"
+    },
+    {
+      "display": "5.9 min",
+      "key": "final"
+    }
+  ],
+  "delay/subway/20260922": [
+    {
+      "display": "0.0 min",
+      "key": "inherited"
+    },
+    {
+      "display": "1.5 min",
+      "key": "gained"
+    },
+    {
+      "display": "1.5 min",
+      "key": "final"
+    }
+  ],
+  "delay/subway/20260923": [
+    {
+      "display": "0.2 min",
+      "key": "inherited"
+    },
+    {
+      "display": "1.8 min",
+      "key": "gained"
+    },
+    {
+      "display": "1.9 min",
+      "key": "final"
+    }
+  ],
+  "early-warning/bus": {
+    "bunched": "passed",
+    "late": "passed"
+  },
+  "early-warning/subway": {
+    "bunched": "did not pass",
+    "late": "passed"
+  },
+  "feed-health/20260922": {
+    "bus_tu": "87.5 / 100",
+    "bus_vp": "100.0 / 100",
+    "subway_tu": "62.5 / 100"
+  },
+  "feed-health/20260923": {
+    "bus_tu": "87.5 / 100",
+    "bus_vp": "100.0 / 100",
+    "subway_tu": "62.5 / 100"
+  },
+  "headways/bus/20260922": [
+    {
+      "display": "1,376,197",
+      "key": "headways"
+    },
+    {
+      "display": "30.6 %",
+      "key": "regular"
+    },
+    {
+      "display": "10.2 %",
+      "key": "bunched"
+    },
+    {
+      "display": "11.8 %",
+      "key": "gaps"
+    },
+    {
+      "display": "47.3 %",
+      "key": "irregular"
+    }
+  ],
+  "headways/bus/20260923": [
+    {
+      "display": "1,421,778",
+      "key": "headways"
+    },
+    {
+      "display": "30.7 %",
+      "key": "regular"
+    },
+    {
+      "display": "10.4 %",
+      "key": "bunched"
+    },
+    {
+      "display": "11.0 %",
+      "key": "gaps"
+    },
+    {
+      "display": "47.9 %",
+      "key": "irregular"
+    }
+  ],
+  "headways/subway/20260922": [
+    {
+      "display": "81,035",
+      "key": "headways"
+    },
+    {
+      "display": "45.7 %",
+      "key": "regular"
+    },
+    {
+      "display": "0.8 %",
+      "key": "bunched"
+    },
+    {
+      "display": "5.8 %",
+      "key": "gaps"
+    },
+    {
+      "display": "47.7 %",
+      "key": "irregular"
+    }
+  ],
+  "headways/subway/20260923": [
+    {
+      "display": "77,920",
+      "key": "headways"
+    },
+    {
+      "display": "44.5 %",
+      "key": "regular"
+    },
+    {
+      "display": "0.5 %",
+      "key": "bunched"
+    },
+    {
+      "display": "6.1 %",
+      "key": "gaps"
+    },
+    {
+      "display": "48.9 %",
+      "key": "irregular"
+    }
+  ],
+  "map/bus": {
+    "display": "0.0 %",
+    "located": "12451",
+    "worst": "ROCKAWAY BEACH BLVD/BEACH 92 ST (550770)"
+  },
+  "map/subway": {
+    "display": "28.4 %",
+    "located": "328",
+    "worst": "Nostrand Av (248N)"
+  },
+  "missing-trips/bus/20260922": [
+    {
+      "display": "55,159",
+      "key": "scheduled"
+    },
+    {
+      "display": "6.7 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "0",
+      "key": "unknown"
+    }
+  ],
+  "missing-trips/bus/20260923": [
+    {
+      "display": "55,159",
+      "key": "scheduled"
+    },
+    {
+      "display": "5.6 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "0",
+      "key": "unknown"
+    }
+  ],
+  "missing-trips/subway/20260922": [
+    {
+      "display": "3,379",
+      "key": "scheduled"
+    },
+    {
+      "display": "10.2 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "0",
+      "key": "unknown"
+    }
+  ],
+  "missing-trips/subway/20260923": [
+    {
+      "display": "3,379",
+      "key": "scheduled"
+    },
+    {
+      "display": "12.4 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "0",
+      "key": "unknown"
+    }
+  ],
+  "overview/bus/20260922": [
+    {
+      "display": "47.4 %",
+      "key": "on_time"
+    },
+    {
+      "display": "10.2 %",
+      "key": "bunched"
+    },
+    {
+      "display": "6.7 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "87.5 / 100",
+      "key": "feed_score"
+    }
+  ],
+  "overview/bus/20260923": [
+    {
+      "display": "46.9 %",
+      "key": "on_time"
+    },
+    {
+      "display": "10.4 %",
+      "key": "bunched"
+    },
+    {
+      "display": "5.6 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "87.5 / 100",
+      "key": "feed_score"
+    }
+  ],
+  "overview/subway/20260922": [
+    {
+      "display": "67.5 %",
+      "key": "on_time"
+    },
+    {
+      "display": "0.8 %",
+      "key": "bunched"
+    },
+    {
+      "display": "10.2 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "62.5 / 100",
+      "key": "feed_score"
+    }
+  ],
+  "overview/subway/20260923": [
+    {
+      "display": "69.0 %",
+      "key": "on_time"
+    },
+    {
+      "display": "0.5 %",
+      "key": "bunched"
+    },
+    {
+      "display": "12.4 %",
+      "key": "not_delivered"
+    },
+    {
+      "display": "62.5 / 100",
+      "key": "feed_score"
+    }
+  ],
+  "scorecards/bus": {
+    "least": "QM42",
+    "most": "BX29",
+    "ranked": "345"
+  },
+  "scorecards/subway": {
+    "least": "2",
+    "most": "1",
+    "ranked": "8"
+  },
+  "stops/bus/B1/305460": [
+    {
+      "display": "213",
+      "key": "arrivals"
+    },
+    {
+      "display": "34.7 %",
+      "key": "on_time"
+    },
+    {
+      "display": "12 of 24",
+      "key": "scored_hours"
+    }
+  ],
+  "stops/subway/1/119N": [
+    {
+      "display": "416",
+      "key": "arrivals"
+    },
+    {
+      "display": "92.5 %",
+      "key": "on_time"
+    },
+    {
+      "display": "17 of 25",
+      "key": "scored_hours"
+    }
+  ],
+  "validation": {
+    "archive_rows": "607,076,700",
+    "parity": "27 / 27",
+    "tests": "212 / 213"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "prefix": "rt",
+  "days": [
+    "2026-09-22",
+    "2026-09-23",
+    "2026-09-24"
+  ],
+  "feeds": {
+    "trip_updates.bus": {
+      "snapshots": 8640,
+      "messages": 31772414,
+      "acknowledged_equal": true,
+      "consumed_equal": true,
+      "markers_equal": true,
+      "timestamps_backwards": 0,
+      "lineage_overlaps": 0,
+      "fidelity_sampled": 20,
+      "fidelity_mismatched": [],
+      "uncarried_columns_with_data": [],
+      "stream_sha256": "fd4f97b294ca54a6a45cb9bee42d6c1f0eb5a110ce0342d733b722c226ad1b37"
+    },
+    "trip_updates.subway": {
+      "snapshots": 12956,
+      "messages": 2865676,
+      "acknowledged_equal": true,
+      "consumed_equal": true,
+      "markers_equal": true,
+      "timestamps_backwards": 0,
+      "lineage_overlaps": 0,
+      "fidelity_sampled": 20,
+      "fidelity_mismatched": [],
+      "uncarried_columns_with_data": [],
+      "stream_sha256": "f11611ea101c0caf8612caeafec6a53a271d8dea007929311db96c9d381529c5"
+    },
+    "vehicle_positions.bus": {
+      "snapshots": 8638,
+      "messages": 18088514,
+      "acknowledged_equal": true,
+      "consumed_equal": true,
+      "markers_equal": true,
+      "timestamps_backwards": 0,
+      "lineage_overlaps": 0,
+      "fidelity_sampled": 20,
+      "fidelity_mismatched": [],
+      "uncarried_columns_with_data": [],
+      "stream_sha256": "099dc751347aa3efc3feaef10f3cde839945977f197fb936b2d27f278b59b188"
+    }
+  },
+  "ok": true
+}
