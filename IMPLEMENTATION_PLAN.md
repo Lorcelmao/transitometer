@@ -258,6 +258,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Deliverables:** Streamlit app: U1 reliability console, U2 diagnostics, U3/U4 scorecards and trends, U5 departure confidence, U6 feed health, U7 HCMC map; data-access layer over DuckDB (Delta + Spatial). Development starts from golden/Gold exports on the host; integration reads the live `lakehouse` volume in the `app` profile.
 - **Tests:** data-access unit tests; UI smoke tests; **per-BR acceptance tests on real data** (§6.3); time-to-insight task timings.
 - **Exit:** every core BR (BR1–BR8) demonstrable in-app with recorded evidence.
+- **Addition (2026-10-03):** a second, static frontend (Next.js, `web/`) presents the validated snapshot publicly. It reads the same serving layer: page rules and labels moved from the Streamlit pages into `serve/views.py`, exported as JSON by `tasks.py web-data`; both frontends are tested against one parity file. Plan: `plans/261003-1210-nextjs-showcase-frontend/`.
 
 ### S12 — E2E, reproducibility & evaluation packaging — Docker
 - **Deliverables:** `python tasks.py demo` (replay → Silver/Gold → app); evaluation report (correctness, performance, exploitation); reproducibility manifest (image digests, versions, host spec, caps); demo recording.

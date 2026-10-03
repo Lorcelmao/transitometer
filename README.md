@@ -27,7 +27,7 @@ flowchart LR
 | Silver | Spark Structured Streaming, Delta | `from_protobuf` decoding; exact-duplicate removal within a 10 min event-time watermark; a dead-letter table for undecodable or incomplete messages; a conservation check (in = kept + duplicates + late + dead-lettered); exactly-once Delta sink (re-runs append nothing). |
 | Silver events | Spark (batch) | Stop arrivals inferred from successive predictions, matched to the timetable in three tiers, with service-day handling for trips past midnight. |
 | Gold | Spark (batch), Delta | BR1 on-time performance (−1/+5 min band) per route and hour, including bus terminal arrivals measured from GPS; BR2 observed headways classified as regular, bunched or gap; BR3 every scheduled trip classified as delivered, partial, missing, not run or unknown; BR4 segment travel times and exact delay attribution; BR5 route scorecards with bootstrap confidence and rank intervals; BR6 rule-based early warning against a naive baseline on a held-out day; BR7 twelve feed-quality checks with a conformance score; BR8 stop-level reliability by hour with Wilson intervals. |
-| Serve | DuckDB + Streamlit | The app reads Gold Delta tables (or the frozen golden tables) through one data-access layer. |
+| Serve | DuckDB, Streamlit, Next.js | One Python serving layer (`serve/kpis.py` queries, `serve/views.py` page rules and labels) feeds two frontends: the Streamlit app (Gold Delta, golden tables or the validated snapshot) and a static Next.js site built from the same views exported as JSON. |
 
 ## Quickstart
 
@@ -46,7 +46,7 @@ python tasks.py demo                    # one real hour end to end, then the app
 
 `demo` replays one real hour of all three feeds through Kafka, Spark Silver, stop-event inference and Gold, then starts the app at <http://localhost:8501>. Each step prints its progress. `python tasks.py down` stops everything; data volumes are kept.
 
-To browse the app without running the pipeline, start it on the frozen golden tables: `TRANSITOMETER_APP_SOURCE=golden python tasks.py up app`.
+To browse the app without running the pipeline, start it on the frozen golden tables: `TRANSITOMETER_APP_SOURCE=golden python tasks.py up app`. Or run it on the host, without Docker, on the committed validated snapshot of the Spark Gold tables (`showcase/data/`, see below): `pip install -e ".[app]"`, then `TRANSITOMETER_APP_SOURCE=snapshot streamlit run src/transitometer/app/main.py`.
 
 ## Full golden-window run and validation
 
@@ -88,7 +88,7 @@ Rows are matched on their keys; every other column must be equal, floats within 
 |---|---|---|
 | Replay of the golden window into Kafka (3 feeds in parallel, unpaced) | 1,247 s (longest feed) | `results/replay-report.json` |
 | Spark: stop events, timetable matching, statuses (Silver) | 481.8 s | `results/silver-events.json` |
-| Spark: Gold KPI tables (BR1–BR8, terminals) | 348.8 s | `results/gold-kpis.json` |
+| Spark: Gold KPI tables (BR1–BR8, terminals, stop names and locations) | 309.9 s | `results/gold-kpis.json` |
 | DuckDB golden, the same rules (all steps but the 06 cross-check; sum of step times) | 711.0 s | `results/golden-run.json` |
 | DuckDB golden, all 12 steps (BR1–BR8) | 892.1 s | `results/golden-run.json` |
 
@@ -100,23 +100,42 @@ All commands go through `python tasks.py <task>` (works on every OS):
 
 | Task | What it does |
 |---|---|
-| `check` | lint + typecheck + tests |
+| `check [--record]` | lint + typecheck + tests; `--record` writes the counts to `results/test-summary.json` (evidence shown in the app) |
 | `fetch`, `validate-landing` | download and validate the pinned sources (manifest with SHA-256) |
 | `build`, `up <profile>`, `down` | build the image, start services, stop everything (volumes kept) |
 | `replay`, `replay-verify` | replay archived feeds into Kafka; verify the stream against the archive |
-| `silver`, `silver-events`, `gold` | Spark jobs; `silver-events` and `gold` also export their tables and compare them with golden |
+| `silver`, `silver-events`, `gold` | Spark jobs; `silver-events` and `gold` also export their tables and compare them with golden (`gold --export-only` re-exports and compares without re-running Spark) |
+| `snapshot` | copy the validated Gold tables the app reads into `showcase/data/`, with the run's evidence files and a manifest (commit, rows, SHA-256); refuses unless validation passed and the exports match the validated run |
+| `web-data [--check]` | export the shared views over the snapshot as JSON for the Next.js site (`web/public/data/`) and the cross-frontend parity file; `--check` fails if the committed JSON is stale |
 | `demo [--fresh]` | one real hour end to end, then the app |
 | `golden`, `golden-check` | build the DuckDB golden reference; check result tables against it |
 | `storage-check`, `storage-report` | storage guard (warn at 30 GB, refuse engine starts at 35 GB) and usage log |
 
 Runs on any topic prefix other than `rt` (for example the demo) write to their own lakehouse subtree and report folder (`results/scratch/<prefix>/`), so they never touch the validated tables.
 
+## Two frontends
+
+| Frontend | For | Runs where | Data |
+|---|---|---|---|
+| Next.js site (`web/`) | the public showcase: editorial pages, interactive charts, evidence | static files (Vercel Hobby) | JSON exported from the views over the validated snapshot (`python tasks.py web-data`) |
+| Streamlit app (`src/transitometer/app/`) | the analyst console | local, Docker `app` profile, or Streamlit Community Cloud | the same views, live over Gold Delta, the golden tables or the snapshot |
+
+Every metric, threshold, ranking, pass rule and definition is computed once, in `src/transitometer/serve/views.py`; neither frontend defines one of its own. Both are tested against one file of expected headline values (`showcase/contract/parity-expected.json`): Streamlit with headless app tests, the site with Playwright. See [`web/README.md`](web/README.md) for the site.
+
+## Hosted app (validated snapshot)
+
+The public app runs the same Streamlit code on `showcase/data/`, a committed copy of the validated Spark Gold tables (`python tasks.py snapshot`). It needs no Docker, Kafka, Spark or lakehouse: every page names the commit and date of the validated run, and its evidence comes from the copies in `showcase/data/evidence/`.
+
+- Streamlit Community Cloud: entrypoint `src/transitometer/app/main.py`, Python 3.12, secret `TRANSITOMETER_APP_SOURCE = "snapshot"`. It installs `src/transitometer/app/requirements.txt` (pinned like the Spark image) and imports the package from the clone.
+- The CI `hosted-app` job reproduces that environment (hosted requirements only, no package install, no data) and renders every page.
+
 ## Repository map
 
 - `src/transitometer/replay/`: archive → protobuf → Kafka, verification
 - `src/transitometer/pipeline/`: Spark jobs (`silver_ingest`, `silver_events`, `gold_kpis`) and export
 - `src/transitometer/golden/`: DuckDB golden SQL, tolerance comparison, 25-query suite
-- `src/transitometer/serve/`, `src/transitometer/app/`: data-access layer and Streamlit app
+- `src/transitometer/serve/`: data-access layer (`kpis.py`), shared page views and formatting (`views.py`, `format.py`), snapshot and web export
+- `src/transitometer/app/`: Streamlit app; `web/`: Next.js site; `showcase/`: validated snapshot and the cross-frontend contract files
 - `PROJECT_PLAN.md`: scope, users and business requirements; `IMPLEMENTATION_PLAN.md`: stages and tests
 
 ## Roadmap
