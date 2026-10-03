@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Editorial design tokens (plans/261003-1210-nextjs-showcase-frontend/design-system.md).
+ * Light theme only; every colour is a token, so a dark theme only has to redefine :root values.
+ * Text pairs were contrast-checked against --paper (WCAG AA): ink 16.6:1, muted 6.6:1,
+ * accent 6.0:1, link 7.6:1, pass 5.8:1, warn 5.4:1. --rule is decorative only.
+ */
+:root {
+  --paper: #f7f4ee;
+  --panel: #eee8dd;
+  --ink: #161513;
+  --muted-ink: #5c564d;
+  --rule: #cfc6b6;
+  --accent-red: #b3261e;
+  --link: #1f4e8c;
+  --pass: #2e6b3a;
+  --fail: #b3261e;
+  --warn: #8a5a00;
+  /* On-time share, single blue hue, light -> dark. */
+  --seq-1: #d6e2ee;
+  --seq-2: #9fbcd9;
+  --seq-3: #4a7fb5;
+  --seq-4: #1f4e8c;
+  --seq-5: #0b2f5b;
+
+  /* shadcn/ui variables mapped onto the editorial tokens. */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: #fbf9f5;
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--panel);
+  --secondary-foreground: var(--ink);
+  --muted: var(--panel);
+  --muted-foreground: var(--muted-ink);
+  --accent: var(--panel);
+  --accent-foreground: var(--ink);
+  --destructive: var(--fail);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--link);
+  --radius: 0.125rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted-ink: var(--muted-ink);
+  --color-rule: var(--rule);
+  --color-accent-red: var(--accent-red);
+  --color-link: var(--link);
+  --color-pass: var(--pass);
+  --color-fail: var(--fail);
+  --color-warn: var(--warn);
+  --color-seq-1: var(--seq-1);
+  --color-seq-2: var(--seq-2);
+  --color-seq-3: var(--seq-3);
+  --color-seq-4: var(--seq-4);
+  --color-seq-5: var(--seq-5);
+
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-newsreader);
+
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/60;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+  }
+  a {
+    @apply text-link underline decoration-1 underline-offset-2 hover:decoration-2;
+  }
+  .num {
+    font-family: var(--font-plex-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "transitometer-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "serve": "serve out -l 4173",
+    "e2e": "playwright test",
+    "lhci": "lhci autorun"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "cmdk": "^1.1.1",
+    "cn": "^0.4.0",
+    "echarts": "6.1.0",
+    "lucide-react": "^1.50.0",
+    "next": "16.3.8",
+    "radix-ui": "^1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tw-animate-css": "^1.4.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@lhci/cli": "0.15.1",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "jsdom": "29.1.1",
+    "serve": "14.2.6",
+    "shadcn": "4.21.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "5.0.3"
+  },
+  "description": "Static Next.js showcase of the Transitometer validated Gold snapshot",
+  "engines": {
+    "node": ">=22 <23"
+  }
+}
