@@ -1,0 +1,27 @@
+{
+  "row_counts": {
+    "passages": 3020240,
+    "w1": 2919421,
+    "w2": 2956930
+  },
+  "checksums": {
+    "passages.parquet": "30b7a3045a91bcc43974cc92ea7e5923b5623f5b6341a6cf93530dc5d5c73a4c",
+    "w1.parquet": "167acbe7796766d8b268cb51909b38424054b57a8c05b4a6839d4ae894fae9a1",
+    "w2.parquet": "495c2fbe0a3782f5d68e0a13624be20b3cf8d6f90d8a1f7a30fc25c4dd5889b7"
+  },
+  "step_seconds": {
+    "01_schedule.sql": 1.1,
+    "02_stop_events.sql": 106.9,
+    "03_matching.sql": 0.6,
+    "04_otp.sql": 6.3,
+    "05_headways.sql": 13.3,
+    "axis_a_passages.sql": 3.2,
+    "axis_a_w1.sql": 1.9,
+    "axis_a_w2.sql": 13.7
+  },
+  "elapsed_s": 173.5,
+  "completeness_gate": {
+    "ok": true,
+    "detail": "headways: OK (2956930 rows)"
+  }
+}

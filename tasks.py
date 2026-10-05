@@ -276,6 +276,37 @@ def task_golden(_: argparse.Namespace) -> int:
     return 0
 
 
+def task_axis_a_golden(_: argparse.Namespace) -> int:
+    """Axis A input (the passage stream) and golden W1/W2; fails unless W2 = golden headways."""
+    from transitometer.axis_a import golden as axis_a_golden
+    from transitometer.golden import compare
+    from transitometer.ingest.sources import load_sources
+
+    started = time.perf_counter()
+    out_dir = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "axis-a" / "golden"
+    result = axis_a_golden.run(
+        load_sources(SOURCES_FILE),
+        landing_dir(),
+        out_dir,
+        log=lambda message: print(message, flush=True),
+    )
+    policy = compare.Policy.load(ROOT / "golden" / "tolerance.json")
+    gate = axis_a_golden.completeness_gate(out_dir, _golden_dir(), policy)
+    print(f"completeness gate (W2 from passages vs golden headways): {gate.describe()}")
+    body = {
+        "row_counts": result.row_counts,
+        "checksums": result.checksums,
+        "step_seconds": result.step_seconds,
+        "elapsed_s": round(time.perf_counter() - started, 1),
+        "completeness_gate": {"ok": gate.ok, "detail": gate.describe()},
+    }
+    (ROOT / "results" / "axis-a-golden.json").write_text(
+        json.dumps(body, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(f"row counts: {result.row_counts}; outputs: {out_dir}")
+    return 0 if gate.ok else 1
+
+
 def task_golden_check(args: argparse.Namespace) -> int:
     """Check result tables against the frozen golden reference (exit 1 on any failure)."""
     from transitometer.golden import harness
@@ -745,6 +776,10 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         "validate-landing": (task_validate_landing, "validate landing data, write volume report"),
         "golden": (task_golden, "golden reference KPIs (DuckDB) for the golden window"),
+        "axis-a-golden": (
+            task_axis_a_golden,
+            "Axis A passage stream + golden W1/W2 (checked against golden headways)",
+        ),
         "snapshot": (task_snapshot, "copy the validated Gold app tables into showcase/data/"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }

@@ -1,0 +1,11 @@
+{
+  "policy": "Axis A engine results (W1, W2 from the passage stream) are compared with golden W1/W2 once each engine has drained the topic. Rows are matched on the keys; every other column must be equal. W1's mean and population standard deviation are floats summed in a different order by each engine, so they may differ by at most 1e-6 s; counts, sums, minima and maxima of integer delays are exact. W2 uses the golden headways rule and is exact except ref_headway_s (float_abs).",
+  "float_abs": 0.0001,
+  "tables": {
+    "w1": {
+      "keys": ["grp", "service_date", "route_id", "stop_id", "window_start"],
+      "float_abs": {"mean_delay_s": 1e-06, "stddev_delay_s": 1e-06}
+    },
+    "w2": {"keys": ["grp", "service_date", "route_id", "stop_id", "trip_key"]}
+  }
+}
