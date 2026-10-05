@@ -283,7 +283,7 @@ def task_axis_a_golden(_: argparse.Namespace) -> int:
     from transitometer.ingest.sources import load_sources
 
     started = time.perf_counter()
-    out_dir = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "axis-a" / "golden"
+    out_dir = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "axis-a" / "golden"
     result = axis_a_golden.run(
         load_sources(SOURCES_FILE),
         landing_dir(),
@@ -305,6 +305,38 @@ def task_axis_a_golden(_: argparse.Namespace) -> int:
     )
     print(f"row counts: {result.row_counts}; outputs: {out_dir}")
     return 0 if gate.ok else 1
+
+
+AXIS_A_EXPORTS = "/data/exports/axis-a"  # <data root>/exports/axis-a inside the containers
+
+
+def _axis_a_dir() -> Path:
+    return Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "axis-a"
+
+
+def task_axis_a_produce(args: argparse.Namespace) -> int:
+    """Produce the Axis A passage stream into Kafka (recreates the topic), then verify it."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    record = ROOT / "results" / "axis-a-produce.json"
+    arguments = ["produce", "--parquet", f"{AXIS_A_EXPORTS}/golden/passages.parquet", "--fresh"]
+    code = _in_spark("transitometer.axis_a.produce", arguments, record)
+    return code or task_axis_a_verify(args)
+
+
+def task_axis_a_verify(_: argparse.Namespace) -> int:
+    """Re-read the passage topic: per-partition counts and SHA-256 must equal the record."""
+    import shutil
+
+    record = ROOT / "results" / "axis-a-produce.json"
+    shutil.copyfile(
+        record, _axis_a_dir() / "produce-record.json"
+    )  # the container cannot see results/
+    arguments = ["verify", "--record", f"{AXIS_A_EXPORTS}/produce-record.json"]
+    return _in_spark(
+        "transitometer.axis_a.produce", arguments, ROOT / "results" / "axis-a-verify.json"
+    )
 
 
 def task_golden_check(args: argparse.Namespace) -> int:
@@ -820,6 +852,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gcheck.add_argument("--tables", help="directory of an engine's exported Parquet tables")
     gcheck.set_defaults(func=task_golden_check)
+
+    for name, axis_task, help_text in (
+        ("axis-a-produce", task_axis_a_produce, "Axis A passage stream into Kafka, verified"),
+        ("axis-a-verify", task_axis_a_verify, "verify the Axis A passage topic against its record"),
+    ):
+        axis = sub.add_parser(name, help=help_text)
+        axis.add_argument(
+            "--allow-peak", action="store_true", help="proceed above the block threshold"
+        )
+        axis.set_defaults(func=axis_task)
 
     replay = sub.add_parser("replay", help="replay archived feeds into Kafka (kept for engines)")
     replay.add_argument("--days", nargs="+", help="UTC archive days (default: golden window)")

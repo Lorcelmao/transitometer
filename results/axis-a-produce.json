@@ -1,0 +1,46 @@
+{
+  "topic": "rt.passages",
+  "passages": 3020240,
+  "messages": 3020241,
+  "last_arrival": 1790239506,
+  "produce_s": 47.0,
+  "partitions": {
+    "0": {
+      "start": 0,
+      "end": 516605,
+      "messages": 516605,
+      "sha256": "fcaf21da92e273eebca91ebea972a8653b7436a145959cb7278d7ecb54d9c84e"
+    },
+    "1": {
+      "start": 0,
+      "end": 497770,
+      "messages": 497770,
+      "sha256": "bdee4b5a3d40e4055db13d2b525c56798964781716ce1e29e31cc2d980873ae5"
+    },
+    "2": {
+      "start": 0,
+      "end": 493302,
+      "messages": 493302,
+      "sha256": "3774917ac77b8b00c9dccefa64811b7d0854149e65aa97ba35bb01ac1b1fdd2b"
+    },
+    "3": {
+      "start": 0,
+      "end": 509427,
+      "messages": 509427,
+      "sha256": "cebab06189c9cb4cc7825f061db4fb2f042ad5ba04311cf2b9b1cbf4ec8d0eb3"
+    },
+    "4": {
+      "start": 0,
+      "end": 505286,
+      "messages": 505286,
+      "sha256": "b3c9a83c26edf768b2c248488a400394b30cd3ab9cc4df5a92eabaa7829f0a97"
+    },
+    "5": {
+      "start": 0,
+      "end": 497851,
+      "messages": 497851,
+      "sha256": "998bfe8026100875eccae9507341d4f112fca4e03bf7644e30296d47fad24243"
+    }
+  },
+  "elapsed_s": 48.0
+}
