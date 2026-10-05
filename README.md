@@ -6,7 +6,7 @@
 
 **Was the promised transit service actually delivered?** Transitometer is a streaming and lakehouse data pipeline that measures bus and subway reliability from real GTFS-Realtime feeds. It covers on-time performance, headway regularity and bunching, and feed data quality. Every Spark output table is compared with a separately built DuckDB reference. Started as a CO5173 Data Engineering course project (HCMUT).
 
-**Live:** [public site](https://transitometer.vercel.app/) (static snapshot of a validated run) · [why and how it was built](https://transitometer.vercel.app/about/) · [evidence behind the numbers](https://transitometer.vercel.app/data/validation/)
+**Live:** [public site](https://transitometer.vercel.app/) (static snapshot of a validated run) · [why and how it was built](https://transitometer.vercel.app/about/) · [evidence behind the numbers](https://transitometer.vercel.app/data/validation/) · [analyst console](https://transitometer.streamlit.app/) (Streamlit; may take up to a minute to wake)
 
 - Real data: archived New York MTA feeds (bus trip updates, bus vehicle positions, subway 1–7/S trip updates) from [gtfsrt.io](https://gtfsrt.io), plus the matching static timetables.
 - Pipeline: protobuf replay into **Kafka** → **Spark Structured Streaming** (PySpark) → **Delta Lake** Silver and Gold → **DuckDB** → **Streamlit** app.

@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import type { Meta } from "@/data/schemas";
 
-export const STREAMLIT_URL = process.env.NEXT_PUBLIC_STREAMLIT_URL ?? "";
+// The hosted analyst console; NEXT_PUBLIC_STREAMLIT_URL overrides it (for example for a fork).
+export const STREAMLIT_URL = process.env.NEXT_PUBLIC_STREAMLIT_URL || "https://transitometer.streamlit.app/";
 
 /** What runs where, the data licence, and where to look further. */
 export function SiteFooter({ meta }: { meta: Meta }) {

@@ -34,7 +34,7 @@ npm run build              # static export -> web/out/ (every JSON file schema-c
 ## Deploying (Vercel Hobby)
 
 - Vercel project with **root directory `web`**, framework Next.js. No environment variables or secrets.
-- Optional: `NEXT_PUBLIC_STREAMLIT_URL` adds the Streamlit analyst console link to the footer.
+- The analyst console link points to https://transitometer.streamlit.app/; set `NEXT_PUBLIC_STREAMLIT_URL` to point it elsewhere.
 - `vercel.json` sets the security headers and skips builds when neither `web/` nor `showcase/` changed.
 - The site is plain static files, so `out/` also deploys unchanged to Cloudflare Pages or GitHub Pages.
 
