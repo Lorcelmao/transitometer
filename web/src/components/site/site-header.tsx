@@ -66,7 +66,7 @@ function DesktopNav({ pathname }: { pathname: string }) {
         })}
         <NavigationMenuItem>
           <NavigationMenuLink asChild>
-            <Link href="/#about" className="inline-flex h-11 items-center px-3 text-sm text-ink no-underline hover:bg-panel">
+            <Link href="/about/" className="inline-flex h-11 items-center px-3 text-sm text-ink no-underline hover:bg-panel">
               About
             </Link>
           </NavigationMenuLink>
@@ -115,7 +115,7 @@ function MobileNav({ pathname }: { pathname: string }) {
             </div>
           ))}
           <SheetClose asChild>
-            <Link href="/#about" className="text-sm text-ink no-underline">
+            <Link href="/about/" className="text-sm text-ink no-underline">
               About this project
             </Link>
           </SheetClose>

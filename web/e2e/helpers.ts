@@ -15,6 +15,7 @@ export const ROUTES = [
   "/diagnostics/early-warning/",
   "/data/feed-health/",
   "/data/validation/",
+  "/about/",
 ];
 
 /** The display strings both frontends must show (written by `python tasks.py web-data`). */
