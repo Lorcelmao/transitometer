@@ -17,7 +17,7 @@
 - **Report type**: Technology research & comparison design (feeds `02-candidates` and `04-architecture`)
 - **Research date**: 2026-09-23 (UTC+7)
 - **Author**: Technical Analyst subagent
-- **Companion doc**: `00-requirements/instructor-project-requirements.md` (authoritative requirement extract)
+- **Companion doc**: the instructor's project requirements (course material, not published in this repository)
 
 > Scope: This report evaluates the instructor's technology menu plus adjacent technologies,
 > and proposes concrete, defensible comparison experiments. It does **not** pick the final

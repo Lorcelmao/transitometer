@@ -2,7 +2,7 @@
 
 **Course:** CO5173 Data Engineering · **Domain:** Transportation · **Team:** 4 students, 1 semester
 **Date:** 2026-09-23
-**Inputs:** `01-research/domain-problems-and-stakeholders.md`, `01-research/data-engineering-technology-landscape.md`, `03-data-sources/*.md`, `00-requirements/instructor-project-requirements.md`
+**Inputs:** `01-research/domain-problems-and-stakeholders.md`, `01-research/data-engineering-technology-landscape.md`, `03-data-sources/*.md`, the instructor's project requirements (not published)
 
 > Purpose: reduce the transportation opportunity space to a defensible leading direction, with explicit
 > criteria, transparent scores, and the decision points that require team/owner input.

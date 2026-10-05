@@ -1,6 +1,12 @@
 # Transitometer
 
-**Was the promised transit service actually delivered?** Transitometer is a streaming and lakehouse data pipeline that measures bus and subway reliability from real GTFS-Realtime feeds. It covers on-time performance, headway regularity and bunching, and feed data quality. Every number it produces is checked against an independently built reference. CO5173 Data Engineering course project (HCMUT).
+[![ci](https://github.com/Lorcelmao/transitometer/actions/workflows/ci.yml/badge.svg)](https://github.com/Lorcelmao/transitometer/actions/workflows/ci.yml)
+[![Live site](https://img.shields.io/badge/live%20site-transitometer.vercel.app-0b5394)](https://transitometer.vercel.app/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
+**Was the promised transit service actually delivered?** Transitometer is a streaming and lakehouse data pipeline that measures bus and subway reliability from real GTFS-Realtime feeds. It covers on-time performance, headway regularity and bunching, and feed data quality. Every Spark output table is compared with a separately built DuckDB reference. Started as a CO5173 Data Engineering course project (HCMUT).
+
+**Live:** [public site](https://transitometer.vercel.app/) (static snapshot of a validated run) · [why and how it was built](https://transitometer.vercel.app/about/) · [evidence behind the numbers](https://transitometer.vercel.app/data/validation/)
 
 - Real data: archived New York MTA feeds (bus trip updates, bus vehicle positions, subway 1–7/S trip updates) from [gtfsrt.io](https://gtfsrt.io), plus the matching static timetables.
 - Pipeline: protobuf replay into **Kafka** → **Spark Structured Streaming** (PySpark) → **Delta Lake** Silver and Gold → **DuckDB** → **Streamlit** app.
@@ -140,13 +146,18 @@ The public app runs the same Streamlit code on `showcase/data/`, a committed cop
 
 ## Roadmap
 
-All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. Next: the public showcase deployment, then the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
+All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. The public showcase is deployed (Next.js on Vercel, Streamlit on Community Cloud). Next: the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
 
 ## Storage rules
 
 Data never goes into Git. Raw/landing data, golden results and exports live in the host data root (`TRANSITOMETER_DATA_ROOT`); Docker holds only rebuildable working state and should stay at or below 25 GB.
 
-## Collaboration
+## Data and licence
 
-Feature branch → pull request → review by at least one other member → merge to `main`.
-`main` must always pass `python tasks.py check`.
+Source data: archived MTA GTFS-Realtime feeds (via the [gtfsrt.io](https://gtfsrt.io) archive) and MTA static timetables, used under the [MTA Terms of Use](https://www.mta.info/developers/terms-and-conditions). Transitometer is not an official MTA product and is not endorsed by the MTA. The repository publishes only derived tables (the validated snapshot and the golden reference), never raw feed data.
+
+Code: [MIT](LICENSE).
+
+## Contributing
+
+`main` must always pass `python tasks.py check`; CI runs the same checks plus the web build, end-to-end and Lighthouse tests.

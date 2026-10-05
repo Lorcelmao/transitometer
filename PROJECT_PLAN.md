@@ -116,7 +116,7 @@ serving axis bonus) · systematic evaluation of **data correctness, performance,
 
 ## 2. Instructor PROJECT requirements → how this plan satisfies them
 
-Extracted verbatim in `00-requirements/instructor-project-requirements.md`.
+Summarised from the instructor's requirements (course material, not published in this repository).
 
 | ID | Requirement (from spec) | How Transitometer satisfies it |
 |---|---|---|
@@ -580,6 +580,8 @@ Docker-free Spark/Flink development · 90-day multi-agency window.
 | **M2** | Walking skeleton lead; **Spark** Silver/Gold; Delta maintenance | BR1, BR2, BR6 |
 | **M3** | **Flink** Axis A; **ClickHouse** Axis B; **shared benchmark harness** | BR4, BR5 |
 | **M4** | **DuckDB golden**, correctness suite, **Streamlit app** | BR8, BR9 |
+
+Planned for four members; implemented by one developer (see the git history).
 
 All four: BRs, report, slides, video. **The benchmark harness is shared code, not per-person scripts.**
 Ownership is logical: one Git repository; heavy runs on the single host, scheduled; host-side work (golden SQL,
