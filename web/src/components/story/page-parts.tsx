@@ -3,11 +3,21 @@ import type { ReactNode } from "react";
 import { Markdown } from "@/components/markdown";
 
 /** Page opening: a section label, the question the page answers, and a short lead. */
-export function PageIntro({ section, title, children }: { section: string; title: string; children: ReactNode }) {
+export function PageIntro({
+  section,
+  title,
+  titleId,
+  children,
+}: {
+  section: string;
+  title: string;
+  titleId?: string;
+  children: ReactNode;
+}) {
   return (
     <header className="pt-10">
       <p className="text-xs font-medium uppercase tracking-widest text-accent-red">{section}</p>
-      <h1 className="mt-2 max-w-3xl font-display text-4xl leading-tight md:text-5xl">{title}</h1>
+      <h1 id={titleId} className="mt-2 max-w-3xl font-display text-4xl leading-tight md:text-5xl">{title}</h1>
       <div className="mt-4 max-w-prose text-lg text-ink/90">{children}</div>
     </header>
   );
