@@ -88,6 +88,17 @@ Every number below is read from a committed result file (named in each row). The
 
 Rows are matched on their keys; every other column must be equal, floats within the declared tolerance ([`golden/tolerance.json`](golden/tolerance.json)). Re-running the golden pipeline reproduces every frozen golden file byte for byte (checksums in `golden/checksums.json`).
 
+**Alternative processing engine (Axis A): Spark and Flink on one passage stream**
+
+Both engines read the same Kafka topic of 3,020,240 inferred passages (between recorded offsets; per-partition SHA-256 in `results/axis-a-produce.json`) and compute W1, 1-minute event-time windows of arrival delay per route and stop, and W2, the BR2 headway of each passage with keyed state. Golden W2 computed from the passages equals the golden `headways` table, so the stream is complete.
+
+| Engine | W1 windows equal golden | W2 headways equal golden | Evidence |
+|---|---|---|---|
+| Spark 4.1 Structured Streaming | 2,919,421 / 2,919,421 | 2,956,930 / 2,956,930 | `results/validation-axis-a.json` |
+| Flink 2.2 (PyFlink: SQL for W1, KeyedProcessFunction for W2) | 2,919,421 / 2,919,421 | 2,956,930 / 2,956,930 | `results/validation-axis-a.json` |
+
+Both engines share one W2 state step (`axis_a/headway_state.py`), property-tested against the golden SQL. The engines do not re-infer stop events: they start from the inferred passages. Latency, throughput, lateness and recovery are measured in S10; the drained run times in `results/axis-a-*.json` are not a benchmark.
+
 **Performance (one laptop, wall time; Spark `local[8]`, DuckDB 8 threads)**
 
 | Step | Time | Evidence |

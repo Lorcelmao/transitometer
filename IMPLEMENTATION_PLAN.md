@@ -240,6 +240,7 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Deliverables:** build `flink-py` image; PyFlink jobs for **W1** (1-min tumbling event-time delay stats per route/stop) and **W2** (keyed stateful headway per route/direction/stop), same watermark policy and inference rules as Spark; sink `kpi.flink.*`.
 - **Tests:** parity vs golden and vs Spark on identical offsets; output-schema equivalence; fairness assertions (same topic/offsets, caps, pace).
 - **Exit:** both arms produce comparable W1/W2 outputs; deviations explained.
+- **Status (2026-10-06): done.** Input is one topic of inferred passages (`rt.passages`, from golden steps 01–05), not raw trip updates: neither engine re-infers stop events. Spark and Flink W1 (2,919,421 windows) and W2 (2,956,930 headways) equal golden exactly (`results/validation-axis-a.json`). Findings: Spark `availableNow` stops before the batch that applies the final watermark, and Catalyst pushes filters below `EventTimeWatermark` (both fixed in `pipeline/axis_a_spark.py`); the Flink SQL Kafka connector needs `zstd-jni` for the zstd-compressed topics (pinned in `docker/versions.env`). Plan: `plans/261005-2058-s8-flink-axis-a/`.
 
 ### S9 — ClickHouse & Axis B — Docker (`clickhouse`)
 - **Goal:** serving comparison B1 Spark SQL over Delta · B2 DuckDB over Delta · B3 ClickHouse.
