@@ -5,6 +5,7 @@ FROM ${FLINK_BASE_IMAGE}
 
 ARG PYFLINK_VERSION
 ARG FLINK_KAFKA_CONNECTOR_VERSION
+ARG ZSTD_JNI_VERSION
 
 USER root
 
@@ -17,6 +18,11 @@ RUN apt-get update \
 
 ADD --chown=flink:flink \
     https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka/${FLINK_KAFKA_CONNECTOR_VERSION}/flink-sql-connector-kafka-${FLINK_KAFKA_CONNECTOR_VERSION}.jar \
+    /opt/flink/lib/
+
+# The connector reads zstd-compressed topics through kafka-clients, which needs zstd-jni at runtime.
+ADD --chown=flink:flink \
+    https://repo1.maven.org/maven2/com/github/luben/zstd-jni/${ZSTD_JNI_VERSION}/zstd-jni-${ZSTD_JNI_VERSION}.jar \
     /opt/flink/lib/
 
 ENV PYTHONPATH=/opt/transitometer/src

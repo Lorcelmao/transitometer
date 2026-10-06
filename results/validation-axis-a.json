@@ -25,5 +25,32 @@
       "examples": []
     },
     "ok": true
+  },
+  "flink": {
+    "dump": {
+      "engine": "flink",
+      "w1": {
+        "messages": 2919421,
+        "rows": 2919421,
+        "duplicates": 0
+      },
+      "w2": {
+        "messages": 2956930,
+        "rows": 2956930,
+        "duplicates": 0
+      },
+      "elapsed_s": 92.4
+    },
+    "w1": {
+      "ok": true,
+      "detail": "w1: OK (2919421 rows)",
+      "examples": []
+    },
+    "w2": {
+      "ok": true,
+      "detail": "w2: OK (2956930 rows)",
+      "examples": []
+    },
+    "ok": true
   }
 }
