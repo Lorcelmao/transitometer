@@ -1,0 +1,45 @@
+{
+  "engine": "Spark 4.1.3",
+  "topic": "rt.passages",
+  "trigger": "1 second",
+  "max_offsets_per_trigger": 100000,
+  "watermark": "120 seconds",
+  "parallelism": 8,
+  "drained_s": {
+    "w1": 803.6,
+    "w2": 865.8
+  },
+  "w1": {
+    "batches": 32,
+    "input_rows": 3020241,
+    "dropped_by_watermark": 0,
+    "end_offsets": {
+      "rt.passages": {
+        "0": 516605,
+        "1": 497770,
+        "2": 493302,
+        "3": 509427,
+        "4": 505286,
+        "5": 497851
+      }
+    },
+    "read_to_recorded_end": true
+  },
+  "w2": {
+    "batches": 32,
+    "input_rows": 3020241,
+    "dropped_by_watermark": 0,
+    "end_offsets": {
+      "rt.passages": {
+        "0": 516605,
+        "1": 497770,
+        "2": 493302,
+        "3": 509427,
+        "4": 505286,
+        "5": 497851
+      }
+    },
+    "read_to_recorded_end": true
+  },
+  "elapsed_s": 872.9
+}

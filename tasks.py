@@ -339,6 +339,106 @@ def task_axis_a_verify(_: argparse.Namespace) -> int:
     )
 
 
+def task_axis_a_spark(args: argparse.Namespace) -> int:
+    """Axis A Spark arm: W1/W2 from the passage stream into kpi.spark.* (drains the topic)."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    arguments = ["--record", f"{AXIS_A_EXPORTS}/produce-record.json", "--fresh"]
+    return _in_spark(
+        "transitometer.pipeline.axis_a_spark",
+        arguments,
+        ROOT / "results" / "axis-a-spark.json",
+        submit=True,
+    )
+
+
+def task_axis_a_compare(args: argparse.Namespace) -> int:
+    """Dump an engine's Axis A result topics and compare W1/W2 with golden (exit 1 on a diff)."""
+    from transitometer.golden import compare
+
+    engine = args.engine
+    dump = ROOT / "results" / f"axis-a-dump-{engine}.json"
+    code = _in_spark("transitometer.axis_a.dump", ["--engine", engine], dump)
+    if code:
+        return code
+    policy = compare.Policy.load(ROOT / "golden" / "axis-a-tolerance.json")
+    golden_dir, actual_dir = _axis_a_dir() / "golden", _axis_a_dir() / engine
+    report_file = ROOT / "results" / "validation-axis-a.json"
+    report = json.loads(report_file.read_text("utf-8")) if report_file.exists() else {}
+    body: dict[str, object] = {"dump": json.loads(dump.read_text("utf-8"))}
+    ok = True
+    for workload in ("w1", "w2"):
+        diff = compare.compare_table(workload, golden_dir, actual_dir, policy)
+        print(diff.describe(), flush=True)
+        for example in diff.examples[:5]:
+            print(f"    e.g. {example}")
+        body[workload] = {"ok": diff.ok, "detail": diff.describe(), "examples": diff.examples[:5]}
+        ok = ok and diff.ok
+    body["ok"] = ok
+    report[engine] = body
+    report_file.write_text(
+        json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
+    )
+    return 0 if ok else 1
+
+
+def task_axis_a_flink(args: argparse.Namespace) -> int:
+    """Axis A Flink arm: W1/W2 from the passage stream into kpi.flink.* (bounded, drains)."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    record = json.loads((ROOT / "results" / "axis-a-produce.json").read_text("utf-8"))
+    offsets = {p: [b["start"], b["end"]] for p, b in record["partitions"].items()}
+    services = ("kafka", "flink-jobmanager", "flink-taskmanager")
+    code = run(compose_cmd("--profile", "flink", "up", "-d", "--wait", *services))
+    if code:
+        return code
+    # The shared checkpoints volume is created by the Spark container; Flink runs as user flink.
+    prepare = "mkdir -p /data/checkpoints/flink && chown flink:flink /data/checkpoints/flink"
+    code = run(compose_cmd("exec", "-T", "-u", "root", "flink-jobmanager", "sh", "-c", prepare))
+    if code:
+        return code
+    topics = "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092"
+    for topic in ("kpi.flink.w1", "kpi.flink.w2"):
+        for action in (
+            f"--delete --if-exists --topic {topic}",
+            f"--create --topic {topic} --partitions 6",
+        ):
+            run(compose_cmd("exec", "-T", "kafka", "sh", "-c", f"{topics} {action}"))
+    report = ROOT / "results" / "axis-a-flink.json"
+    report.unlink(missing_ok=True)
+    job = "/opt/transitometer/src/transitometer/axis_a/flink_job.py"
+    cmd = compose_cmd(
+        "exec",
+        "-T",
+        "flink-jobmanager",
+        "flink",
+        "run",
+        "-py",
+        job,
+        "--offsets",
+        json.dumps(offsets),
+    )
+    started = time.perf_counter()
+    returncode, stdout, stderr = _stream(cmd)
+    report.with_suffix(".stderr.log").write_text(
+        stderr + "\n--- stdout ---\n" + stdout, encoding="utf-8", newline="\n"
+    )
+    lines = [line for line in stdout.splitlines() if line.startswith("{")]
+    if returncode or not lines:
+        print(stdout[-4000:], stderr[-4000:])
+        print(
+            f"FAILED: flink job exited with {returncode}; log: {report.with_suffix('.stderr.log')}"
+        )
+        return returncode or 1
+    result = json.loads(lines[-1])
+    result["elapsed_s"] = round(time.perf_counter() - started, 1)
+    report.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def task_golden_check(args: argparse.Namespace) -> int:
     """Check result tables against the frozen golden reference (exit 1 on any failure)."""
     from transitometer.golden import harness
@@ -856,12 +956,20 @@ def build_parser() -> argparse.ArgumentParser:
     for name, axis_task, help_text in (
         ("axis-a-produce", task_axis_a_produce, "Axis A passage stream into Kafka, verified"),
         ("axis-a-verify", task_axis_a_verify, "verify the Axis A passage topic against its record"),
+        ("axis-a-spark", task_axis_a_spark, "Axis A Spark arm (W1, W2), drained run"),
+        ("axis-a-flink", task_axis_a_flink, "Axis A Flink arm (W1, W2), bounded run"),
     ):
         axis = sub.add_parser(name, help=help_text)
         axis.add_argument(
             "--allow-peak", action="store_true", help="proceed above the block threshold"
         )
         axis.set_defaults(func=axis_task)
+
+    axis_compare = sub.add_parser(
+        "axis-a-compare", help="dump an engine's Axis A results and compare with golden W1/W2"
+    )
+    axis_compare.add_argument("--engine", required=True, choices=("spark", "flink"))
+    axis_compare.set_defaults(func=task_axis_a_compare)
 
     replay = sub.add_parser("replay", help="replay archived feeds into Kafka (kept for engines)")
     replay.add_argument("--days", nargs="+", help="UTC archive days (default: golden window)")

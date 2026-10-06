@@ -58,6 +58,8 @@ module = [
     "google.transit.*",
     "pyspark",
     "pyspark.*",
+    "pyflink",
+    "pyflink.*",
     "streamlit",
     "altair",
     "pandas",
