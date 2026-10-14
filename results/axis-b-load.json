@@ -1,0 +1,189 @@
+{
+  "prefix": "rt",
+  "target": "/data/lakehouse/axis_b",
+  "tables": {
+    "feed_quality_metrics": {
+      "source": "/data/lakehouse/gold/feed_quality_metrics",
+      "source_version": 5,
+      "rows": 46,
+      "copied_rows": 46,
+      "service_days": [],
+      "versions": 1,
+      "write_s": 2.7,
+      "source_unchanged": true,
+      "ok": true,
+      "layer": "gold"
+    },
+    "headways": {
+      "source": "/data/lakehouse/gold/headways",
+      "source_version": 5,
+      "rows": 2956930,
+      "copied_rows": 2956930,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 7.1,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 1457232,
+      "ok": true,
+      "layer": "gold"
+    },
+    "route_scorecard": {
+      "source": "/data/lakehouse/gold/route_scorecard",
+      "source_version": 2,
+      "rows": 353,
+      "copied_rows": 353,
+      "service_days": [],
+      "versions": 1,
+      "write_s": 0.9,
+      "source_unchanged": true,
+      "ok": true,
+      "layer": "gold"
+    },
+    "segment_travel_stats": {
+      "source": "/data/lakehouse/gold/segment_travel_stats",
+      "source_version": 1,
+      "rows": 380506,
+      "copied_rows": 380506,
+      "service_days": [],
+      "versions": 1,
+      "write_s": 1.4,
+      "source_unchanged": true,
+      "ok": true,
+      "layer": "gold"
+    },
+    "segments": {
+      "source": "/data/lakehouse/gold/segments",
+      "source_version": 1,
+      "rows": 2845556,
+      "copied_rows": 2845556,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 4.3,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 1399055,
+      "ok": true,
+      "layer": "gold"
+    },
+    "stop_events": {
+      "source": "/data/lakehouse/silver/stop_events",
+      "source_version": 2,
+      "rows": 2955606,
+      "copied_rows": 2955606,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 5.7,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 1454152,
+      "ok": true,
+      "layer": "silver"
+    },
+    "stop_hour_reliability": {
+      "source": "/data/lakehouse/gold/stop_hour_reliability",
+      "source_version": 2,
+      "rows": 392788,
+      "copied_rows": 392788,
+      "service_days": [],
+      "versions": 1,
+      "write_s": 1.5,
+      "source_unchanged": true,
+      "ok": true,
+      "layer": "gold"
+    },
+    "terminal_events": {
+      "source": "/data/lakehouse/gold/terminal_events",
+      "source_version": 5,
+      "rows": 73874,
+      "copied_rows": 73874,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 1.5,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 36451,
+      "ok": true,
+      "layer": "gold"
+    },
+    "trip_delay_attribution": {
+      "source": "/data/lakehouse/gold/trip_delay_attribution",
+      "source_version": 1,
+      "rows": 110050,
+      "copied_rows": 110050,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 1.9,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 55097,
+      "ok": true,
+      "layer": "gold"
+    },
+    "trip_delivery": {
+      "source": "/data/lakehouse/gold/trip_delivery",
+      "source_version": 5,
+      "rows": 117076,
+      "copied_rows": 117076,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 1.5,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 58538,
+      "ok": true,
+      "layer": "gold"
+    },
+    "warning_decisions": {
+      "source": "/data/lakehouse/gold/warning_decisions",
+      "source_version": 1,
+      "rows": 105488,
+      "copied_rows": 105488,
+      "service_days": [
+        "20260922",
+        "20260923"
+      ],
+      "versions": 2,
+      "write_s": 1.6,
+      "source_unchanged": true,
+      "version_0_days": [
+        "20260922"
+      ],
+      "version_0_rows": 52179,
+      "ok": true,
+      "layer": "gold"
+    }
+  },
+  "ok": true,
+  "elapsed_s": 82.7
+}

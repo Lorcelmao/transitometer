@@ -1,0 +1,189 @@
+{
+  "version": "26.8.10.6",
+  "database": "axis_b",
+  "tables": {
+    "feed_quality_metrics": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/feed_quality_metrics",
+      "delta_rows": 46,
+      "rows": 46,
+      "loads": [
+        {
+          "service_date": null,
+          "seconds": 0.013
+        }
+      ],
+      "non_nullable_columns": 6,
+      "columns": 6,
+      "ok": true
+    },
+    "headways": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/headways",
+      "delta_rows": 2956930,
+      "rows": 2956930,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 1.181
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 1.016
+        }
+      ],
+      "non_nullable_columns": 15,
+      "columns": 15,
+      "ok": true
+    },
+    "route_scorecard": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/route_scorecard",
+      "delta_rows": 353,
+      "rows": 353,
+      "loads": [
+        {
+          "service_date": null,
+          "seconds": 0.01
+        }
+      ],
+      "non_nullable_columns": 12,
+      "columns": 12,
+      "ok": true
+    },
+    "segment_travel_stats": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/segment_travel_stats",
+      "delta_rows": 380506,
+      "rows": 380506,
+      "loads": [
+        {
+          "service_date": null,
+          "seconds": 0.242
+        }
+      ],
+      "non_nullable_columns": 12,
+      "columns": 12,
+      "ok": true
+    },
+    "segments": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/segments",
+      "delta_rows": 2845556,
+      "rows": 2845556,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 0.57
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 0.629
+        }
+      ],
+      "non_nullable_columns": 15,
+      "columns": 15,
+      "ok": true
+    },
+    "stop_events": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/stop_events",
+      "delta_rows": 2955606,
+      "rows": 2955606,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 0.913
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 0.833
+        }
+      ],
+      "non_nullable_columns": 17,
+      "columns": 17,
+      "ok": true
+    },
+    "stop_hour_reliability": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/stop_hour_reliability",
+      "delta_rows": 392788,
+      "rows": 392788,
+      "loads": [
+        {
+          "service_date": null,
+          "seconds": 0.295
+        }
+      ],
+      "non_nullable_columns": 15,
+      "columns": 15,
+      "ok": true
+    },
+    "terminal_events": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/terminal_events",
+      "delta_rows": 73874,
+      "rows": 73874,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 0.042
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 0.04
+        }
+      ],
+      "non_nullable_columns": 12,
+      "columns": 12,
+      "ok": true
+    },
+    "trip_delay_attribution": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/trip_delay_attribution",
+      "delta_rows": 110050,
+      "rows": 110050,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 0.052
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 0.049
+        }
+      ],
+      "non_nullable_columns": 9,
+      "columns": 9,
+      "ok": true
+    },
+    "trip_delivery": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/trip_delivery",
+      "delta_rows": 117076,
+      "rows": 117076,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 0.053
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 0.055
+        }
+      ],
+      "non_nullable_columns": 13,
+      "columns": 13,
+      "ok": true
+    },
+    "warning_decisions": {
+      "source": "/var/lib/clickhouse/user_files/lakehouse/axis_b/warning_decisions",
+      "delta_rows": 105488,
+      "rows": 105488,
+      "loads": [
+        {
+          "service_date": "20260922",
+          "seconds": 0.066
+        },
+        {
+          "service_date": "20260923",
+          "seconds": 0.062
+        }
+      ],
+      "non_nullable_columns": 16,
+      "columns": 18,
+      "ok": true
+    }
+  },
+  "ok": true
+}

@@ -1,0 +1,164 @@
+{
+  "engine": "duckdb",
+  "answers": "/data/exports/axis-b/duckdb",
+  "queries": {
+    "q01_on_time_by_mode_day": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.067,
+      "adaptations": []
+    },
+    "q02_worst_route_hours": {
+      "applicable": true,
+      "rows": 20,
+      "seconds": 0.063,
+      "adaptations": []
+    },
+    "q03_route_delay_percentiles": {
+      "applicable": true,
+      "rows": 353,
+      "seconds": 0.298,
+      "adaptations": []
+    },
+    "q04_headway_class_mix": {
+      "applicable": true,
+      "rows": 16,
+      "seconds": 0.049,
+      "adaptations": []
+    },
+    "q05_route_delivery_shares": {
+      "applicable": true,
+      "rows": 354,
+      "seconds": 0.016,
+      "adaptations": []
+    },
+    "q06_route_segment_travel": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 0.071,
+      "adaptations": []
+    },
+    "q07_route_delay_attribution": {
+      "applicable": true,
+      "rows": 353,
+      "seconds": 0.016,
+      "adaptations": []
+    },
+    "q08_failing_feed_checks": {
+      "applicable": true,
+      "rows": 8,
+      "seconds": 0.016,
+      "adaptations": []
+    },
+    "q09_route_ranking": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 0.045,
+      "adaptations": []
+    },
+    "q10_running_on_time_by_hour": {
+      "applicable": true,
+      "rows": 114,
+      "seconds": 0.051,
+      "adaptations": []
+    },
+    "q11_worst_stops_per_route": {
+      "applicable": true,
+      "rows": 1022,
+      "seconds": 0.138,
+      "adaptations": []
+    },
+    "q12_biggest_delay_gain_per_route": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 1.699,
+      "adaptations": []
+    },
+    "q13_bunching_moving_average": {
+      "applicable": true,
+      "rows": 114,
+      "seconds": 0.066,
+      "adaptations": []
+    },
+    "q14_route_delay_percent_rank": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 0.065,
+      "adaptations": []
+    },
+    "q15_first_vs_last_delay": {
+      "applicable": true,
+      "rows": 2,
+      "seconds": 0.789,
+      "adaptations": []
+    },
+    "q16_on_time_by_delivery_class": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.169,
+      "adaptations": []
+    },
+    "q17_follower_delay_by_headway_class": {
+      "applicable": true,
+      "rows": 8,
+      "seconds": 0.475,
+      "adaptations": []
+    },
+    "q18_stops_worse_than_route": {
+      "applicable": true,
+      "rows": 578,
+      "seconds": 0.038,
+      "adaptations": []
+    },
+    "q19_final_delay_of_warned_trips": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.051,
+      "adaptations": []
+    },
+    "q20_last_stop_vs_last_intermediate": {
+      "applicable": true,
+      "rows": 1,
+      "seconds": 0.054,
+      "adaptations": []
+    },
+    "q21_missing_trips_and_gaps": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.076,
+      "adaptations": []
+    },
+    "q22_segments_slower_than_p90": {
+      "applicable": true,
+      "rows": 2,
+      "seconds": 0.208,
+      "adaptations": []
+    },
+    "q23_scheduled_trips_without_events": {
+      "applicable": true,
+      "rows": 14,
+      "seconds": 0.086,
+      "adaptations": []
+    },
+    "q24_version_first_day_vs_latest": {
+      "applicable": true,
+      "rows": 2,
+      "seconds": 0.046,
+      "adaptations": [
+        "time travel: first service day read as Delta version 0"
+      ]
+    },
+    "q25_route_change_between_versions": {
+      "applicable": true,
+      "rows": 351,
+      "seconds": 0.098,
+      "adaptations": [
+        "time travel: first service day read as Delta version 0"
+      ]
+    }
+  },
+  "version": "1.5.5",
+  "threads": 8,
+  "tables": "/data/lakehouse/axis_b",
+  "elapsed_s": 7.3
+}

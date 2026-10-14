@@ -1,0 +1,173 @@
+{
+  "engine": "clickhouse",
+  "answers": "D:\\Transitometer-data\\exports\\axis-b\\clickhouse",
+  "queries": {
+    "q01_on_time_by_mode_day": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.131,
+      "adaptations": []
+    },
+    "q02_worst_route_hours": {
+      "applicable": true,
+      "rows": 20,
+      "seconds": 0.069,
+      "adaptations": []
+    },
+    "q03_route_delay_percentiles": {
+      "applicable": true,
+      "rows": 353,
+      "seconds": 0.08,
+      "adaptations": [
+        "percentile_disc as its definition (2x)"
+      ]
+    },
+    "q04_headway_class_mix": {
+      "applicable": true,
+      "rows": 16,
+      "seconds": 0.079,
+      "adaptations": []
+    },
+    "q05_route_delivery_shares": {
+      "applicable": true,
+      "rows": 354,
+      "seconds": 0.021,
+      "adaptations": []
+    },
+    "q06_route_segment_travel": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 0.086,
+      "adaptations": [
+        "percentile_disc as its definition (2x)"
+      ]
+    },
+    "q07_route_delay_attribution": {
+      "applicable": true,
+      "rows": 353,
+      "seconds": 0.021,
+      "adaptations": []
+    },
+    "q08_failing_feed_checks": {
+      "applicable": true,
+      "rows": 8,
+      "seconds": 0.011,
+      "adaptations": []
+    },
+    "q09_route_ranking": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 0.087,
+      "adaptations": []
+    },
+    "q10_running_on_time_by_hour": {
+      "applicable": true,
+      "rows": 114,
+      "seconds": 0.112,
+      "adaptations": []
+    },
+    "q11_worst_stops_per_route": {
+      "applicable": true,
+      "rows": 1022,
+      "seconds": 0.124,
+      "adaptations": [
+        "percentile_disc as its definition (1x)"
+      ]
+    },
+    "q12_biggest_delay_gain_per_route": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 1.118,
+      "adaptations": [
+        "lag over a Nullable argument (NULL when there is no previous row)"
+      ]
+    },
+    "q13_bunching_moving_average": {
+      "applicable": true,
+      "rows": 114,
+      "seconds": 0.071,
+      "adaptations": []
+    },
+    "q14_route_delay_percent_rank": {
+      "applicable": true,
+      "rows": 352,
+      "seconds": 0.1,
+      "adaptations": [
+        "percentile_disc as its definition (1x)"
+      ]
+    },
+    "q15_first_vs_last_delay": {
+      "applicable": true,
+      "rows": 2,
+      "seconds": 0.455,
+      "adaptations": []
+    },
+    "q16_on_time_by_delivery_class": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.21,
+      "adaptations": []
+    },
+    "q17_follower_delay_by_headway_class": {
+      "applicable": true,
+      "rows": 8,
+      "seconds": 0.787,
+      "adaptations": [
+        "percentile_disc as its definition (1x)"
+      ]
+    },
+    "q18_stops_worse_than_route": {
+      "applicable": true,
+      "rows": 578,
+      "seconds": 0.031,
+      "adaptations": []
+    },
+    "q19_final_delay_of_warned_trips": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.094,
+      "adaptations": [
+        "percentile_disc as its definition (1x)"
+      ]
+    },
+    "q20_last_stop_vs_last_intermediate": {
+      "applicable": true,
+      "rows": 1,
+      "seconds": 0.068,
+      "adaptations": [
+        "percentile_disc as its definition (1x)"
+      ]
+    },
+    "q21_missing_trips_and_gaps": {
+      "applicable": true,
+      "rows": 4,
+      "seconds": 0.107,
+      "adaptations": []
+    },
+    "q22_segments_slower_than_p90": {
+      "applicable": true,
+      "rows": 2,
+      "seconds": 0.753,
+      "adaptations": []
+    },
+    "q23_scheduled_trips_without_events": {
+      "applicable": true,
+      "rows": 14,
+      "seconds": 0.136,
+      "adaptations": []
+    },
+    "q24_version_first_day_vs_latest": {
+      "applicable": false,
+      "reason": "no Delta version read on this engine"
+    },
+    "q25_route_change_between_versions": {
+      "applicable": false,
+      "reason": "no Delta version read on this engine"
+    }
+  },
+  "version": "26.8.10.6",
+  "threads": 8,
+  "settings": {
+    "join_use_nulls": "1"
+  }
+}

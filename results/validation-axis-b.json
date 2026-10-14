@@ -1,0 +1,674 @@
+{
+  "duckdb": {
+    "version": "1.5.5",
+    "equal": 25,
+    "applicable": 25,
+    "ok": true,
+    "queries": {
+      "q01_on_time_by_mode_day": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q01_on_time_by_mode_day: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q02_worst_route_hours": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q02_worst_route_hours: OK (20 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q03_route_delay_percentiles": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q03_route_delay_percentiles: OK (353 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q04_headway_class_mix": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q04_headway_class_mix: OK (16 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q05_route_delivery_shares": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q05_route_delivery_shares: OK (354 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q06_route_segment_travel": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q06_route_segment_travel: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q07_route_delay_attribution": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q07_route_delay_attribution: OK (353 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q08_failing_feed_checks": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q08_failing_feed_checks: OK (8 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q09_route_ranking": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q09_route_ranking: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q10_running_on_time_by_hour": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q10_running_on_time_by_hour: OK (114 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q11_worst_stops_per_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q11_worst_stops_per_route: OK (1022 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q12_biggest_delay_gain_per_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q12_biggest_delay_gain_per_route: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q13_bunching_moving_average": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q13_bunching_moving_average: OK (114 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q14_route_delay_percent_rank": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q14_route_delay_percent_rank: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q15_first_vs_last_delay": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q15_first_vs_last_delay: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q16_on_time_by_delivery_class": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q16_on_time_by_delivery_class: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q17_follower_delay_by_headway_class": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q17_follower_delay_by_headway_class: OK (8 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q18_stops_worse_than_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q18_stops_worse_than_route: OK (578 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q19_final_delay_of_warned_trips": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q19_final_delay_of_warned_trips: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q20_last_stop_vs_last_intermediate": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q20_last_stop_vs_last_intermediate: OK (1 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q21_missing_trips_and_gaps": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q21_missing_trips_and_gaps: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q22_segments_slower_than_p90": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q22_segments_slower_than_p90: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q23_scheduled_trips_without_events": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q23_scheduled_trips_without_events: OK (14 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q24_version_first_day_vs_latest": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q24_version_first_day_vs_latest: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "time travel: first service day read as Delta version 0"
+        ]
+      },
+      "q25_route_change_between_versions": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q25_route_change_between_versions: OK (351 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "time travel: first service day read as Delta version 0"
+        ]
+      }
+    }
+  },
+  "spark": {
+    "version": "4.1.3",
+    "equal": 25,
+    "applicable": 25,
+    "ok": true,
+    "queries": {
+      "q01_on_time_by_mode_day": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q01_on_time_by_mode_day: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q02_worst_route_hours": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q02_worst_route_hours: OK (20 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q03_route_delay_percentiles": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q03_route_delay_percentiles: OK (353 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q04_headway_class_mix": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q04_headway_class_mix: OK (16 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q05_route_delivery_shares": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q05_route_delivery_shares: OK (354 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q06_route_segment_travel": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q06_route_segment_travel: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q07_route_delay_attribution": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q07_route_delay_attribution: OK (353 rows; 1 exact rounding tie(s) verified)",
+        "examples": [],
+        "rounding_ties": [
+          {
+            "column": "mean_inherited_delay_s",
+            "grp": "bus",
+            "route_id": "QM11",
+            "expected": 319.27,
+            "actual": 319.28,
+            "sum": 12771,
+            "count": 40,
+            "tie": true
+          }
+        ],
+        "adaptations": []
+      },
+      "q08_failing_feed_checks": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q08_failing_feed_checks: OK (8 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q09_route_ranking": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q09_route_ranking: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q10_running_on_time_by_hour": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q10_running_on_time_by_hour: OK (114 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q11_worst_stops_per_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q11_worst_stops_per_route: OK (1022 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q12_biggest_delay_gain_per_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q12_biggest_delay_gain_per_route: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q13_bunching_moving_average": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q13_bunching_moving_average: OK (114 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q14_route_delay_percent_rank": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q14_route_delay_percent_rank: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q15_first_vs_last_delay": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q15_first_vs_last_delay: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q16_on_time_by_delivery_class": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q16_on_time_by_delivery_class: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q17_follower_delay_by_headway_class": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q17_follower_delay_by_headway_class: OK (8 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q18_stops_worse_than_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q18_stops_worse_than_route: OK (578 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q19_final_delay_of_warned_trips": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q19_final_delay_of_warned_trips: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q20_last_stop_vs_last_intermediate": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q20_last_stop_vs_last_intermediate: OK (1 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q21_missing_trips_and_gaps": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q21_missing_trips_and_gaps: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q22_segments_slower_than_p90": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q22_segments_slower_than_p90: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q23_scheduled_trips_without_events": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q23_scheduled_trips_without_events: OK (14 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q24_version_first_day_vs_latest": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q24_version_first_day_vs_latest: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "time travel: first service day read as Delta version 0"
+        ]
+      },
+      "q25_route_change_between_versions": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q25_route_change_between_versions: OK (351 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "time travel: first service day read as Delta version 0"
+        ]
+      }
+    }
+  },
+  "clickhouse": {
+    "version": "26.8.10.6",
+    "equal": 23,
+    "applicable": 23,
+    "ok": true,
+    "queries": {
+      "q01_on_time_by_mode_day": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q01_on_time_by_mode_day: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q02_worst_route_hours": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q02_worst_route_hours: OK (20 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q03_route_delay_percentiles": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q03_route_delay_percentiles: OK (353 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (2x)"
+        ]
+      },
+      "q04_headway_class_mix": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q04_headway_class_mix: OK (16 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q05_route_delivery_shares": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q05_route_delivery_shares: OK (354 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q06_route_segment_travel": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q06_route_segment_travel: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (2x)"
+        ]
+      },
+      "q07_route_delay_attribution": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q07_route_delay_attribution: OK (353 rows; 2 exact rounding tie(s) verified)",
+        "examples": [],
+        "rounding_ties": [
+          {
+            "column": "mean_final_delay_s",
+            "grp": "bus",
+            "route_id": "BX18A",
+            "expected": 457.93,
+            "actual": 457.92,
+            "sum": 54951,
+            "count": 120,
+            "tie": true
+          },
+          {
+            "column": "mean_final_delay_s",
+            "grp": "bus",
+            "route_id": "Q86",
+            "expected": 93.53,
+            "actual": 93.52,
+            "sum": 26187,
+            "count": 280,
+            "tie": true
+          }
+        ],
+        "adaptations": []
+      },
+      "q08_failing_feed_checks": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q08_failing_feed_checks: OK (8 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q09_route_ranking": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q09_route_ranking: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q10_running_on_time_by_hour": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q10_running_on_time_by_hour: OK (114 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q11_worst_stops_per_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q11_worst_stops_per_route: OK (1022 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (1x)"
+        ]
+      },
+      "q12_biggest_delay_gain_per_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q12_biggest_delay_gain_per_route: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "lag over a Nullable argument (NULL when there is no previous row)"
+        ]
+      },
+      "q13_bunching_moving_average": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q13_bunching_moving_average: OK (114 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q14_route_delay_percent_rank": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q14_route_delay_percent_rank: OK (352 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (1x)"
+        ]
+      },
+      "q15_first_vs_last_delay": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q15_first_vs_last_delay: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q16_on_time_by_delivery_class": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q16_on_time_by_delivery_class: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q17_follower_delay_by_headway_class": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q17_follower_delay_by_headway_class: OK (8 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (1x)"
+        ]
+      },
+      "q18_stops_worse_than_route": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q18_stops_worse_than_route: OK (578 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q19_final_delay_of_warned_trips": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q19_final_delay_of_warned_trips: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (1x)"
+        ]
+      },
+      "q20_last_stop_vs_last_intermediate": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q20_last_stop_vs_last_intermediate: OK (1 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": [
+          "percentile_disc as its definition (1x)"
+        ]
+      },
+      "q21_missing_trips_and_gaps": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q21_missing_trips_and_gaps: OK (4 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q22_segments_slower_than_p90": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q22_segments_slower_than_p90: OK (2 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q23_scheduled_trips_without_events": {
+        "applicable": true,
+        "ok": true,
+        "detail": "q23_scheduled_trips_without_events: OK (14 rows)",
+        "examples": [],
+        "rounding_ties": [],
+        "adaptations": []
+      },
+      "q24_version_first_day_vs_latest": {
+        "applicable": false,
+        "reason": "no Delta version read on this engine"
+      },
+      "q25_route_change_between_versions": {
+        "applicable": false,
+        "reason": "no Delta version read on this engine"
+      }
+    }
+  }
+}
