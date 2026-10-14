@@ -69,10 +69,11 @@ def wait_ready(timeout_s: float = 60.0) -> None:
         time.sleep(1)
 
 
-def delta_path(prefix: str, table: str) -> str:
-    """The table's Axis B Delta folder as the server sees it (see layout.lakehouse_root)."""
+def delta_path(prefix: str, table: str, suffix: str = "") -> str:
+    """The table's Axis B Delta folder as the server sees it (see layout.lakehouse_root);
+    suffix "_fresh" names the freshness copy (bench.axis_b_spark)."""
     base = f"{USER_FILES}/lakehouse" + ("" if prefix == "rt" else f"/scratch/{prefix}")
-    return f"{base}/axis_b/{table}"
+    return f"{base}/axis_b{suffix}/{table}"
 
 
 def _quote(name: str) -> str:
@@ -144,13 +145,13 @@ def load(prefix: str, policy_file: Path) -> dict[str, Any]:
     }
 
 
-def run(out_dir: Path, threads: int = 8) -> dict[str, Any]:
+def run(out_dir: Path, threads: int = 8, passes: int = 1) -> dict[str, Any]:
     settings = {**QUERY_SETTINGS, "database": DATABASE, "max_threads": str(threads)}
 
     def execute(sql: str) -> pa.Table:
         return pq.read_table(io.BytesIO(request(f"{sql}\nFORMAT Parquet", **settings)))
 
-    record = run_suite("clickhouse", execute, None, out_dir)
+    record = run_suite("clickhouse", execute, None, out_dir, passes)
     record.update(
         {
             "version": request("SELECT version()").decode().strip(),
@@ -159,3 +160,44 @@ def run(out_dir: Path, threads: int = 8) -> dict[str, Any]:
         }
     )
     return record
+
+
+def footprint() -> list[dict[str, Any]]:
+    """Active MergeTree parts per Axis B table: parts, rows and bytes (on disk, compressed,
+    uncompressed)."""
+    return rows(
+        "SELECT table, count() AS parts, sum(rows) AS rows, sum(bytes_on_disk) AS bytes_on_disk, "
+        "sum(data_compressed_bytes) AS compressed_bytes, "
+        "sum(data_uncompressed_bytes) AS uncompressed_bytes "
+        f"FROM system.parts WHERE database = '{DATABASE}' AND active "
+        "AND table <> 'fresh_stop_events' GROUP BY table ORDER BY table"
+    )
+
+
+def freshness(prefix: str, threads: int = 8) -> dict[str, Any]:
+    """B3 freshness on the fresh stop_events copy (day 2 already committed in Delta): a table that
+    answers q01 on day 1; time the load of day 2 from Delta, then the q01 that first sees it."""
+    from transitometer.bench.axis_b_local import freshness_sql
+
+    source = f"deltaLakeLocal('{delta_path(prefix, dialect.TIME_TRAVEL_TABLE, '_fresh')}')"
+    fresh = f"{DATABASE}.fresh_stop_events"
+    settings = {**QUERY_SETTINGS, "database": DATABASE, "max_threads": str(threads)}
+    days = [r["d"] for r in rows(f"SELECT DISTINCT {DAY} AS d FROM {source} ORDER BY d")]
+    request(f"DROP TABLE IF EXISTS {fresh}")
+    request(f"CREATE TABLE {fresh} AS {DATABASE}.{dialect.TIME_TRAVEL_TABLE}")
+    request(f"INSERT INTO {fresh} SELECT * FROM {source} WHERE {DAY} = '{days[0]}'")
+    query = freshness_sql("fresh_stop_events")
+    before = sorted({r[DAY] for r in rows(query, **settings)})
+    started = time.perf_counter()
+    request(f"INSERT INTO {fresh} SELECT * FROM {source} WHERE {DAY} = '{days[1]}'")
+    load_s = time.perf_counter() - started
+    seen = sorted({r[DAY] for r in rows(query, **settings)})
+    visible_s = time.perf_counter() - started
+    request(f"DROP TABLE {fresh}")
+    return {
+        "days_before": before,
+        "days_after": seen,
+        "load_s": round(load_s, 4),
+        "visible_s": round(visible_s, 4),
+        "ok": before == days[:1] and seen == days[:2],
+    }

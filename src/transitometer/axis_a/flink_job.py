@@ -10,6 +10,7 @@ Event time is the observed arrival; the watermark trails it by 120 s, as in the 
 
 Usage (inside the Flink image):
   flink run -py flink_job.py --offsets '{"0": [start, end], ...}' [--bootstrap kafka:9092]
+                            [--topic rt.passages]
 """
 
 from __future__ import annotations
@@ -62,7 +63,7 @@ def offsets_option(offsets: dict[str, list[int]], index: int) -> str:
     return ";".join(f"partition:{p},offset:{b[index]}" for p, b in sorted(offsets.items()))
 
 
-def source_ddl(bootstrap: str, offsets: dict[str, list[int]]) -> str:
+def source_ddl(bootstrap: str, offsets: dict[str, list[int]], topic: str = TOPIC) -> str:
     columns = ",\n  ".join(f"`{n}` {t}" for n, t in PASSAGE_COLUMNS)
     return f"""
 CREATE TABLE passages (
@@ -71,7 +72,7 @@ CREATE TABLE passages (
   WATERMARK FOR et AS et - INTERVAL '{WATERMARK_S}' SECOND(3)
 ) WITH (
   'connector' = 'kafka',
-  'topic' = '{TOPIC}',
+  'topic' = '{topic}',
   'properties.bootstrap.servers' = '{bootstrap}',
   'properties.group.id' = 'axis-a-flink',
   'scan.startup.mode' = 'specific-offsets',
@@ -155,6 +156,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--offsets", required=True, help='JSON {"partition": [start, end]}')
     parser.add_argument("--bootstrap", default="kafka:9092")
+    parser.add_argument("--topic", default=TOPIC, help="passage topic (S10 benchmark: its own)")
     args = parser.parse_args(argv)
     offsets: dict[str, list[int]] = json.loads(args.offsets)
 
@@ -162,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     env.set_parallelism(PARALLELISM)
     env.enable_checkpointing(10_000)
     t_env = StreamTableEnvironment.create(env)
-    t_env.execute_sql(source_ddl(args.bootstrap, offsets))
+    t_env.execute_sql(source_ddl(args.bootstrap, offsets, args.topic))
     t_env.execute_sql(sink_ddl("kpi_w1", "kpi.flink.w1", W1_COLUMNS, args.bootstrap))
     w2_columns = ", ".join(f"{n} {t}" for n, t in zip(hs.OUTPUT_FIELDS, W2_SQL_TYPES, strict=True))
     t_env.execute_sql(sink_ddl("kpi_w2", "kpi.flink.w2", w2_columns, args.bootstrap))
@@ -186,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "engine": "Flink (PyFlink)",
-                "topic": TOPIC,
+                "topic": args.topic,
                 "watermark": f"{WATERMARK_S} seconds",
                 "parallelism": PARALLELISM,
                 "drained_s": round(time.perf_counter() - started, 1),

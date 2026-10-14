@@ -504,9 +504,7 @@ def task_axis_b_clickhouse(args: argparse.Namespace) -> int:
 
 def task_axis_b_compare(args: argparse.Namespace) -> int:
     """Compare an Axis B arm's query answers with the frozen golden answers (exit 1 on a diff)."""
-    import pyarrow.parquet as pq
-
-    from transitometer.golden import compare
+    from transitometer.axis_b import grading
 
     engine = args.engine
     run_file = ROOT / "results" / f"axis-b-{engine}.json"
@@ -514,48 +512,120 @@ def task_axis_b_compare(args: argparse.Namespace) -> int:
         print(f"no run record {run_file}; run `python tasks.py axis-b-{engine}` first")
         return 1
     record = json.loads(run_file.read_text("utf-8"))
-    policy = compare.Policy.load(ROOT / "golden" / "tolerance.json")
     answers = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "axis-b" / engine
-    queries: dict[str, dict[str, object]] = {}
-    ok = True
-    for name, run_info in record["queries"].items():
-        if not run_info["applicable"]:
-            print(f"{name}: not applicable ({run_info['reason']})")
-            queries[name] = {"applicable": False, "reason": run_info["reason"]}
+    graded = grading.grade(record, answers, ROOT / "golden", _golden_dir())
+    for name, query in graded["queries"].items():
+        if not query["applicable"]:
+            print(f"{name}: not applicable ({query['reason']})")
             continue
-        expected = pq.read_table(ROOT / "golden" / "queries" / f"{name}.parquet")
-        actual = pq.read_table(answers / f"{name}.parquet")
-        diff = compare.compare_query(name, expected, actual, policy, _golden_dir())
-        print(diff.describe(), flush=True)
-        for example in diff.examples[:5]:
+        print(query["detail"], flush=True)
+        for example in query["examples"]:
             print(f"    e.g. {example}")
-        for tie in diff.ties:
+        for tie in query["rounding_ties"]:
             print(f"    rounding tie: {tie}")
-        queries[name] = {
-            "applicable": True,
-            "ok": diff.ok,
-            "detail": diff.describe(),
-            "examples": diff.examples[:5],
-            "rounding_ties": diff.ties,
-            "adaptations": run_info["adaptations"],
-        }
-        ok = ok and diff.ok
-    equal = sum(1 for q in queries.values() if q.get("ok"))
-    applicable = sum(1 for q in queries.values() if q["applicable"])
     report_file = ROOT / "results" / "validation-axis-b.json"
     report = json.loads(report_file.read_text("utf-8")) if report_file.exists() else {}
-    report[engine] = {
-        "version": record.get("version"),
-        "equal": equal,
-        "applicable": applicable,
-        "ok": ok,
-        "queries": queries,
-    }
+    report[engine] = {"version": record.get("version"), **graded}
     report_file.write_text(
         json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
     )
-    print(f"{engine}: {equal}/{applicable} applicable queries equal golden; report: {report_file}")
-    return 0 if ok else 1
+    print(
+        f"{engine}: {graded['equal']}/{graded['applicable']} applicable queries equal golden; "
+        f"report: {report_file}"
+    )
+    return 0 if graded["ok"] else 1
+
+
+def bench_host() -> object:
+    """The benchmark harnesses' handle on compose and the tooling image."""
+    from transitometer.bench.common import Host
+
+    image = f"transitometer/spark-tools:{read_env_file(VERSIONS_FILE)['SPARK_VERSION']}"
+    return Host(compose_cmd, ROOT, image)
+
+
+def task_bench_axis_b(args: argparse.Namespace) -> int:
+    """S10 Axis B benchmark (docs/benchmark-fairness.md): raw CSVs into results/benchmarks/."""
+    from transitometer.bench.axis_b import AxisB
+    from transitometer.bench.common import BenchError, Host
+
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    host = bench_host()
+    assert isinstance(host, Host)
+    data_root = Path(host_settings()["TRANSITOMETER_DATA_ROOT"])
+    bench = AxisB(host, data_root, _golden_dir(), lambda m: print(m, flush=True))
+    steps = {
+        "latency": bench.latency,
+        "freshness": bench.freshness,
+        "footprint": bench.footprint,
+        "compaction": bench.compaction,
+    }
+    try:
+        for step in args.steps:
+            print(f"== axis-b {step}", flush=True)
+            steps[step]()
+    except BenchError as exc:
+        print(f"FAILED: {exc}")
+        return 1
+    finally:
+        host.run("--profile", "*", "stop")
+    return 0
+
+
+def task_bench_axis_a(args: argparse.Namespace) -> int:
+    """S10 Axis A benchmark (docs/benchmark-fairness.md): raw CSVs into results/benchmarks/."""
+    from transitometer.bench.axis_a import AxisA
+    from transitometer.bench.common import BenchError, Host
+
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    host = bench_host()
+    assert isinstance(host, Host)
+    data_root = Path(host_settings()["TRANSITOMETER_DATA_ROOT"])
+    bench = AxisA(host, data_root, lambda m: print(m, flush=True))
+    try:
+        for name in args.scenarios:
+            print(f"== axis-a {name}", flush=True)
+            bench.scenario(name, runs=args.runs)
+    except BenchError as exc:
+        print(f"FAILED: {exc}")
+        return 1
+    finally:
+        host.run("--profile", "*", "stop")
+    return 0
+
+
+def task_bench_report(_: argparse.Namespace) -> int:
+    """Summary tables and charts of the S10 benchmarks, from the raw CSVs only (host)."""
+    from transitometer.bench import report
+
+    for name, rows in report.write(ROOT / "results" / "benchmarks").items():
+        print(f"summary/{name}.csv: {rows} rows")
+    return 0
+
+
+PHASE_ENGINES = {
+    # service, named volume, image pin in docker/versions.env (None: locally built image)
+    "clickhouse": (("clickhouse",), "clickhouse-data", "CLICKHOUSE_IMAGE"),
+    "flink": (("flink-jobmanager", "flink-taskmanager"), None, None),
+}
+
+
+def task_bench_cleanup(args: argparse.Namespace) -> int:
+    """Remove a phase-scoped engine after its benchmark: containers, data volume and image."""
+    services, volume, pin = PHASE_ENGINES[args.engine]
+    if run(compose_cmd("--profile", args.engine, "rm", "-s", "-f", *services)):
+        return 1
+    if volume and run(["docker", "volume", "rm", f"transitometer_{volume}"]):
+        return 1
+    versions = read_env_file(VERSIONS_FILE)
+    image = versions[pin] if pin else f"transitometer/flink-py:{versions['PYFLINK_VERSION']}"
+    code = run(["docker", "image", "rm", image])
+    task_storage_report(args)
+    return code
 
 
 def task_golden_check(args: argparse.Namespace) -> int:
@@ -1032,6 +1102,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Axis A passage stream + golden W1/W2 (checked against golden headways)",
         ),
         "snapshot": (task_snapshot, "copy the validated Gold app tables into showcase/data/"),
+        "bench-report": (task_bench_report, "S10 summary tables and charts from the raw CSVs"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }
     for name, (func, help_text) in simple.items():
@@ -1109,6 +1180,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-peak", action="store_true", help="proceed above the block threshold"
     )
     b_clickhouse.set_defaults(func=task_axis_b_clickhouse)
+
+    bench_b = sub.add_parser("bench-axis-b", help="S10 Axis B benchmark (raw CSVs)")
+    bench_b.add_argument(
+        "--steps",
+        nargs="+",
+        default=["latency", "freshness", "footprint", "compaction"],
+        choices=("latency", "freshness", "footprint", "compaction"),
+    )
+    bench_b.add_argument("--allow-peak", action="store_true", help="proceed above the block")
+    bench_b.set_defaults(func=task_bench_axis_b)
+
+    bench_a = sub.add_parser("bench-axis-a", help="S10 Axis A benchmark (raw CSVs)")
+    bench_a.add_argument(
+        "--scenarios",
+        nargs="+",
+        default=["latency", "knee", "late", "dup", "recovery"],
+        choices=("latency", "knee", "late", "dup", "recovery", "smoke"),
+    )
+    bench_a.add_argument("--runs", type=int, default=3, help="runs per configuration")
+    bench_a.add_argument("--allow-peak", action="store_true", help="proceed above the block")
+    bench_a.set_defaults(func=task_bench_axis_a)
+
+    cleanup = sub.add_parser(
+        "bench-cleanup", help="remove a phase-scoped engine: containers, data volume, image"
+    )
+    cleanup.add_argument("engine", choices=tuple(PHASE_ENGINES))
+    cleanup.set_defaults(func=task_bench_cleanup)
 
     replay = sub.add_parser("replay", help="replay archived feeds into Kafka (kept for engines)")
     replay.add_argument("--days", nargs="+", help="UTC archive days (default: golden window)")

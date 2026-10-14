@@ -269,7 +269,15 @@ def main(argv: list[str] | None = None) -> int:
         "w2": to_kafka(w2(source), args.bootstrap, outputs["w2"], "w2", args.trigger),
     }
     finished: dict[str, float] = {}
+    announced = False
     while len(finished) < len(queries):
+        if not announced and all(
+            q.lastProgress or not q.status["message"].startswith("Initializing")
+            for q in queries.values()
+        ):
+            # The benchmark harness starts its producer only after this line.
+            print("progress ready", flush=True)
+            announced = True
         for name, query in queries.items():
             if name in finished:
                 continue

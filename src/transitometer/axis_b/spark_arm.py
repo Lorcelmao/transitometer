@@ -3,7 +3,7 @@
 Each table is registered in the session catalog as an external Delta table at its path, so the
 queries use plain table names and q24/q25 can read `stop_events VERSION AS OF 0`.
 
-Usage: spark-submit spark_arm.py [--prefix rt]
+Usage: spark-submit spark_arm.py [--prefix rt] [--passes 1] [--answers spark]
 """
 
 from __future__ import annotations
@@ -27,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--prefix", default="rt")
     parser.add_argument("--lakehouse", default=os.environ.get("LAKEHOUSE_DIR", "/data/lakehouse"))
     parser.add_argument("--exports", default=os.environ.get("EXPORTS_DIR", "/data/exports"))
+    parser.add_argument("--passes", type=int, default=1, help="1 cold pass, then warm passes")
+    parser.add_argument("--answers", default="spark", help="folder under exports/axis-b")
     args = parser.parse_args(argv)
     root = axis_b_root(args.lakehouse, args.prefix)
     spark = build_session()
@@ -42,7 +44,8 @@ def main(argv: list[str] | None = None) -> int:
         "spark",
         execute,
         f"{dialect.TIME_TRAVEL_TABLE} VERSION AS OF 0",
-        Path(args.exports) / "axis-b" / "spark",
+        Path(args.exports) / "axis-b" / args.answers,
+        args.passes,
     )
     record.update(
         {
