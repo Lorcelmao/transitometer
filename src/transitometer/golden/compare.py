@@ -38,6 +38,12 @@ class TableDiff:
     extra_rows: int = 0
     mismatches: dict[str, int] = field(default_factory=dict)
     examples: list[dict[str, Any]] = field(default_factory=list)
+    # Rows a query answer differs on by one rounding step, each with its exact-tie evidence.
+    ties: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def unverified_ties(self) -> int:
+        return sum(1 for t in self.ties if not t["tie"])
 
     @property
     def ok(self) -> bool:
@@ -47,10 +53,13 @@ class TableDiff:
             or self.missing_rows
             or self.extra_rows
             or self.mismatches
+            or self.unverified_ties
         )
 
     def describe(self) -> str:
         extra = f"; extra columns ignored: {self.extra_columns}" if self.extra_columns else ""
+        if self.ties and self.ok:
+            extra += f"; {len(self.ties)} exact rounding tie(s) verified"
         if self.ok:
             return f"{self.name}: OK ({self.expected_rows} rows{extra})"
         parts = [
@@ -64,6 +73,8 @@ class TableDiff:
             if value
         ]
         parts += [f"{column}: {count} differ" for column, count in self.mismatches.items()]
+        if self.unverified_ties:
+            parts.append(f"{self.unverified_ties} one-step differences that are not exact ties")
         return f"{self.name}: FAIL ({'; '.join(parts)}{extra})"
 
 
@@ -71,11 +82,22 @@ class TableDiff:
 class Policy:
     float_abs: float
     tables: dict[str, dict[str, Any]]
+    # query -> {table, group_by, step, columns: {answer column: summed source column}}
+    ties: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> Policy:
         raw = json.loads(path.read_text(encoding="utf-8"))
-        return cls(float(raw["float_abs"]), raw["tables"])
+        return cls(float(raw["float_abs"]), raw["tables"], raw.get("query_rounding_ties", {}))
+
+    def query_tolerance(self, query: str, columns: list[str]) -> dict[str, float]:
+        """Per column of a query answer: one rounding step for a tie-checked column, else
+        float_abs. A difference the step admits must still be an exact tie (compare_query)."""
+        rule = self.ties.get(query, {})
+        return {
+            c: float(rule["step"]) if c in rule.get("columns", {}) else self.float_abs
+            for c in columns
+        }
 
     def keys(self, table: str) -> list[str]:
         keys: list[str] = self.tables[table]["keys"]
@@ -182,10 +204,83 @@ def _sorted(table: pa.Table) -> pa.Table:
     return ordered.append_column("_row", pa.array(range(ordered.num_rows), pa.int64()))
 
 
-def compare_ordered(name: str, expected: pa.Table, actual: pa.Table, float_abs: float) -> TableDiff:
+def compare_ordered(
+    name: str, expected: pa.Table, actual: pa.Table, tolerance: dict[str, float] | float
+) -> TableDiff:
     """Query answers: both sides sorted on all columns, then compared row by row."""
     if [c for c in expected.column_names if c not in actual.column_names]:
-        return compare(name, expected, actual, expected.column_names[:1], float_abs)
+        return compare(name, expected, actual, expected.column_names[:1], tolerance)
     return compare(
-        name, _sorted(expected), _sorted(actual.select(expected.column_names)), ["_row"], float_abs
+        name, _sorted(expected), _sorted(actual.select(expected.column_names)), ["_row"], tolerance
     )
+
+
+def compare_query(
+    name: str, expected: pa.Table, actual: pa.Table, policy: Policy, tables_dir: Path
+) -> TableDiff:
+    """A query answer against its golden answer under the policy's query tolerances.
+
+    `tables_dir` holds the tables the answer was computed from; a one-step difference on a
+    tie-checked column passes only when the exact mean recomputed there is that tie.
+    """
+    diff = compare_ordered(
+        name, expected, actual, policy.query_tolerance(name, expected.column_names)
+    )
+    rule = policy.ties.get(name)
+    if rule and not diff.missing_columns:
+        diff.ties = rounding_ties(expected, actual, rule, policy.float_abs, tables_dir)
+    return diff
+
+
+def rounding_ties(
+    expected: pa.Table,
+    actual: pa.Table,
+    rule: dict[str, Any],
+    float_abs: float,
+    tables_dir: Path,
+) -> list[dict[str, Any]]:
+    """Every row where a tie-checked column differs by more than float_abs, with the evidence.
+
+    The column is round(sum(source) / count(*), step) per group. A row is a verified tie when the
+    two answers are one step apart and the exact mean, sum / count in integers, is their midpoint:
+    2 * sum == (expected + actual) * count, both sides scaled by 1 / step. Anything else is not a
+    tie and fails the comparison.
+    """
+    scale = round(1 / float(rule["step"]))
+    groups: list[str] = rule["group_by"]
+    source = (tables_dir / f"{rule['table']}.parquet").as_posix()
+    where = " AND ".join(f"{_quote(g)} IS NOT DISTINCT FROM ?" for g in groups)
+    keys = ", ".join(f"e.{_quote(g)}" for g in groups)
+    found: list[dict[str, Any]] = []
+    with duckdb.connect() as con:
+        con.register("e", _sorted(expected))
+        con.register("a", _sorted(actual.select(expected.column_names)))
+        for column, summed in rule["columns"].items():
+            col = _quote(column)
+            rows = con.execute(
+                f"SELECT {keys}, e.{col}, a.{col} FROM e JOIN a USING (_row) "
+                f"WHERE abs(e.{col} - a.{col}) > {float_abs + FLOAT_EPSILON}"
+            ).fetchall()
+            for row in rows:
+                key, exp, act = list(row[: len(groups)]), float(row[-2]), float(row[-1])
+                total, count = con.execute(
+                    f"SELECT sum({_quote(summed)}), count(*) FROM read_parquet(?) WHERE {where}",
+                    [source, *key],
+                ).fetchone() or (None, 0)
+                tie = (
+                    total is not None
+                    and round(abs(exp - act) * scale) == 1
+                    and 2 * scale * int(total) == round((exp + act) * scale) * int(count)
+                )
+                found.append(
+                    {
+                        "column": column,
+                        **dict(zip(groups, key, strict=True)),
+                        "expected": exp,
+                        "actual": act,
+                        "sum": None if total is None else int(total),
+                        "count": int(count),
+                        "tie": tie,
+                    }
+                )
+    return found

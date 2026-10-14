@@ -21,7 +21,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 
 from transitometer.golden import properties, suite
-from transitometer.golden.compare import Policy, compare_ordered, compare_table
+from transitometer.golden.compare import Policy, compare_query, compare_table
 from transitometer.golden.runner import LARGE_TABLES
 
 
@@ -92,7 +92,7 @@ def verify_queries(tables_dir: Path, answers_dir: Path, policy: Policy, report: 
             def one(name: str = name) -> None:
                 answer = suite.run_one(tables_dir, name, Path(tmp))
                 expected = pq.read_table(answers_dir / f"{name}.parquet")
-                diff = compare_ordered(name, expected, pq.read_table(answer), policy.float_abs)
+                diff = compare_query(name, expected, pq.read_table(answer), policy, tables_dir)
                 report.add(diff.ok, f"query {diff.describe()}")
 
             report.guarded(f"query {name}", one)

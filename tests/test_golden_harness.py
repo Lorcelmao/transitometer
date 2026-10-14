@@ -13,6 +13,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from test_golden_kpis import PARAMS, build_landing
+from transitometer.golden import compare as compare_module
 from transitometer.golden import harness, properties, runner, suite
 from transitometer.golden.compare import Policy, compare, compare_ordered
 
@@ -87,6 +88,76 @@ def test_policy_covers_every_exported_table() -> None:
     assert set(policy.tables) == set(runner.EXPORTED_TABLES)
     assert policy.tolerance("delay_attribution_summary", "mean_final_delay_s") == 0.1
     assert policy.tolerance("stop_events", "anything") == policy.float_abs == 1e-4
+
+
+def test_query_tolerance_covers_only_the_tie_checked_columns() -> None:
+    policy = Policy.load(REPO_GOLDEN / "tolerance.json")
+    columns = ["grp", "route_id", "trip_vehicles", "mean_inherited_delay_s", "mean_gained_delay_s"]
+    assert policy.query_tolerance("q07_route_delay_attribution", columns) == {
+        "grp": 1e-4,
+        "route_id": 1e-4,
+        "trip_vehicles": 1e-4,
+        "mean_inherited_delay_s": 0.01,
+        "mean_gained_delay_s": 1e-4,
+    }
+    assert policy.query_tolerance("q15_first_vs_last_delay", ["mean_change_s"]) == {
+        "mean_change_s": 1e-4
+    }
+    assert set(policy.ties) <= set(suite.query_names())
+
+
+TIE_RULE = {
+    "table": "trips",
+    "group_by": ["grp", "route_id"],
+    "step": 0.01,
+    "columns": {"mean_delay_s": "delay_s"},
+}
+
+
+def _tie_case(tmp_path: Path, actual_means: list[float]) -> compare_module.TableDiff:
+    """Route A: 12771 s over 40 trips = 319.275 (a tie); route B: 401 s over 3 = 133.666...
+    The golden answers are 319.27 and 133.67."""
+    trips = pa.table(
+        {
+            "grp": ["bus"] * 43,
+            "route_id": ["A"] * 40 + ["B"] * 3,
+            "delay_s": [319] * 29 + [320] * 11 + [133, 134, 134],
+        }
+    )
+    pq.write_table(trips, tmp_path / "trips.parquet")
+    routes = {"grp": ["bus", "bus"], "route_id": ["A", "B"]}
+    expected = pa.table({**routes, "mean_delay_s": [319.27, 133.67]})
+    actual = pa.table({**routes, "mean_delay_s": actual_means})
+    policy = Policy(1e-4, {}, {"q": TIE_RULE})
+    return compare_module.compare_query("q", expected, actual, policy, tmp_path)
+
+
+def test_one_step_difference_on_an_exact_tie_passes_with_its_evidence(tmp_path: Path) -> None:
+    diff = _tie_case(tmp_path, [319.28, 133.67])
+    assert diff.ok
+    assert diff.ties == [
+        {
+            "column": "mean_delay_s",
+            "grp": "bus",
+            "route_id": "A",
+            "expected": 319.27,
+            "actual": 319.28,
+            "sum": 12771,
+            "count": 40,
+            "tie": True,
+        }
+    ]
+
+
+def test_one_step_difference_that_is_not_a_tie_fails(tmp_path: Path) -> None:
+    diff = _tie_case(tmp_path, [319.27, 133.66])  # 133.666... is no tie: a real difference
+    assert not diff.ok
+    assert diff.unverified_ties == 1
+    assert "not exact ties" in diff.describe()
+
+
+def test_two_step_difference_fails_even_on_a_tie_checked_column(tmp_path: Path) -> None:
+    assert not _tie_case(tmp_path, [319.29, 133.67]).ok
 
 
 def test_suite_has_the_frozen_25_queries() -> None:
