@@ -99,6 +99,18 @@ Both engines read the same Kafka topic of 3,020,240 inferred passages (between r
 
 Both engines share one W2 state step (`axis_a/headway_state.py`), property-tested against the golden SQL. The engines do not re-infer stop events: they start from the inferred passages. Latency, throughput, lateness and recovery are measured in S10; the drained run times in `results/axis-a-*.json` are not a benchmark.
 
+**Alternative serving (Axis B): the frozen 25-query suite on three engines**
+
+All three arms read the same Delta copy of the 11 tables the suite uses (`lakehouse/axis_b`, built by `axis-b-load`). Every table with a service date is committed one service day per Delta version, so version 0 is the first day, which is what the time-travel queries q24 and q25 read. The copy is benchmark-only. It reads each validated table at a pinned Delta version and never writes outside `axis_b`. Every commit records its source path and version (Delta `userMetadata`, and `results/axis-b-load.json`), and the loader fails if a source table changed while it ran. Each answer is compared row by row with the frozen golden answer (`golden/queries/`).
+
+| Arm | Queries equal golden | Rewrites needed (`axis_b/dialect.py`) | Evidence |
+|---|---|---|---|
+| B1 Spark SQL 4.1 over Delta | 25 / 25 | q24, q25: `VERSION AS OF 0` | `results/validation-axis-b.json` |
+| B2 DuckDB 1.5 over Delta | 25 / 25 | q24, q25: `delta_scan(..., version => 0)` | `results/validation-axis-b.json` |
+| B3 ClickHouse 26.8 `MergeTree`, loaded from Delta | 23 / 23; q24, q25 not applicable (no Delta versions) | 7 queries: `percentile_disc` written as its definition; q12: `lag` on a Nullable argument | `results/validation-axis-b.json` |
+
+ClickHouse loads each table one service day at a time straight from the Delta files (`deltaLakeLocal`); the row counts equal Delta's and each load is timed (`results/axis-b-clickhouse-load.json`). Two engine differences surfaced and are handled in the dialect rather than in the queries: ClickHouse `lag` returns 0 instead of NULL when there is no previous row, and `quantileExactLow` is not `percentile_disc` when p·n is a whole number. Three rows of q07 needed a policy decision. They are per-route means of integer seconds that fall exactly on a rounding tie, and the engines round ties differently. QM11 (12,771 s / 40 = 319.275): golden 319.27, Spark 319.28, because Spark's exact decimal rounds half up. BX18A (54,951 / 120 = 457.925) and Q86 (26,187 / 280 = 93.525): golden 457.93 and 93.53, ClickHouse 457.92 and 93.52, because ClickHouse rounds doubles half to even. Only q07's `mean_inherited_delay_s` and `mean_final_delay_s` may differ by one 0.01 step. A row passes only when its exact mean, recomputed in integers from the golden table, is the midpoint of the two answers. Every such row is listed with its sum and count in `results/validation-axis-b.json` (`rounding_ties`). The rule is in `golden/tolerance.json` (`query_rounding_ties`). q15, the other query rounded to 0.01, matches exactly on every engine and has no exception. The single timed run per query in `results/axis-b-*.json` is not a benchmark; cold and warm latency, freshness and footprint are measured in S10.
+
 **Performance (one laptop, wall time; Spark `local[8]`, DuckDB 8 threads)**
 
 | Step | Time | Evidence |
@@ -126,6 +138,8 @@ All commands go through `python tasks.py <task>` (works on every OS):
 | `web-data [--check]` | export the shared views over the snapshot as JSON for the Next.js site (`web/public/data/`) and the cross-frontend parity file; `--check` fails if the committed JSON is stale |
 | `demo [--fresh]` | one real hour end to end, then the app |
 | `golden`, `golden-check` | build the DuckDB golden reference; check result tables against it |
+| `axis-a-golden`, `axis-a-produce`, `axis-a-spark`, `axis-a-flink`, `axis-a-compare --engine <e>` | Axis A: passage stream and golden W1/W2, the Spark and Flink arms, comparison with golden |
+| `axis-b-load`, `axis-b-spark`, `axis-b-duckdb`, `axis-b-clickhouse [--no-load]`, `axis-b-compare --engine <e>` | Axis B: the per-day Delta dataset, the three serving arms, comparison of their answers with golden |
 | `storage-check`, `storage-report` | storage guard (warn at 30 GB, refuse engine starts at 35 GB) and usage log |
 
 Runs on any topic prefix other than `rt` (for example the demo) write to their own lakehouse subtree and report folder (`results/scratch/<prefix>/`), so they never touch the validated tables.
@@ -151,13 +165,14 @@ The public app runs the same Streamlit code on `showcase/data/`, a committed cop
 - `src/transitometer/replay/`: archive → protobuf → Kafka, verification
 - `src/transitometer/pipeline/`: Spark jobs (`silver_ingest`, `silver_events`, `gold_kpis`) and export
 - `src/transitometer/golden/`: DuckDB golden SQL, tolerance comparison, 25-query suite
+- `src/transitometer/axis_a/`, `src/transitometer/axis_b/`: the processing (Spark vs Flink) and serving (Spark SQL vs DuckDB vs ClickHouse) comparisons
 - `src/transitometer/serve/`: data-access layer (`kpis.py`), shared page views and formatting (`views.py`, `format.py`), snapshot and web export
 - `src/transitometer/app/`: Streamlit app; `web/`: Next.js site; `showcase/`: validated snapshot and the cross-frontend contract files
 - `PROJECT_PLAN.md`: scope, users and business requirements; `IMPLEMENTATION_PLAN.md`: stages and tests
 
 ## Roadmap
 
-All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. The public showcase is deployed (Next.js on Vercel, Streamlit on Community Cloud). Next: the benchmarked alternatives (Flink for processing, ClickHouse for serving) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
+All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. The public showcase is deployed (Next.js on Vercel, Streamlit on Community Cloud). Both alternatives return golden-equal results: Flink for processing (Axis A) and DuckDB and ClickHouse for serving (Axis B). Next: the benchmarks for both axes (latency, throughput, freshness, footprint) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
 
 ## Storage rules
 
