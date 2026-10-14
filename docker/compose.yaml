@@ -161,11 +161,18 @@ services:
     logging: *default-logging
     ulimits:
       nofile: { soft: 262144, hard: 262144 }
+    environment:
+      # Passwordless default user reachable over the published port; the port is bound to
+      # 127.0.0.1 only, so nothing outside this host can connect.
+      CLICKHOUSE_SKIP_USER_SETUP: "1"
     ports:
       - "127.0.0.1:8123:8123"
     volumes:
       - clickhouse-data:/var/lib/clickhouse
       - ./clickhouse/system-log-ttl.xml:/etc/clickhouse-server/config.d/system-log-ttl.xml:ro
+      # The loader reads the Axis B Delta tables in place (deltaLakeLocal), which only accepts
+      # paths under user_files; read-only.
+      - lakehouse:/var/lib/clickhouse/user_files/lakehouse:ro
 
 volumes:
   kafka-data:

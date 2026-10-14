@@ -439,6 +439,125 @@ def task_axis_a_flink(args: argparse.Namespace) -> int:
     return 0
 
 
+def task_axis_b_load(args: argparse.Namespace) -> int:
+    """Axis B dataset: the suite's tables into lakehouse/axis_b, one service day per commit."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    return _in_spark(
+        "transitometer.axis_b.delta_load", [], ROOT / "results" / "axis-b-load.json", submit=True
+    )
+
+
+def task_axis_b_spark(args: argparse.Namespace) -> int:
+    """Axis B, B1: the suite in Spark SQL over the Axis B Delta tables."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    return _in_spark(
+        "transitometer.axis_b.spark_arm", [], ROOT / "results" / "axis-b-spark.json", submit=True
+    )
+
+
+def task_axis_b_duckdb(args: argparse.Namespace) -> int:
+    """Axis B, B2: the suite in DuckDB over the Axis B Delta tables."""
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    return _in_spark("transitometer.axis_b.duckdb_arm", [], ROOT / "results" / "axis-b-duckdb.json")
+
+
+def task_axis_b_clickhouse(args: argparse.Namespace) -> int:
+    """Axis B, B3: load ClickHouse from the Axis B Delta tables (unless --no-load), then query."""
+    from transitometer.axis_b import clickhouse
+
+    guard = task_storage_check(args)
+    if guard:
+        return guard
+    code = run(compose_cmd("--profile", "clickhouse", "up", "-d", "clickhouse"))
+    if code:
+        return code
+    try:
+        clickhouse.wait_ready()
+        if not args.no_load:
+            print("loading ClickHouse from the Axis B Delta tables", flush=True)
+            loaded = clickhouse.load("rt", ROOT / "golden" / "tolerance.json")
+            (ROOT / "results" / "axis-b-clickhouse-load.json").write_text(
+                json.dumps(loaded, indent=2) + "\n", encoding="utf-8", newline="\n"
+            )
+            for table, info in loaded["tables"].items():
+                print(f"  {table}: {info['rows']:,} rows (Delta {info['delta_rows']:,})")
+            if not loaded["ok"]:
+                print("FAILED: ClickHouse row counts differ from Delta")
+                return 1
+        answers = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "axis-b"
+        record = clickhouse.run(answers / "clickhouse")
+    except clickhouse.ClickHouseError as exc:
+        print(f"FAILED: {exc}")
+        return 1
+    (ROOT / "results" / "axis-b-clickhouse.json").write_text(
+        json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(f"clickhouse: {len(record['queries'])} queries; report: results/axis-b-clickhouse.json")
+    return 0
+
+
+def task_axis_b_compare(args: argparse.Namespace) -> int:
+    """Compare an Axis B arm's query answers with the frozen golden answers (exit 1 on a diff)."""
+    import pyarrow.parquet as pq
+
+    from transitometer.golden import compare
+
+    engine = args.engine
+    run_file = ROOT / "results" / f"axis-b-{engine}.json"
+    if not run_file.exists():
+        print(f"no run record {run_file}; run `python tasks.py axis-b-{engine}` first")
+        return 1
+    record = json.loads(run_file.read_text("utf-8"))
+    policy = compare.Policy.load(ROOT / "golden" / "tolerance.json")
+    answers = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "axis-b" / engine
+    queries: dict[str, dict[str, object]] = {}
+    ok = True
+    for name, run_info in record["queries"].items():
+        if not run_info["applicable"]:
+            print(f"{name}: not applicable ({run_info['reason']})")
+            queries[name] = {"applicable": False, "reason": run_info["reason"]}
+            continue
+        expected = pq.read_table(ROOT / "golden" / "queries" / f"{name}.parquet")
+        actual = pq.read_table(answers / f"{name}.parquet")
+        diff = compare.compare_query(name, expected, actual, policy, _golden_dir())
+        print(diff.describe(), flush=True)
+        for example in diff.examples[:5]:
+            print(f"    e.g. {example}")
+        for tie in diff.ties:
+            print(f"    rounding tie: {tie}")
+        queries[name] = {
+            "applicable": True,
+            "ok": diff.ok,
+            "detail": diff.describe(),
+            "examples": diff.examples[:5],
+            "rounding_ties": diff.ties,
+            "adaptations": run_info["adaptations"],
+        }
+        ok = ok and diff.ok
+    equal = sum(1 for q in queries.values() if q.get("ok"))
+    applicable = sum(1 for q in queries.values() if q["applicable"])
+    report_file = ROOT / "results" / "validation-axis-b.json"
+    report = json.loads(report_file.read_text("utf-8")) if report_file.exists() else {}
+    report[engine] = {
+        "version": record.get("version"),
+        "equal": equal,
+        "applicable": applicable,
+        "ok": ok,
+        "queries": queries,
+    }
+    report_file.write_text(
+        json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(f"{engine}: {equal}/{applicable} applicable queries equal golden; report: {report_file}")
+    return 0 if ok else 1
+
+
 def task_golden_check(args: argparse.Namespace) -> int:
     """Check result tables against the frozen golden reference (exit 1 on any failure)."""
     from transitometer.golden import harness
@@ -958,6 +1077,9 @@ def build_parser() -> argparse.ArgumentParser:
         ("axis-a-verify", task_axis_a_verify, "verify the Axis A passage topic against its record"),
         ("axis-a-spark", task_axis_a_spark, "Axis A Spark arm (W1, W2), drained run"),
         ("axis-a-flink", task_axis_a_flink, "Axis A Flink arm (W1, W2), bounded run"),
+        ("axis-b-load", task_axis_b_load, "Axis B Delta dataset, one service day per commit"),
+        ("axis-b-spark", task_axis_b_spark, "Axis B, B1: the query suite in Spark SQL"),
+        ("axis-b-duckdb", task_axis_b_duckdb, "Axis B, B2: the query suite in DuckDB"),
     ):
         axis = sub.add_parser(name, help=help_text)
         axis.add_argument(
@@ -970,6 +1092,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     axis_compare.add_argument("--engine", required=True, choices=("spark", "flink"))
     axis_compare.set_defaults(func=task_axis_a_compare)
+
+    b_compare = sub.add_parser(
+        "axis-b-compare", help="compare an Axis B arm's query answers with the golden answers"
+    )
+    b_compare.add_argument("--engine", required=True, choices=("spark", "duckdb", "clickhouse"))
+    b_compare.set_defaults(func=task_axis_b_compare)
+
+    b_clickhouse = sub.add_parser(
+        "axis-b-clickhouse", help="Axis B, B3: load ClickHouse from Delta, run the query suite"
+    )
+    b_clickhouse.add_argument(
+        "--no-load", action="store_true", help="query the tables loaded by an earlier run"
+    )
+    b_clickhouse.add_argument(
+        "--allow-peak", action="store_true", help="proceed above the block threshold"
+    )
+    b_clickhouse.set_defaults(func=task_axis_b_clickhouse)
 
     replay = sub.add_parser("replay", help="replay archived feeds into Kafka (kept for engines)")
     replay.add_argument("--days", nargs="+", help="UTC archive days (default: golden window)")
