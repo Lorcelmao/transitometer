@@ -1,0 +1,4 @@
+run,position,arm,layout,started_at,equal,applicable,parity_ok,engine_version,threads,containers,contract
+1,1,B2z,zero_copy,2026-10-14T11:29:44+0700,23,23,True,1.5.5,8,transitometer-spark-1,1d35e18
+2,1,B2z,zero_copy,2026-10-14T11:30:23+0700,23,23,True,1.5.5,8,transitometer-spark-1,1d35e18
+3,1,B2z,zero_copy,2026-10-14T11:31:01+0700,23,23,True,1.5.5,8,transitometer-spark-1,1d35e18

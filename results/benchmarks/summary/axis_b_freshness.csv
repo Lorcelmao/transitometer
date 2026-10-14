@@ -1,0 +1,4 @@
+arm,visible_s_median,visible_s_min,visible_s_max,load_median_s,delta_commit_median_s,all_ok
+B1,1.6619,1.5797,1.6739,0.0,3.1557,true
+B2,0.306,0.2882,0.3237,0.0,3.1557,true
+B3,0.73,0.7161,0.7359,0.6958,3.1557,true

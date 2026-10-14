@@ -1,0 +1,10 @@
+run,arm,delta_commit_s,load_s,visible_s,ok,containers,contract
+1,B1,2.9963,0.0,1.6739,True,transitometer-spark-1,1d35e18
+1,B2,2.9963,0.0,0.3237,True,transitometer-spark-1,1d35e18
+1,B3,2.9963,0.6958,0.73,True,transitometer-clickhouse-1,1d35e18
+2,B1,3.3912,0.0,1.6619,True,transitometer-spark-1,1d35e18
+2,B3,3.3912,0.7046,0.7359,True,transitometer-clickhouse-1,1d35e18
+2,B2,3.3912,0.0,0.306,True,transitometer-spark-1,1d35e18
+3,B1,3.1557,0.0,1.5797,True,transitometer-spark-1,1d35e18
+3,B2,3.1557,0.0,0.2882,True,transitometer-spark-1,1d35e18
+3,B3,3.1557,0.6787,0.7161,True,transitometer-clickhouse-1,1d35e18

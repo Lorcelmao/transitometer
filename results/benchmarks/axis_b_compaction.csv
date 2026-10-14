@@ -1,0 +1,12 @@
+table,files_before,files_after,data_bytes_before,data_bytes_after,optimize_s
+feed_quality_metrics,1,1,2603,2603,1.02
+headways,18,1,46859663,45439734,14.36
+route_scorecard,1,1,15641,15641,0.35
+segment_travel_stats,6,1,4224811,3988616,1.61
+segments,16,1,26398983,25362261,9.15
+stop_events,10,1,43635997,42183741,11.74
+stop_hour_reliability,6,1,4352251,4180180,1.38
+terminal_events,10,1,1742475,1636846,0.86
+trip_delay_attribution,16,1,1890651,1579673,0.8
+trip_delivery,10,1,1500249,1471278,0.91
+warning_decisions,10,1,2942753,2640414,0.99

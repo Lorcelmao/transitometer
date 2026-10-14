@@ -1,0 +1,2 @@
+rows,delta_bytes,clickhouse_bytes,raw_bytes,delta_ratio,clickhouse_ratio,delta_files,clickhouse_parts
+9938273,133933854,201615779,2195158637,16.44,10.89,104,24

@@ -1,0 +1,7 @@
+run,position,arm,layout,started_at,equal,applicable,parity_ok,engine_version,threads,containers,contract
+1,1,B1,optimized,2026-10-14T11:11:22+0700,25,25,True,4.1.3,8,transitometer-spark-1,1d35e18
+1,2,B2,optimized,2026-10-14T11:16:17+0700,25,25,True,1.5.5,8,transitometer-spark-1,1d35e18
+2,1,B2,optimized,2026-10-14T11:17:00+0700,25,25,True,1.5.5,8,transitometer-spark-1,1d35e18
+2,2,B1,optimized,2026-10-14T11:17:42+0700,25,25,True,4.1.3,8,transitometer-spark-1,1d35e18
+3,1,B1,optimized,2026-10-14T11:22:27+0700,25,25,True,4.1.3,8,transitometer-spark-1,1d35e18
+3,2,B2,optimized,2026-10-14T11:27:07+0700,25,25,True,1.5.5,8,transitometer-spark-1,1d35e18
