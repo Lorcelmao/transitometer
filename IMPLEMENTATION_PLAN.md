@@ -13,7 +13,7 @@
 | **Repository** | `github.com/Lorcelmao/transitometer` (created in S0) |
 
 > **Binding constraints from `PROJECT_PLAN.md`:** real data for all BR results and acceptance (§1.1) · single machine,
-> one engine profile at a time (§1.2) · two-zone storage, Docker ≤ 25 GB steady, soft guard at 30/35 GB (§1.3; raised from 25/30 by the owner on 2026-10-02) ·
+> one engine profile at a time (§1.2) · two-zone storage, Docker ≤ 25 GB steady, soft guard at 30/50 GB (§1.3; raised from 25/30 by the owner on 2026-10-02, block raised to 50 GB on 2026-10-14) ·
 > core = BR1–BR8 + Axis A + Axis B (§16).
 
 ---
@@ -103,8 +103,8 @@ The host needs **no JDK**. Host Java 23 is irrelevant to the stack.
 through the scaling/compaction peak. **Compromise target:** ≤ 25 GB steady, peaks confined to scheduled windows and followed by cleanup + compaction.
 Docker Desktop 4.54 (WSL2 mode) offers **no hard disk-usage limit**, so the ceiling is enforced by the **soft storage
 guard** `python tasks.py storage-check` (reads `docker system df` + VHDX file size): **warn ≥ 30 GB**, **refuse to start new
-engine runs ≥ 35 GB** (owner decision 2026-10-02, after the full-window Silver run brought
-Docker to about 27 GB; 35 GB is the hard limit, not a target) (override only via an explicit flag during a scheduled peak phase). Every `tasks.py up <profile>`,
+engine runs ≥ 50 GB** (owner decision 2026-10-14 for the S10 benchmark and scaling peaks; it was 35 GB from 2026-10-02, after the full-window Silver run brought
+Docker to about 27 GB; 50 GB is the hard limit, not a target) (override only via an explicit flag during a scheduled peak phase). Every `tasks.py up <profile>`,
 `tasks.py replay` and `tasks.py bench` task calls it first.
 
 ### 4.4 Docker disk image behaviour (measured)

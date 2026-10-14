@@ -37,7 +37,7 @@ flowchart LR
 
 ## Quickstart
 
-Requirements: Python 3.10+, Docker Desktop (Compose v2), about 35 GB free disk for Docker.
+Requirements: Python 3.10+, Docker Desktop (Compose v2), about 50 GB free disk for Docker.
 
 ```bash
 python -m venv .venv
@@ -140,7 +140,7 @@ All commands go through `python tasks.py <task>` (works on every OS):
 | `golden`, `golden-check` | build the DuckDB golden reference; check result tables against it |
 | `axis-a-golden`, `axis-a-produce`, `axis-a-spark`, `axis-a-flink`, `axis-a-compare --engine <e>` | Axis A: passage stream and golden W1/W2, the Spark and Flink arms, comparison with golden |
 | `axis-b-load`, `axis-b-spark`, `axis-b-duckdb`, `axis-b-clickhouse [--no-load]`, `axis-b-compare --engine <e>` | Axis B: the per-day Delta dataset, the three serving arms, comparison of their answers with golden |
-| `storage-check`, `storage-report` | storage guard (warn at 30 GB, refuse engine starts at 35 GB) and usage log |
+| `storage-check`, `storage-report` | storage guard (warn at 30 GB, refuse engine starts at 50 GB) and usage log |
 
 Runs on any topic prefix other than `rt` (for example the demo) write to their own lakehouse subtree and report folder (`results/scratch/<prefix>/`), so they never touch the validated tables.
 
