@@ -12,7 +12,7 @@ import pyarrow.parquet as pq
 from transitometer.axis_a.produce import FIELDS
 from transitometer.bench import axis_a_latency as lat
 from transitometer.bench import axis_a_slice
-from transitometer.bench.axis_a import MemorySampler
+from transitometer.bench.axis_a import AxisA, MemorySampler
 
 
 def _con(**tables: pa.Table) -> duckdb.DuckDBPyConnection:
@@ -123,3 +123,15 @@ def test_memory_units_parse_to_gib() -> None:
     assert MemorySampler._gib("512MiB") == 0.5
     assert MemorySampler._gib("2.5GiB") == 2.5
     assert MemorySampler._gib("0B") == 0.0
+
+
+def test_flink_is_ready_once_idle_source_subtasks_have_finished() -> None:
+    def job(state: str, **tasks: int) -> dict[str, object]:
+        counts = {"running": 0, "finished": 0, "initializing": 0, "total": 32} | tasks
+        return {"state": state, "tasks": counts}
+
+    assert AxisA._flink_running([job("RUNNING", running=32)])
+    assert AxisA._flink_running([job("RUNNING", running=28, finished=4)])
+    assert not AxisA._flink_running([job("RUNNING", running=28, initializing=4)])
+    assert not AxisA._flink_running([job("RUNNING", finished=32)])
+    assert not AxisA._flink_running([job("FINISHED", finished=32)])

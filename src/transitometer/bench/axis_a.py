@@ -193,9 +193,16 @@ class AxisA:
             time.sleep(1)
         raise BenchError("Flink did not reach the expected state")
 
-    def _flink_running(self, jobs: list[dict[str, Any]]) -> bool:
+    @staticmethod
+    def _flink_running(jobs: list[dict[str, Any]]) -> bool:
+        """Every task is running, or already finished: a bounded source subtask that gets no
+        Kafka partition (parallelism above the partition count) finishes right after start."""
         live = [j for j in jobs if j["state"] == "RUNNING"]
-        return bool(live) and all(j["tasks"]["running"] == j["tasks"]["total"] for j in live)
+        return bool(live) and all(
+            j["tasks"]["running"] > 0
+            and j["tasks"]["running"] + j["tasks"]["finished"] == j["tasks"]["total"]
+            for j in live
+        )
 
     def _start(self, engine: str, run_dir: str, record: dict[str, Any], fresh: bool) -> Engine:
         if engine == "spark":
