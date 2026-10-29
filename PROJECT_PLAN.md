@@ -691,7 +691,7 @@ Transit Equity".
 
 ## 22. Unresolved questions
 
-1. **Group ID and member names** — needed at submission.
+1. ~~Group ID~~ — **resolved 2026-10-29: group 33** (as on the presentation submission). Member names: supplied by the owner at submission, not kept in this repository.
 2. ~~MTA Bus GTFS static historical versions~~ — **resolved in S1:** versioned bus schedules are archived by gtfsrt.io; the 7-day window sits inside one bus and one subway version.
 3. **Corridor selection for BR9** — which subway lines / bus routes; decided in S1 from measured volume.
 4. **Data-set freeze date** — planned end of week 6; confirm against the course calendar.
