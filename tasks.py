@@ -598,6 +598,25 @@ def task_bench_axis_a(args: argparse.Namespace) -> int:
     return 0
 
 
+def task_bench_scaling(args: argparse.Namespace) -> int:
+    """S10 real-data scaling: Silver build on 1/3/7-day slices (raw CSV in results/benchmarks/)."""
+    from transitometer.bench.common import BenchError, Host
+    from transitometer.bench.scaling import Scaling
+
+    host = bench_host()
+    assert isinstance(host, Host)
+    scaling = Scaling(host, lambda: task_storage_check(args), lambda m: print(m, flush=True))
+    try:
+        scaling.run(tuple(args.days))
+    except (BenchError, RuntimeError) as exc:
+        print(f"FAILED: {exc}")
+        return 1
+    finally:
+        host.run("--profile", "*", "stop")
+    task_storage_report(args)
+    return 0
+
+
 def task_bench_report(_: argparse.Namespace) -> int:
     """Summary tables and charts of the S10 benchmarks, from the raw CSVs only (host)."""
     from transitometer.bench import report
@@ -1201,6 +1220,13 @@ def build_parser() -> argparse.ArgumentParser:
     bench_a.add_argument("--runs", type=int, default=3, help="runs per configuration")
     bench_a.add_argument("--allow-peak", action="store_true", help="proceed above the block")
     bench_a.set_defaults(func=task_bench_axis_a)
+
+    scaling = sub.add_parser("bench-scaling", help="S10 Silver build on 1/3/7-day real slices")
+    scaling.add_argument(
+        "--days", type=int, nargs="+", choices=(1, 3, 7), default=[1, 3, 7], help="slices to run"
+    )
+    scaling.add_argument("--allow-peak", action="store_true", help="proceed above the block")
+    scaling.set_defaults(func=task_bench_scaling)
 
     cleanup = sub.add_parser(
         "bench-cleanup", help="remove a phase-scoped engine: containers, data volume, image"
