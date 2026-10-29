@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    #vis.vega-embed {
+      width: 100%;
+      display: flex;
+    }
+
+    #vis.vega-embed details,
+    #vis.vega-embed details summary {
+      position: relative;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@6.4.1"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+</head>
+<body>
+  <div id="vis"></div>
+  <script>
+    (function(vegaEmbed) {
+      var spec = {"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}}, "data": {"name": "data-ccf989a19ceb4791c7b8b8f38281bb8d"}, "mark": {"type": "line", "point": true}, "encoding": {"x": {"field": "days", "type": "quantitative"}, "y": {"field": "seconds_median", "title": "seconds", "type": "quantitative"}}, "title": "Silver build time by real-data slice", "$schema": "https://vega.github.io/schema/vega-lite/v6.4.1.json", "datasets": {"data-ccf989a19ceb4791c7b8b8f38281bb8d": [{"days": 1, "messages_in": 17520044, "rows_out": 201118299, "seconds_median": 861.2, "seconds_min": 849.4, "seconds_max": 862.8, "rows_per_s_median": 233533.0}, {"days": 3, "messages_in": 47451776, "rows_out": 554739512, "seconds_median": 2248.7, "seconds_min": 2209.4, "seconds_max": 2352.6, "rows_per_s_median": 246693.0}]}};
+      var embedOpt = {"mode": "vega-lite"};
+
+      function showError(el, error){
+          el.innerHTML = ('<div style="color:red;">'
+                          + '<p>JavaScript Error: ' + error.message + '</p>'
+                          + "<p>This usually means there's a typo in your chart specification. "
+                          + "See the javascript console for the full traceback.</p>"
+                          + '</div>');
+          throw error;
+      }
+      const el = document.getElementById('vis');
+      vegaEmbed("#vis", spec, embedOpt)
+        .catch(error => showError(el, error));
+    })(vegaEmbed);
+
+  </script>
+</body>
+</html>
