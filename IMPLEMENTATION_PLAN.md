@@ -262,12 +262,14 @@ Each stage: **Goal → Deliverables → Tests → Exit.**
 - **Deliverables:** Streamlit app: U1 reliability console, U2 diagnostics, U3/U4 scorecards and trends, U5 departure confidence, U6 feed health, U7 HCMC map; data-access layer over DuckDB (Delta + Spatial). Development starts from golden/Gold exports on the host; integration reads the live `lakehouse` volume in the `app` profile.
 - **Tests:** data-access unit tests; UI smoke tests; **per-BR acceptance tests on real data** (§6.3); time-to-insight task timings.
 - **Exit:** every core BR (BR1–BR8) demonstrable in-app with recorded evidence.
+- **Status (2026-10-29): evidence recorded; timings open.** Every core BR has its Gold tables equal to golden, a property test and a page in both frontends, with screenshots: `docs/br-acceptance.md`. Both frontends are live (transitometer.vercel.app, transitometer.streamlit.app). Open: the time-to-insight timings (owner), and whether U5 needs a dedicated departure-confidence page beyond the BR8 stop-reliability page; U7 (HCMC) belongs to S13 (BR11).
 - **Addition (2026-10-03):** a second, static frontend (Next.js, `web/`) presents the validated snapshot publicly. It reads the same serving layer: page rules and labels moved from the Streamlit pages into `serve/views.py`, exported as JSON by `tasks.py web-data`; both frontends are tested against one parity file. Plan: `plans/261003-1210-nextjs-showcase-frontend/`.
 
 ### S12 — E2E, reproducibility & evaluation packaging — Docker
 - **Deliverables:** `python tasks.py demo` (replay → Silver/Gold → app); evaluation report (correctness, performance, exploitation); reproducibility manifest (image digests, versions, host spec, caps); demo recording.
 - **Tests:** clean clone on the host → `python tasks.py fetch` then `python tasks.py demo`; determinism re-run; artifact checklist.
 - **Exit:** E2E passes from a clean clone; evaluation chapter complete.
+- **Status (2026-10-29): clean clone passes; evaluation drafted; recording open.** A fresh clone runs the README quickstart (`fetch`, `build`, `demo`) in 748 s and the app answers; the demo's 65 report counts equal those of the 2026-10-02 run (`docs/reproducibility.md`, which also lists what pins what and the reference machine). Evaluation chapter: `docs/evaluation.md`. Open: the demo recording (owner).
 
 ### S13 — Desirable / optional
 - **BR9** corridor history (batch path, subway group by default); **BR10** weather join; **BR11** HCMC static coverage (frequency-based GTFS built from OSM; Hanoi World Bank GTFS as fallback) (DuckDB Spatial); optional extras from `PROJECT_PLAN.md` §20 (SeaweedFS, PostGIS, Metabase, live polling) only if the core is complete and the storage log allows.

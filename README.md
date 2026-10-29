@@ -184,6 +184,7 @@ The public app runs the same Streamlit code on `showcase/data/`, a committed cop
 - `src/transitometer/serve/`: data-access layer (`kpis.py`), shared page views and formatting (`views.py`, `format.py`), snapshot and web export
 - `src/transitometer/app/`: Streamlit app; `web/`: Next.js site; `showcase/`: validated snapshot and the cross-frontend contract files
 - `PROJECT_PLAN.md`: scope, users and business requirements; `IMPLEMENTATION_PLAN.md`: stages and tests
+- `docs/`: [evaluation](docs/evaluation.md) (correctness, performance, use), [requirement acceptance](docs/br-acceptance.md) with screenshots, [benchmark results](docs/benchmark-results.md) and their [fairness contract](docs/benchmark-fairness.md), [reproducibility](docs/reproducibility.md)
 
 ## Roadmap
 
