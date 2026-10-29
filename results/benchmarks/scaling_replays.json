@@ -1,0 +1,124 @@
+[
+  {
+    "days": 1,
+    "replay_s": 400.7,
+    "report": {
+      "prefix": "scale1",
+      "days": [
+        "2026-09-17"
+      ],
+      "speed": 0.0,
+      "minutes": 0.0,
+      "faults": "none",
+      "feeds": [
+        {
+          "feed": "trip_updates.bus",
+          "topic": "scale1.trip_updates.bus",
+          "faults": "none",
+          "snapshots": 2880,
+          "rows": 176695301,
+          "messages": 10607458,
+          "acknowledged": 10607458,
+          "payload_bytes": 6296864882,
+          "max_message_bytes": 3354,
+          "elapsed_s": 398.0,
+          "pacing_lag_p50_s": null,
+          "pacing_lag_p99_s": null,
+          "pacing_lag_max_s": null
+        },
+        {
+          "feed": "trip_updates.subway",
+          "topic": "scale1.trip_updates.subway",
+          "faults": "none",
+          "snapshots": 4319,
+          "rows": 18393269,
+          "messages": 890056,
+          "acknowledged": 890056,
+          "payload_bytes": 471690111,
+          "max_message_bytes": 1494,
+          "elapsed_s": 231.0,
+          "pacing_lag_p50_s": null,
+          "pacing_lag_p99_s": null,
+          "pacing_lag_max_s": null
+        },
+        {
+          "feed": "vehicle_positions.bus",
+          "topic": "scale1.vehicle_positions.bus",
+          "faults": "none",
+          "snapshots": 2880,
+          "rows": 6029729,
+          "messages": 6032609,
+          "acknowledged": 6032609,
+          "payload_bytes": 756813312,
+          "max_message_bytes": 132,
+          "elapsed_s": 97.7,
+          "pacing_lag_p50_s": null,
+          "pacing_lag_p99_s": null,
+          "pacing_lag_max_s": null
+        }
+      ]
+    }
+  },
+  {
+    "days": 3,
+    "replay_s": 1177.4,
+    "report": {
+      "prefix": "scale3",
+      "days": [
+        "2026-09-17",
+        "2026-09-18",
+        "2026-09-19"
+      ],
+      "speed": 0.0,
+      "minutes": 0.0,
+      "faults": "none",
+      "feeds": [
+        {
+          "feed": "trip_updates.bus",
+          "topic": "scale3.trip_updates.bus",
+          "faults": "none",
+          "snapshots": 8639,
+          "rows": 486120795,
+          "messages": 28692829,
+          "acknowledged": 28692829,
+          "payload_bytes": 17211539955,
+          "max_message_bytes": 3354,
+          "elapsed_s": 1174.1,
+          "pacing_lag_p50_s": null,
+          "pacing_lag_p99_s": null,
+          "pacing_lag_max_s": null
+        },
+        {
+          "feed": "trip_updates.subway",
+          "topic": "scale3.trip_updates.subway",
+          "faults": "none",
+          "snapshots": 12957,
+          "rows": 52378516,
+          "messages": 2540342,
+          "acknowledged": 2540342,
+          "payload_bytes": 1343806610,
+          "max_message_bytes": 1494,
+          "elapsed_s": 723.7,
+          "pacing_lag_p50_s": null,
+          "pacing_lag_p99_s": null,
+          "pacing_lag_max_s": null
+        },
+        {
+          "feed": "vehicle_positions.bus",
+          "topic": "scale3.vehicle_positions.bus",
+          "faults": "none",
+          "snapshots": 8640,
+          "rows": 16240201,
+          "messages": 16248841,
+          "acknowledged": 16248841,
+          "payload_bytes": 2024881390,
+          "max_message_bytes": 133,
+          "elapsed_s": 299.7,
+          "pacing_lag_p50_s": null,
+          "pacing_lag_p99_s": null,
+          "pacing_lag_max_s": null
+        }
+      ]
+    }
+  }
+]
