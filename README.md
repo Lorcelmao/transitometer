@@ -121,7 +121,20 @@ ClickHouse loads each table one service day at a time straight from the Delta fi
 | DuckDB golden, the same rules (all steps but the 06 cross-check; sum of step times) | 711.0 s | `results/golden-run.json` |
 | DuckDB golden, all 12 steps (BR1–BR8) | 892.1 s | `results/golden-run.json` |
 
-This is the current alternative-solution comparison: a single-node batch engine (DuckDB, over the raw archive Parquet) against a distributed streaming/batch engine (Spark in Docker, over Silver Delta tables already decoded from Kafka). They are not like-for-like: DuckDB's time includes reading the raw archive, while Spark's times include JVM start-up and Delta writes but not the Kafka → Silver ingest that precedes them. The full benchmark suite (Flink, ClickHouse, scaling) is on the roadmap.
+This is the current alternative-solution comparison: a single-node batch engine (DuckDB, over the raw archive Parquet) against a distributed streaming/batch engine (Spark in Docker, over Silver Delta tables already decoded from Kafka). They are not like-for-like: DuckDB's time includes reading the raw archive, while Spark's times include JVM start-up and Delta writes but not the Kafka → Silver ingest that precedes them.
+
+**Benchmarks (S10): both axes and real-data scaling**
+
+Measured under a [fairness contract](docs/benchmark-fairness.md) published before the first run: 3 runs per configuration, alternating arm order, only the arm under test running, the same input bytes for every arm, and every run graded against golden. Full tables, deviations and what was not tested: [`docs/benchmark-results.md`](docs/benchmark-results.md); raw samples in `results/benchmarks/`.
+
+| Question | Result (median of 3 runs) |
+|---|---|
+| Streaming latency at 200 passages/s, p95 | Flink W1 0.33 s, W2 21.4 s; Spark W1 22.6 s, W2 40.2 s (W2 waits for the 120 s event-time watermark) |
+| Throughput knee (W2 p95 ≤ 30 s) | Flink 1,000/s in every run (2,000/s in 2 of 3); Spark none, even at 500/s |
+| Recovery after SIGKILL | Spark 13.1 s, no duplicates; Flink 17.5 s, about 2,500 duplicate outputs (at-least-once) |
+| 25-query suite, warm pass | DuckDB 2.66 s, ClickHouse 3.00 s (23 queries), Spark SQL 33.6 s |
+| A new service day becomes queryable | DuckDB 0.31 s, ClickHouse 0.73 s, Spark SQL 1.66 s |
+| Silver build from Kafka, 1 and 3 days | 861 s and 2,249 s: about 20,000 messages/s, linear in input |
 
 ## Tasks
 
@@ -140,6 +153,8 @@ All commands go through `python tasks.py <task>` (works on every OS):
 | `golden`, `golden-check` | build the DuckDB golden reference; check result tables against it |
 | `axis-a-golden`, `axis-a-produce`, `axis-a-spark`, `axis-a-flink`, `axis-a-compare --engine <e>` | Axis A: passage stream and golden W1/W2, the Spark and Flink arms, comparison with golden |
 | `axis-b-load`, `axis-b-spark`, `axis-b-duckdb`, `axis-b-clickhouse [--no-load]`, `axis-b-compare --engine <e>` | Axis B: the per-day Delta dataset, the three serving arms, comparison of their answers with golden |
+| `bench-axis-a`, `bench-axis-b`, `bench-scaling [--days]`, `bench-report` | S10 benchmarks: raw CSVs in `results/benchmarks/`; `bench-report` rebuilds the summaries and charts from them |
+| `bench-cleanup <engine>` | remove a phase-scoped engine (Flink or ClickHouse) after its benchmark |
 | `storage-check`, `storage-report` | storage guard (warn at 30 GB, refuse engine starts at 50 GB) and usage log |
 
 Runs on any topic prefix other than `rt` (for example the demo) write to their own lakehouse subtree and report folder (`results/scratch/<prefix>/`), so they never touch the validated tables.
@@ -172,7 +187,7 @@ The public app runs the same Streamlit code on `showcase/data/`, a committed cop
 
 ## Roadmap
 
-All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. The public showcase is deployed (Next.js on Vercel, Streamlit on Community Cloud). Both alternatives return golden-equal results: Flink for processing (Axis A) and DuckDB and ClickHouse for serving (Axis B). Next: the benchmarks for both axes (latency, throughput, freshness, footprint) and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
+All eight core requirements run in Spark and match the golden reference: BR1 on-time performance, BR2 headways and bunching, BR3 missing trips, BR4 delay attribution, BR5 route scorecards, BR6 early warning, BR7 feed health and BR8 stop reliability. The public showcase is deployed (Next.js on Vercel, Streamlit on Community Cloud). Both alternatives return golden-equal results: Flink for processing (Axis A) and DuckDB and ClickHouse for serving (Axis B), and both axes and the 1- and 3-day scaling slices are benchmarked ([`docs/benchmark-results.md`](docs/benchmark-results.md)). Next: the per-requirement acceptance check of the app, the one-command end-to-end demo from a clean clone, and the Ho Chi Minh City static network case study. See `IMPLEMENTATION_PLAN.md`.
 
 ## Storage rules
 
