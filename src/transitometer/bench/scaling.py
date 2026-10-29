@@ -26,6 +26,11 @@ from transitometer.ops.skeleton import SPARK_SUBMIT, SRC
 FIRST_DAY = date(2026, 9, 17)
 SLICES = (1, 3, 7)
 RUNS = 3
+# Run in the kafka container: wait (up to 5 min) until no deleted partition awaits removal.
+PURGED = (
+    "i=0; while ls \"$KAFKA_LOG_DIRS\" | grep -q -- '-delete$'; do "
+    'i=$((i+1)); [ "$i" -ge 60 ] && exit 1; sleep 5; done'
+)
 # Run in the spark container: bytes of one slice's scratch Silver and checkpoints.
 SIZES = (
     "import json, os, sys\n"
@@ -56,8 +61,14 @@ class Scaling:
         self._sh(f"rm -rf /data/lakehouse/scratch/{prefix} /data/checkpoints/scratch/{prefix}")
 
     def _drop_topics(self, prefix: str) -> None:
+        """Delete the slice's topics and wait until Kafka has removed their files.
+
+        Kafka only renames a deleted partition to `*-delete` and removes it after
+        `file.delete.delay.ms` (60 s); stopping the broker earlier leaves the bytes on disk.
+        """
         topics = "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092"
         self._sh(f"{topics} --delete --if-exists --topic '{prefix}\\..*'", service="kafka")
+        self._sh(PURGED, service="kafka")
 
     def _kept(self, days: tuple[int, ...]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Rows and replay records already written for the slices not being run now."""
