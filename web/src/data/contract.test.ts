@@ -8,6 +8,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type * as z from "zod/mini";
 
+import { MAP_FRAME } from "@/charts/options";
 import { NAV } from "@/components/site/nav";
 import * as schemas from "@/data/schemas";
 
@@ -51,6 +52,22 @@ describe("exported JSON matches the site's contract", () => {
     expect(() => schemas.parseView("overview", read("overview.json"), schemas.overview)).not.toThrow();
     expect(() => schemas.parseView("feed", read("feed-health.json"), schemas.feedHealth)).not.toThrow();
     expect(() => schemas.parseView("validation", read("validation.json"), schemas.validation)).not.toThrow();
+  });
+
+  it("stop maps fit the map's fixed frame, and so does the background", () => {
+    const inside = ([lon, lat]: number[]) =>
+      lon > MAP_FRAME.lon[0] && lon < MAP_FRAME.lon[1] && lat > MAP_FRAME.lat[0] && lat < MAP_FRAME.lat[1];
+    const col = (name: (typeof schemas.MAP_COLUMNS)[number]) => schemas.MAP_COLUMNS.indexOf(name);
+    for (const file of files("map")) {
+      const { data } = schemas.parseView(file, read(file), schemas.stopMap);
+      for (const row of data.stops) expect(inside([row[col("lon")] as number, row[col("lat")] as number])).toBe(true);
+    }
+    const background = schemas.basemap.parse(
+      JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../public/basemap/nyc.json"), "utf8")),
+    );
+    const points = [...background.streets.flat(), ...background.subway.flatMap((s) => s.lines.flat())];
+    expect(points.length).toBeGreaterThan(1000);
+    expect(points.every(inside)).toBe(true);
   });
 
   it("rejects a file whose numbers were renamed or retyped", () => {

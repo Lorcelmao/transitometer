@@ -15,7 +15,7 @@ export default function Page() {
       <PageIntro section="Diagnostics" title="Where in the city were arrivals least reliable?">
         Every stop the feeds reported, placed by its timetable coordinates and coloured by the share of
         its arrivals that were on time, all routes and hours pooled over both days. No map tiles: the
-        stops themselves trace the city.
+        background is drawn from the bus and subway route shapes of the MTA timetables.
       </PageIntro>
       <MapView meta={meta} initial={{ file, ...readView(file, stopMap) }} />
     </>

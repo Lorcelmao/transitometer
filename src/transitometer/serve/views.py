@@ -257,6 +257,9 @@ OTP_DEFINITIONS = (
     "are excluded; stops reported by several vehicles at once are excluded as ambiguous.\n"
     "- **On time:** delay between −60 s and +300 s; delay = inferred arrival − scheduled "
     "arrival.\n"
+    "- **Late:** more than 5 min late. **Early:** more than 1 min early. On time, late and "
+    "early add up to 100 % of the counted arrivals (up to rounding).\n"
+    "- **Median delay:** the middle delay of the arrivals counted (negative = early).\n"
     f"- **Route ranking:** route-hours with at least {MIN_EVENTS} arrivals, weighted by "
     "arrivals.\n"
     "- **Bus last stops** are measured separately from GPS positions and are not part of "
@@ -521,6 +524,19 @@ def route_stop_details(con: Con, src: Source, grp: str, route_id: str) -> list[R
 
 MAP_WORST = 10  # the map's text summary names this many least reliable stops
 
+MAP_DEFINITIONS = (
+    "- **Arrivals at a stop:** inferred arrivals of every route that serves the stop, all "
+    "hours, both service days pooled (see On-time performance for how an arrival is "
+    "inferred).\n"
+    "- **On time:** the share of those arrivals at most 1 min early and at most 5 min late.\n"
+    "- **Stop ID:** the MTA's own identifier. Each direction of a street has its own stop and "
+    "its own ID.\n"
+    f"- **Scored:** stops with at least {MIN_CELL_EVENTS} arrivals; the others are drawn "
+    "hollow and not compared.\n"
+    "- **Background:** bus and subway route shapes from the MTA static timetables, drawn "
+    "without map tiles."
+)
+
 
 def stop_map(con: Con, src: Source, grp: str) -> Row:
     """BR8 map: located stops, least reliable sufficient stops first, then the thinly observed.
@@ -544,6 +560,7 @@ def stop_map(con: Con, src: Source, grp: str) -> Row:
         "worst": worst,
         "sufficient": sum(s["sufficient"] for s in stops),
         "min_events": MIN_CELL_EVENTS,
+        "definitions": MAP_DEFINITIONS,
         "summary": (
             f"{len(stops):,} located stops, {sum(s['sufficient'] for s in stops):,} with at least "
             f"{MIN_CELL_EVENTS} arrivals over both days. Least reliable: "
@@ -778,6 +795,10 @@ WARNING_DEFINITIONS = (
     "*Baseline:* current delay > 5 min. *Outcome:* delay at the last observed stop > 5 min.\n"
     "- **Bunching rule:** current headway ≤ ½ of the scheduled headway. *Baseline:* already "
     "classified bunched. *Outcome:* bunched at any later stop.\n"
+    "- **Precision:** of the trips a rule warned about, the share that really ended late (or "
+    "really got bunched). **Recall:** of the trips that really ended late (or got bunched), "
+    "the share the rule warned about. **F1** combines the two into one score from 0 to 1; "
+    "higher is better.\n"
     f"- Rules and thresholds were tuned on {day_label(DEVELOPMENT_DAY)} only; "
     f"{day_label(HELD_OUT_DAY)} is held out. Acceptance, declared before the held-out day "
     "was computed: the rule beats its baseline on F1 with precision ≥ "

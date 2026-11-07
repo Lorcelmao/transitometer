@@ -18,6 +18,7 @@ export function EChart({
   label,
   renderer = "svg",
   onPointClick,
+  onReady,
 }: {
   build: BuildOption;
   /** Fixed height in pixels, or a CSS aspect ratio (for example "1 / 1") instead. */
@@ -27,10 +28,17 @@ export function EChart({
   renderer?: "svg" | "canvas";
   /** Called with the clicked data item (the object passed in the series data). */
   onPointClick?: (item: unknown) => void;
+  /** Called once with the chart after its first draw (for events and actions beyond a click). */
+  onReady?: (chart: EChartsType) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const chart = useRef<EChartsType | null>(null);
   const latest = useRef(build);
+  // The latest click handler: it may depend on the data shown, which changes with the filters.
+  const click = useRef(onPointClick);
+  useEffect(() => {
+    click.current = onPointClick;
+  }, [onPointClick]);
 
   function apply(instance: EChartsType, builder: BuildOption) {
     const font =
@@ -63,8 +71,9 @@ export function EChart({
           if (disposed) return;
           const instance = echarts.init(element, null, { renderer });
           chart.current = instance;
-          if (onPointClick) instance.on("click", (event) => onPointClick(event.data));
+          if (onPointClick) instance.on("click", (event) => click.current?.(event.data));
           apply(instance, latest.current);
+          onReady?.(instance);
           resize = new ResizeObserver(() => instance.resize());
           resize.observe(element);
         });

@@ -212,6 +212,7 @@ def _compact_map(view: dict[str, Any]) -> dict[str, Any]:
         "sufficient": view["sufficient"],
         "min_events": view["min_events"],
         "summary": view["summary"],
+        "definitions": view["definitions"],
     }
 
 
