@@ -204,7 +204,7 @@ export default function Home() {
             <p className="text-xs font-medium uppercase tracking-widest text-muted-ink">Links</p>
             <ul className="space-y-2">
               <li>
-                <Link href="/about/">Why I built it: decisions and trade-offs</Link>
+                <Link href="/about/">About the project: decisions and trade-offs</Link>
               </li>
               <li>
                 <a href={REPOSITORY}>Source code, pipeline and results on GitHub</a>
@@ -219,8 +219,7 @@ export default function Home() {
               </li>
             </ul>
             <p className="pt-2 text-sm text-muted-ink">
-              Built by <a href="https://github.com/Lorcelmao">Lorcelmao</a>. Stack: Python, Kafka, PySpark Structured
-              Streaming, Delta Lake, DuckDB, Streamlit, Next.js.
+              Stack: Python, Kafka, PySpark Structured Streaming, Delta Lake, DuckDB, Streamlit, Next.js.
             </p>
           </aside>
         </div>
