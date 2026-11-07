@@ -1097,6 +1097,23 @@ def task_web_data(args: argparse.Namespace) -> int:
     return 0
 
 
+def task_web_basemap(_: argparse.Namespace) -> int:
+    """The stop map's background from the pinned static timetables in the landing zone."""
+    from transitometer.ingest.sources import load_sources
+    from transitometer.serve import basemap
+
+    try:
+        summary = basemap.write(basemap.build(landing_dir(), load_sources(SOURCES_FILE)))
+    except FileNotFoundError as exc:
+        print(f"web-basemap: {exc}")
+        return 1
+    print(
+        f"basemap: {summary['streets']} street lines, {summary['subway_lines']} subway lines, "
+        f"{summary['points']:,} points ({summary['bytes'] / 1e6:.2f} MB) -> web/public/basemap"
+    )
+    return 0
+
+
 def task_down(_: argparse.Namespace) -> int:
     """Stop every service; named volumes are kept (use Docker directly for deliberate resets)."""
     return run(compose_cmd("--profile", "*", "down"))
@@ -1121,6 +1138,10 @@ def build_parser() -> argparse.ArgumentParser:
             "Axis A passage stream + golden W1/W2 (checked against golden headways)",
         ),
         "snapshot": (task_snapshot, "copy the validated Gold app tables into showcase/data/"),
+        "web-basemap": (
+            task_web_basemap,
+            "stop map background from the static timetables -> web/public/basemap/",
+        ),
         "bench-report": (task_bench_report, "S10 summary tables and charts from the raw CSVs"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }

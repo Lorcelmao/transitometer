@@ -149,6 +149,7 @@ All commands go through `python tasks.py <task>` (works on every OS):
 | `silver`, `silver-events`, `gold` | Spark jobs; `silver-events` and `gold` also export their tables and compare them with golden (`gold --export-only` re-exports and compares without re-running Spark) |
 | `snapshot` | copy the validated Gold tables the app reads into `showcase/data/`, with the run's evidence files and a manifest (commit, rows, SHA-256); refuses unless validation passed and the exports match the validated run |
 | `web-data [--check]` | export the shared views over the snapshot as JSON for the Next.js site (`web/public/data/`) and the cross-frontend parity file; `--check` fails if the committed JSON is stale |
+| `web-basemap` | draw the stop map's background (bus and subway route shapes of the pinned static timetables in the landing zone) into `web/public/basemap/nyc.json`; reference geometry, committed, no map tiles |
 | `demo [--fresh]` | one real hour end to end, then the app |
 | `golden`, `golden-check` | build the DuckDB golden reference; check result tables against it |
 | `axis-a-golden`, `axis-a-produce`, `axis-a-spark`, `axis-a-flink`, `axis-a-compare --engine <e>` | Axis A: passage stream and golden W1/W2, the Spark and Flink arms, comparison with golden |
