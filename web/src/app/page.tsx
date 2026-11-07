@@ -106,7 +106,11 @@ export default function Home() {
       </Chapter>
 
       <Chapter number="4" id="trust" title="Why the numbers can be trusted">
-        <dl className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <p className="mt-6 max-w-prose text-sm text-muted-ink">
+          Silver holds the cleaned arrivals matched to the timetable; Gold holds the result tables this site shows. The
+          golden reference is a separate DuckDB implementation of the same rules that both are checked against.
+        </p>
+        <dl className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div className="reveal border-t-2 border-ink pt-2">
             <dt className="text-xs font-medium uppercase tracking-wider text-muted-ink">Source integrity</dt>
             <dd className="num mt-1 text-3xl" data-testid="trust-integrity">

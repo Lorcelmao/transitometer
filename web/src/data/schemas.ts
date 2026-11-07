@@ -350,8 +350,22 @@ export const stopMap = z.object({
   sufficient: num,
   min_events: num,
   summary: z.string(),
+  definitions: z.string(),
 });
 export type StopMap = z.infer<typeof stopMap>;
+
+/**
+ * The stop map's background (`python tasks.py web-basemap`, public/basemap/nyc.json): reference
+ * geometry from the MTA static timetables, not a view, so it has its own schema tag.
+ */
+const polyline = z.array(z.tuple([num, num]));
+export const basemap = z.object({
+  schema: z.literal("transitometer.basemap/1"),
+  source: z.string(),
+  streets: z.array(polyline),
+  subway: z.array(z.object({ color: z.string(), lines: z.array(polyline) })),
+});
+export type Basemap = z.infer<typeof basemap>;
 
 export const earlyWarning = z.object({
   held_out_day: z.string(),

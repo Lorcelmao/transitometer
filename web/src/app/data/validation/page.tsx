@@ -103,6 +103,10 @@ export default function Page() {
         title="Golden-reference parity"
         question="The same rules were implemented a second time, independently, as DuckDB SQL over the raw archive. Does every Spark table equal its golden counterpart?"
       >
+        <p className="mb-4 max-w-prose text-sm text-muted-ink">
+          Silver holds the cleaned arrivals matched to the timetable; Gold holds the result tables this site shows. The
+          golden reference is the separate DuckDB implementation they are compared with: same rules, different code.
+        </p>
         {data.parity.available ? (
           <>
             <dl className="grid gap-6 sm:grid-cols-2">
