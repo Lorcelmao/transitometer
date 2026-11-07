@@ -10,7 +10,7 @@ import { overview as overviewSchema } from "@/data/schemas";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "What Transitometer does, why it was built, the decisions behind it and the trade-offs they cost.",
+  description: "What Transitometer does, why it exists, the decisions behind it and the trade-offs they cost.",
 };
 
 /** One row of the supporting facts under the writeup. */
@@ -34,22 +34,18 @@ export default function Page() {
   return (
     <>
       <article aria-labelledby="writeup-title" data-testid="writeup">
-        <PageIntro section="About · project writeup" title="Why I built Transitometer" titleId="writeup-title">
-          Transitometer is a reliability app built from archived New York MTA GTFS-Realtime feeds. It began as my Data
-          Engineering course project; I kept developing it into a product because raw transit feeds are hard to inspect
-          and easy to misread (a trip missing from the feed is not proof it never ran). It turns two days of feed
-          observations into evidence that riders, planners and feed maintainers can explore: punctuality, bunching, trip
-          delivery, where delay builds up and feed quality, each with its sample size and caveats.
+        <PageIntro section="About · project writeup" title="About Transitometer" titleId="writeup-title">
+          Transitometer is a reliability app built from archived New York MTA GTFS-Realtime feeds. It began as a Data
+          Engineering course project and grew into a product, because raw transit feeds are hard to inspect and easy to
+          misread (a trip missing from the feed is not proof it never ran). It turns two days of feed observations into
+          evidence that riders, planners and feed maintainers can explore: punctuality, bunching, trip delivery, where
+          delay builds up and feed quality, each with its sample size and caveats.
         </PageIntro>
         <p className="mt-6 max-w-prose">
-          I made the product and architecture decisions. Archived snapshots are replayed through Kafka into Spark, and a
-          separate DuckDB implementation of the same rules checks Spark&apos;s output. The heavy pipeline stays on one
-          machine; only a validated snapshot is published, as a static Next.js site on Vercel. That trades live data for
-          near-zero hosting cost, fast pages and results reproducible from the repository. A Streamlit console remains
-          for deeper technical inspection.
-        </p>
-        <p className="mt-4 text-sm text-muted-ink">
-          By <a href="https://github.com/Lorcelmao">Loc Huynh</a>, sole developer
+          Archived snapshots are replayed through Kafka into Spark, and a separate DuckDB implementation of the same rules
+          checks Spark&apos;s output. The heavy pipeline stays on one machine; only a validated snapshot is published, as
+          a static Next.js site on Vercel. That trades live data for near-zero hosting cost, fast pages and results
+          reproducible from the repository. A Streamlit console remains for deeper technical inspection.
         </p>
       </article>
 

@@ -42,9 +42,6 @@ export function SiteFooter({ meta }: { meta: Meta }) {
             <li>
               <a href={meta.repository}>Source code and pipeline</a>
             </li>
-            <li>
-              <a href="https://github.com/Lorcelmao">Built by Lorcelmao</a>
-            </li>
             {STREAMLIT_URL ? (
               <li>
                 <a href={STREAMLIT_URL}>Analyst console (Streamlit, same snapshot)</a>

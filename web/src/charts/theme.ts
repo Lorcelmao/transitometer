@@ -1,13 +1,13 @@
 /** Chart colours, mirroring the CSS tokens in app/globals.css (ECharts needs literal values). */
 export const COLORS = {
-  paper: "#f7f4ee",
-  panel: "#eee8dd",
+  paper: "#f6f7fb",
+  panel: "#eceff5",
   ink: "#161513",
   muted: "#5c564d",
-  rule: "#cfc6b6",
+  rule: "#cdd3de",
   accent: "#b3261e",
   link: "#1f4e8c",
-  thin: "#b9b0a2",
+  thin: "#aab2c0",
   sequential: ["#d6e2ee", "#9fbcd9", "#4a7fb5", "#1f4e8c", "#0b2f5b"],
 } as const;
 
