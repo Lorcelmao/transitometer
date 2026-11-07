@@ -5,15 +5,18 @@
 /*
  * Editorial design tokens (plans/261003-1210-nextjs-showcase-frontend/design-system.md).
  * Light theme only; every colour is a token, so a dark theme only has to redefine :root values.
- * Text pairs were contrast-checked against --paper (WCAG AA): ink 16.6:1, muted 6.6:1,
- * accent 6.0:1, link 7.6:1, pass 5.8:1, warn 5.4:1. --rule is decorative only.
+ * The surfaces (paper, panel, rule, popover) use the cool near-white neutrals of the RiftQuant
+ * light theme; ink, accent and link keep the editorial values.
+ * Text pairs were contrast-checked against --paper (WCAG AA): ink 17.1:1, muted 6.8:1,
+ * accent 6.1:1, link 7.8:1, pass 6.0:1, warn 5.5:1; on --panel the lowest is warn at 5.2:1.
+ * --rule is decorative only.
  */
 :root {
-  --paper: #f7f4ee;
-  --panel: #eee8dd;
+  --paper: #f6f7fb;
+  --panel: #eceff5;
   --ink: #161513;
   --muted-ink: #5c564d;
-  --rule: #cfc6b6;
+  --rule: #cdd3de;
   --accent-red: #b3261e;
   --link: #1f4e8c;
   --pass: #2e6b3a;
@@ -31,7 +34,7 @@
   --foreground: var(--ink);
   --card: var(--paper);
   --card-foreground: var(--ink);
-  --popover: #fbf9f5;
+  --popover: #ffffff;
   --popover-foreground: var(--ink);
   --primary: var(--ink);
   --primary-foreground: var(--paper);
