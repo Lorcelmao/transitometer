@@ -5,7 +5,7 @@
     "replay-verification.json": "ae917bb8f15bc5afa13807a67ef834bcc9f8ec7165349d5a9b5426c79fec90c3",
     "silver-ingest.json": "5c9c2f8bd12756f3f1a23ac2ab7aaa2dc8eaef4c629d5cb47a57618ab62830ec",
     "test-summary.json": "57b8b2e328e1ff97da181ec8ad0d52ef5a3a91ef76672deff7d7abffa1e9247a",
-    "tolerance.json": "b06ae784b0cad067a6a53ab63d9616ff130f332f4ac3f653426cc9e23a858ea2",
+    "tolerance.json": "67d7daf1b4e6d930f2562773f429414aa240f93be97555b4d4d8587fadeab9ac",
     "validation-gold.json": "e6e9381f75fe57a6a42bcf0d1b9a1ef2b66d257358aa83d44f0e7b5f4c731d8e",
     "validation-silver.json": "0b5a6e65d8a9666c90bb72805e07b35677ee2ce777923fd36be89c5b043c9766"
   },
@@ -109,6 +109,12 @@
       "rows": 14949,
       "sha256": "4df5f1e6afad1cf6e8df4abba4e2287b88ad7c52aa316d83e7605089c817941a",
       "validated": false
+    },
+    "warning_decisions": {
+      "bytes": 2628705,
+      "rows": 105488,
+      "sha256": "f962cba981e6c65d9132606b546c061a87abeb02ace727225b73ae0929131db5",
+      "validated": true
     }
   },
   "validated_commit": "774e95103e579153b67d50613eee76cee71ea3d2",
