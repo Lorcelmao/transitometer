@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from transitometer.pipeline.service_days import day_base
 from transitometer.serve import format as fmt
 from transitometer.serve import kpis, views
 
@@ -93,6 +94,36 @@ def test_early_warning_verdicts_apply_the_declared_rule(con, grp) -> None:  # ty
         expected = rule["f1"] > base["f1"] and rule["precision"] >= views.MIN_PRECISION
         assert verdict["passed"] is expected
         assert verdict["verdict"] == ("passed" if expected else "did not pass")
+
+
+@pytest.mark.parametrize("grp", ["bus", "subway"])
+def test_the_dispatcher_list_adds_up_to_the_rules_own_counts(con, grp) -> None:  # type: ignore[no-untyped-def]
+    day = views.HELD_OUT_DAY
+    summary = {
+        r["outcome"]: r
+        for r in kpis.warning_summary(con, SRC)
+        if r["grp"] == grp and r["service_date"] == day and r["method"] == "rule"
+    }
+    every_route = kpis.warning_routes(con, SRC, grp, day, min_decisions=0)
+    hours = kpis.warning_hours(con, SRC, grp, day, day_base(day))
+    for rows in (every_route, hours):
+        for outcome in ("late", "bunched"):
+            warned = sum(int(r[f"warned_{outcome}"]) for r in rows)
+            hits = sum(int(r[f"{outcome}_hits"]) for r in rows)
+            assert warned == summary[outcome]["tp"] + summary[outcome]["fp"]
+            assert hits == summary[outcome]["tp"]
+        assert sum(int(r["decisions"]) for r in rows) == summary["late"]["decisions"]
+
+    listed = views.early_warning(con, SRC, grp)["dispatcher"]
+    assert listed["day"] == day
+    routes = listed["routes"]
+    assert 0 < len(routes) <= views.RANKED_ROUTES
+    assert all(r["decisions"] >= views.WARNING_MIN_DECISIONS for r in routes)
+    assert [r["warnings"] for r in routes] == sorted((r["warnings"] for r in routes), reverse=True)
+    examples = listed["examples"]
+    assert len({(e["kind"], e["route_id"]) for e in examples}) == len(examples)  # one per route
+    for e in examples:
+        assert e["late"] is (e["kind"] == "warning came true")
 
 
 def test_feed_health_names_exactly_the_failed_checks(con) -> None:  # type: ignore[no-untyped-def]

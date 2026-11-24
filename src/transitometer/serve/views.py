@@ -14,6 +14,7 @@ from typing import Any
 
 import duckdb
 
+from transitometer.pipeline.service_days import day_base
 from transitometer.serve import evidence, kpis
 from transitometer.serve.format import (
     check_threshold,
@@ -864,7 +865,97 @@ def early_warning(con: Con, src: Source, grp: str) -> Row:
         "min_precision_display": pct(MIN_PRECISION, 0),
         "verdicts": verdicts,
         "comparison": comparison,
+        "dispatcher": warning_list(con, src, grp, HELD_OUT_DAY),
         "definitions": WARNING_DEFINITIONS,
+    }
+
+
+WARNING_MIN_DECISIONS = 30  # a route is ranked with at least this many decisions on the day
+WARNING_EXAMPLES = 3  # trips shown per kind (warning came true, false alarm)
+
+
+def _came_true(hits: int, warned: int) -> str:
+    """'318 of 412 came true (77 %)', or a dash when nothing was warned."""
+    return f"{hits:,} of {warned:,} came true ({pct(hits / warned, 0)})" if warned else "—"
+
+
+def _clock(seconds: int) -> str:
+    """Seconds after GTFS time zero as HH:MM; hours past 23 stay on the same service day."""
+    return f"{seconds // 3600:02d}:{seconds % 3600 // 60:02d}"
+
+
+def warning_list(con: Con, src: Source, grp: str, day: str) -> Row:
+    """BR6 for the dispatcher (U1): where and when the rules raised warnings on one replayed
+    day, how many came true, and example trips the late rule flagged."""
+    if not src.has("warning_decisions"):
+        return {"available": False}
+    base = day_base(day)
+
+    def counts(r: Row) -> Row:
+        return {
+            **r,
+            "warnings": int(r["warned_late"] + r["warned_bunched"]),
+            "late_display": _came_true(int(r["late_hits"]), int(r["warned_late"])),
+            "bunched_display": _came_true(int(r["bunched_hits"]), int(r["warned_bunched"])),
+        }
+
+    routes = [
+        counts(r)
+        for r in kpis.warning_routes(con, src, grp, day, WARNING_MIN_DECISIONS, RANKED_ROUTES)
+    ]
+    # Hours in which the rules raised no warning carry nothing for the dispatcher.
+    hours = [counts(r) for r in kpis.warning_hours(con, src, grp, day, base)]
+    hours = [h for h in hours if h["warnings"]]
+    for h in hours:
+        h["label"] = f"{int(h['service_hour']):02d}:00"
+    # Bar lengths relative to the longest bar of each list, so the frontends only draw them.
+    for rows in (routes, hours):
+        top = max((r["warnings"] for r in rows), default=0)
+        for r in rows:
+            r["bar"] = round(r["warnings"] / top, 4) if top else 0.0
+    examples = []
+    for came_true in (True, False):
+        for r in kpis.warning_examples(con, src, grp, day, came_true, WARNING_EXAMPLES):
+            examples.append(
+                {
+                    **r,
+                    "kind": "warning came true" if came_true else "false alarm",
+                    "stop": (
+                        f"{r['stop_name']} ({r['decision_stop']})"
+                        if r["stop_name"]
+                        else r["decision_stop"]
+                    ),
+                    "time": _clock(int(r["decision_time"]) - base),
+                    "delay_display": minutes(r["delay_s"]),
+                    "projected_display": minutes(r["projected_delay_s"]),
+                    "outcome": "ended late" if r["late"] else "did not end late",
+                }
+            )
+    return {
+        "available": True,
+        "day": day,
+        "day_label": day_label(day),
+        "min_decisions": WARNING_MIN_DECISIONS,
+        "routes": routes,
+        "hours": hours,
+        "examples": examples,
+        "routes_caption": (
+            f"The {len(routes)} routes with the most warnings on {day_label(day)}, among routes "
+            f"with at least {WARNING_MIN_DECISIONS} trips judged. Warnings count late and "
+            "bunching warnings separately, so one trip can carry both. A warning came true when "
+            "the trip really ended late (or really got bunched later)."
+        ),
+        "hours_caption": (
+            "Warnings raised in each hour of the service day, by the time of the decision point "
+            "(halfway through the trip); hours without a warning are left out. Hours past 23 "
+            "belong to the same service day after midnight."
+        ),
+        "examples_caption": (
+            "Trips the late rule warned about, one per route, highest projected delay first: "
+            f"{WARNING_EXAMPLES} whose warning came true and {WARNING_EXAMPLES} false alarms. "
+            "Delays are at the decision point; the projection adds half the delay trend over "
+            "the scheduled time still to go."
+        ),
     }
 
 

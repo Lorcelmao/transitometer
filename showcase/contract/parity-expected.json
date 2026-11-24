@@ -59,9 +59,17 @@
     "bunched": "passed",
     "late": "passed"
   },
+  "early-warning/bus/dispatcher": {
+    "late": "171 of 195 came true (88 %)",
+    "route": "B41"
+  },
   "early-warning/subway": {
     "bunched": "did not pass",
     "late": "passed"
+  },
+  "early-warning/subway/dispatcher": {
+    "late": "59 of 73 came true (81 %)",
+    "route": "6"
   },
   "feed-health/20260922": {
     "bus_tu": "87.5 / 100",

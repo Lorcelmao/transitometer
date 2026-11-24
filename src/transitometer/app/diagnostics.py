@@ -148,5 +148,70 @@ def page_early_warning() -> None:
         )
     )
     st.altair_chart(chart)
+    dispatcher(view["dispatcher"])
     definitions(view["definitions"])
     provenance_note()
+
+
+def dispatcher(listed: dict) -> None:  # type: ignore[type-arg]
+    """What the rules would have shown a dispatcher on the held-out day (views.warning_list)."""
+    if not listed["available"]:
+        return
+    st.subheader(f"What a dispatcher would have seen on {listed['day_label']}")
+    st.markdown(
+        "A replay of the held-out day: at each trip's decision point the rules either warned or "
+        "stayed quiet, and the trip's real outcome shows whether the warning came true."
+    )
+    columns = {
+        "decisions": "Trips judged",
+        "warnings": "Warnings",
+        "late_display": "Late warnings",
+        "bunched_display": "Bunching warnings",
+    }
+    st.markdown("**Routes with the most warnings**")
+    routes = frame(listed["routes"])
+    st.dataframe(
+        routes[["route_id", *columns]].rename(columns={"route_id": "Route", **columns}),
+        hide_index=True,
+        width="stretch",
+    )
+    st.caption(listed["routes_caption"])
+    st.markdown("**Warnings through the day**")
+    hours = frame(listed["hours"])
+    chart = (
+        alt.Chart(hours, height=220)
+        .mark_bar(color=BLUE)
+        .encode(
+            x=alt.X("label:N", title="Hour of the service day", sort=list(hours["label"])),
+            y=alt.Y("warnings:Q", title="Warnings"),
+            tooltip=[
+                alt.Tooltip("label", title="Hour"),
+                alt.Tooltip("decisions", title="Trips judged", format=","),
+                alt.Tooltip("warnings", title="Warnings", format=","),
+                alt.Tooltip("late_display", title="Late warnings"),
+                alt.Tooltip("bunched_display", title="Bunching warnings"),
+            ],
+        )
+    )
+    st.altair_chart(chart, width="stretch")
+    st.caption(listed["hours_caption"])
+    st.markdown("**Example warnings**")
+    examples = frame(listed["examples"])
+    st.dataframe(
+        examples[
+            ["route_id", "kind", "stop", "time", "delay_display", "projected_display", "outcome"]
+        ].rename(
+            columns={
+                "route_id": "Route",
+                "kind": "Warning",
+                "stop": "Decision stop",
+                "time": "Time",
+                "delay_display": "Delay then",
+                "projected_display": "Projected",
+                "outcome": "Outcome",
+            }
+        ),
+        hide_index=True,
+        width="stretch",
+    )
+    st.caption(listed["examples_caption"])
