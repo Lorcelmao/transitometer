@@ -203,9 +203,9 @@ html {
     clip-path: circle(150% at var(--ox) var(--oy));
   }
 }
+/* Movement only: a changed number stays fully opaque, so it is contrast-safe while it settles. */
 @keyframes value-update {
   from {
-    opacity: 0.2;
     transform: translateY(3px);
   }
 }
