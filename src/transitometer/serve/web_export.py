@@ -83,7 +83,9 @@ PAGES = {
         ("delay_attribution_summary", "segment_travel_stats", "stop_names"),
     ),
     "early-warning": Page(
-        "Early warning", "/diagnostics/early-warning/", ("early_warning_summary",)
+        "Early warning",
+        "/diagnostics/early-warning/",
+        ("early_warning_summary", "warning_decisions", "stop_names"),
     ),
     "map": Page(
         "",  # the site only: a map needs the browser, Streamlit has the stop explorer
@@ -319,6 +321,12 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
             writer.write("early-warning", f"early-warning/{grp}.json", filters, warning)
             writer.parity[f"early-warning/{grp}"] = {
                 v["outcome"]: v.get("verdict", "not measured") for v in warning["verdicts"]
+            }
+            dispatcher = warning["dispatcher"]
+            top = dispatcher["routes"][0] if dispatcher.get("routes") else None
+            writer.parity[f"early-warning/{grp}/dispatcher"] = {
+                "route": top["route_id"] if top else None,
+                "late": top["late_display"] if top else None,
             }
             routes = views.stop_routes(con, src, grp)
             index = []

@@ -37,5 +37,13 @@
     "trip_match_summary": {"keys": ["grp", "service_date", "tier"]},
     "warning_decisions": {"keys": ["grp", "service_date", "static_trip_id", "unit"]}
   },
-  "queries": "Query answers are compared row by row in sorted order (every answer is sorted on all columns), with the same float_abs."
+  "queries": "Query answers are compared row by row in sorted order (every answer is sorted on all columns), with the same float_abs. The only exception is query_rounding_ties: the listed columns are means of integer seconds rounded to 0.01, and on an exact tie (x.xx5) engines round differently (DuckDB rounds the nearest binary double half away from zero, Spark rounds the exact decimal half up, ClickHouse rounds doubles half to even). A listed column may differ by exactly one step, and only on a row whose exact mean, recomputed in integer arithmetic from the golden table (sum of the source column / row count of the group), equals the midpoint of the two answers. Any other difference fails. Every tolerated row is reported with its sum and count. Observed: q07 mean_inherited_delay_s bus QM11 12771/40 = 319.275 (golden 319.27, Spark 319.28); q07 mean_final_delay_s bus BX18A 54951/120 = 457.925 (golden 457.93, ClickHouse 457.92) and bus Q86 26187/280 = 93.525 (golden 93.53, ClickHouse 93.52).",
+  "query_rounding_ties": {
+    "q07_route_delay_attribution": {
+      "table": "trip_delay_attribution",
+      "group_by": ["grp", "route_id"],
+      "step": 0.01,
+      "columns": {"mean_inherited_delay_s": "inherited_delay_s", "mean_final_delay_s": "final_delay_s"}
+    }
+  }
 }

@@ -53,6 +53,17 @@ test("early warning: the held-out verdicts equal the parity file", async ({ page
   }
 });
 
+test("early warning: the dispatcher's top route equals the parity file", async ({ page }) => {
+  await page.goto("/diagnostics/early-warning/");
+  for (const mode of MODES) {
+    await chooseFilters(page, mode);
+    const expected = PARITY[`early-warning/${mode}/dispatcher`] as { route: string; late: string };
+    const first = page.getByRole("list", { name: "Warnings per route on the held-out day" }).getByRole("listitem").first();
+    await expect(first).toContainText(expected.route);
+    await expect(first).toContainText(expected.late);
+  }
+});
+
 test("feed health: every feed score equals the parity file on both days", async ({ page }) => {
   await page.goto("/data/feed-health/");
   for (const day of DAYS) {

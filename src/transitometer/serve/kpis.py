@@ -41,6 +41,7 @@ APP_TABLES = (
     "delay_attribution_summary",
     "segment_travel_stats",
     "early_warning_summary",
+    "warning_decisions",
     "stop_names",
     "stop_locations",
 )
@@ -363,6 +364,73 @@ def warning_summary(con: duckdb.DuckDBPyConnection, src: Source) -> list[dict[st
         f" ORDER BY grp, service_date, outcome, method DESC"
     )
     return _rows(con, sql)
+
+
+# The rule's warnings and how many came true, as counts any grouping of warning_decisions shares.
+WARNING_COUNTS = (
+    "count(*)::BIGINT AS decisions,"
+    " count(*) FILTER (WHERE warn_late)::BIGINT AS warned_late,"
+    " count(*) FILTER (WHERE warn_late AND late)::BIGINT AS late_hits,"
+    " count(*) FILTER (WHERE warn_bunched)::BIGINT AS warned_bunched,"
+    " count(*) FILTER (WHERE warn_bunched AND bunched)::BIGINT AS bunched_hits"
+)
+
+
+def warning_routes(
+    con: duckdb.DuckDBPyConnection,
+    src: Source,
+    grp: str,
+    day: str,
+    min_decisions: int,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """BR6: the rule's warnings per route on one day, routes with the most warnings first."""
+    sql = (
+        f"SELECT route_id, {WARNING_COUNTS} FROM {src.table('warning_decisions')}"
+        f" WHERE grp = ? AND service_date = ? GROUP BY route_id HAVING count(*) >= ?"
+        f" ORDER BY warned_late + warned_bunched DESC, route_id"
+        + (f" LIMIT {int(limit)}" if limit is not None else "")
+    )
+    return _rows(con, sql, [grp, day, min_decisions])
+
+
+def warning_hours(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, day: str, day_base: int
+) -> list[dict[str, Any]]:
+    """BR6: the rule's warnings per hour of the service day at the decision point.
+
+    `day_base` is the epoch second of GTFS time zero for the day (service_days.day_base), so hours
+    past 23 belong to the same service day, as on the other hourly pages.
+    """
+    sql = (
+        f"SELECT ((decision_time - ?) // 3600)::INTEGER AS service_hour, {WARNING_COUNTS}"
+        f" FROM {src.table('warning_decisions')} WHERE grp = ? AND service_date = ?"
+        f" GROUP BY ALL ORDER BY service_hour"
+    )
+    return _rows(con, sql, [day_base, grp, day])
+
+
+def warning_examples(
+    con: duckdb.DuckDBPyConnection, src: Source, grp: str, day: str, came_true: bool, limit: int
+) -> list[dict[str, Any]]:
+    """BR6: trips the late rule warned about that did (or did not) end late, one per route (its
+    highest projected delay), routes ordered by that delay; with the decision stop's name."""
+    name = "n.stop_name" if src.has("stop_names") else "NULL"
+    names = (
+        f" LEFT JOIN {src.table('stop_names')} n ON n.grp = w.grp AND n.stop_id = w.decision_stop"
+        if src.has("stop_names")
+        else ""
+    )
+    sql = (
+        f"SELECT w.route_id, w.static_trip_id, w.decision_stop, {name} AS stop_name,"
+        f" w.decision_time, w.delay_s, w.projected_delay_s, w.late"
+        f" FROM {src.table('warning_decisions')} w{names}"
+        f" WHERE w.grp = ? AND w.service_date = ? AND w.warn_late AND w.late = ?"
+        f" QUALIFY row_number() OVER (PARTITION BY w.route_id"
+        f" ORDER BY w.projected_delay_s DESC, w.static_trip_id, w.unit) = 1"
+        f" ORDER BY w.projected_delay_s DESC, w.route_id LIMIT {int(limit)}"
+    )
+    return _rows(con, sql, [grp, day, came_true])
 
 
 def feed_metric(

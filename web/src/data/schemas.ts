@@ -402,6 +402,54 @@ export const earlyWarning = z.object({
       decisions: num,
     }),
   ),
+  // What the rules would have shown a dispatcher on the held-out day (views.warning_list).
+  dispatcher: z.object({
+    available: z.boolean(),
+    day_label: z.optional(z.string()),
+    min_decisions: z.optional(num),
+    routes: z.optional(
+      z.array(
+        z.object({
+          route_id: z.string(),
+          decisions: num,
+          warnings: num,
+          bar: num,
+          late_display: z.string(),
+          bunched_display: z.string(),
+        }),
+      ),
+    ),
+    hours: z.optional(
+      z.array(
+        z.object({
+          service_hour: num,
+          label: z.string(),
+          decisions: num,
+          warnings: num,
+          bar: num,
+          late_display: z.string(),
+          bunched_display: z.string(),
+        }),
+      ),
+    ),
+    examples: z.optional(
+      z.array(
+        z.object({
+          kind: z.string(),
+          route_id: z.string(),
+          static_trip_id: z.string(),
+          stop: z.string(),
+          time: z.string(),
+          delay_display: z.string(),
+          projected_display: z.string(),
+          outcome: z.string(),
+        }),
+      ),
+    ),
+    routes_caption: z.optional(z.string()),
+    hours_caption: z.optional(z.string()),
+    examples_caption: z.optional(z.string()),
+  }),
   definitions: z.string(),
 });
 export type EarlyWarning = z.infer<typeof earlyWarning>;
