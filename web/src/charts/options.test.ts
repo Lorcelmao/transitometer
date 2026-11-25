@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  bandColors,
+  bandIndex,
+  gridTooltip,
   heatmapOption,
   hourlyIntervalOption,
-  MAP_BANDS,
+  indexStreets,
+  MAP_DIVERGING_BANDS,
   routeIntervalOption,
   stopMapSeries,
   stopTooltip,
+  type MapGridCell,
   type MapStop,
 } from "@/charts/options";
 
@@ -21,38 +24,108 @@ describe("stop map", () => {
     share,
     display: `${(share * 100).toFixed(1)} %`,
     sufficient,
+    routeId: "M4",
+    directionId: 0,
   });
-  const stops = [stop(0, 0, 50), stop(1, 0.55, 300), stop(2, 1, 2000), stop(3, 0.4, 4, false)];
-  const background = { streets: [[[-73.9, 40.7], [-73.8, 40.7]]] as [number, number][][], subway: [] };
+  const stops = [
+    stop(0, 0.2, 50),
+    stop(1, 0.35, 120),
+    stop(2, 0.45, 220),
+    stop(3, 0.55, 300),
+    stop(4, 0.85, 2000),
+    stop(5, 0.4, 4, false),
+  ];
+  const streets = indexStreets([[[-73.92, 40.7], [-73.88, 40.7]], [[-74.2, 40.52], [-74.18, 40.52]]]);
   const layers = { streets: true, subway: true, lineColors: false };
 
-  it("draws every stop exactly once and keeps its index for the tooltip and the click", () => {
-    const series = stopMapSeries(stops, background, layers, true) as { type: string; data: number[][] }[];
-    const indexes = series.filter((s) => s.type === "scatter").flatMap((s) => s.data.map((d) => d[2]));
-    expect(indexes.sort()).toEqual([0, 1, 2, 3]);
-    expect(series.some((s) => s.type === "lines")).toBe(true);
+  it("assigns every stop to its diverging band once and keeps thin stops non-large", () => {
+    const { series, visibleCount } = stopMapSeries({
+      mode: "bus",
+      zoom: 3.5,
+      compact: false,
+      useGrid: false,
+      gridCells: [],
+      stops,
+      bbox: [-73.95, -73.85, 40.68, 40.74],
+      filterBand: null,
+      layers,
+      subway: [],
+      streets,
+      selectedStop: null,
+      font: "sans-serif",
+    });
+    expect(visibleCount).toBe(6);
+    const scatter = series.filter((s) => s.type === "scatter" && String(s.id).startsWith("band-")) as {
+      id: string;
+      large?: boolean;
+      data: number[][];
+    }[];
+    const indexes = scatter.flatMap((s) => s.data.map((d) => d[2]));
+    expect(indexes.sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5]);
+    const thin = scatter.find((s) => s.id === "band-thin");
+    expect(thin?.large).toBeUndefined();
+    // Only the street inside the Manhattan bbox should survive viewport culling
+    const streetSeries = series.find((s) => s.id === "streets") as { data: unknown[] } | undefined;
+    expect(streetSeries?.data).toHaveLength(1);
   });
 
-  it("leaves the street layer out until it should show, and never sends an empty series", () => {
-    const series = stopMapSeries(stops, background, layers, false) as { type: string; data: unknown[] }[];
-    expect(series.some((s) => s.type === "lines")).toBe(false);
-    expect(series.every((s) => s.data.length > 0)).toBe(true);
-    expect(stopMapSeries(stops, null, layers, true).every((s) => s.type === "scatter")).toBe(true);
+  it("renders the 670 m grid at city zoom and leaves streets out before STREETS_FROM_ZOOM", () => {
+    const cells: MapGridCell[] = [
+      [-73.97, 40.75, 400, 0.25, 6, 6, "5 AV/E 72 ST", "M4"],
+      [-73.95, 40.72, 8, null, 2, 0, "TINY STOP", "B24"],
+    ];
+    const { series, visibleCount } = stopMapSeries({
+      mode: "bus",
+      zoom: 1.04,
+      compact: false,
+      useGrid: true,
+      gridCells: cells,
+      stops: [],
+      bbox: null,
+      filterBand: null,
+      layers,
+      subway: [],
+      streets,
+      selectedStop: null,
+      font: "sans-serif",
+    });
+    expect(visibleCount).toBe(2);
+    expect(series.some((s) => s.id === "streets")).toBe(false);
+    expect(series.some((s) => s.id === "borough-labels")).toBe(true);
+    expect(series.some((s) => s.id === "band-0")).toBe(true);
+    expect(series.some((s) => s.id === "band-thin")).toBe(true);
   });
 
-  it("has one colour per 10 % band, from the ramp's ends", () => {
-    const colors = bandColors(["#000000", "#ffffff"]);
-    expect(colors).toHaveLength(MAP_BANDS);
-    expect(colors[0] < colors[MAP_BANDS - 1]).toBe(true);
+  it("maps shares onto the 5 diverging WCAG AA bands", () => {
+    expect(MAP_DIVERGING_BANDS).toHaveLength(5);
+    expect(bandIndex(0.1)).toBe(0);
+    expect(bandIndex(0.35)).toBe(1);
+    expect(bandIndex(0.455)).toBe(2);
+    expect(bandIndex(0.6)).toBe(3);
+    expect(bandIndex(0.8)).toBe(4);
+    expect(bandIndex(null)).toBe(-1);
   });
 
-  it("explains every line of the tooltip and escapes the stop name", () => {
-    const text = stopTooltip({ ...stop(1, 0.5, 300), label: "A & <B> (S1)" }, 10);
+  it("formats stop and grid tooltips with HTML escaping and equal-weighted stop median reference", () => {
+    const text = stopTooltip(
+      { ...stop(1, 0.25, 300), label: "A & <B> (S1)" },
+      10,
+      "bus",
+      0.455,
+      "45.5 %",
+    );
     expect(text).toContain("A &amp; &lt;B&gt;");
     expect(text).toContain("Stop S1");
+    expect(text).toContain("Critical");
+    expect(text).toContain("-20.5 pts vs bus stop median (45.5 %)");
     expect(text).toContain("300 arrivals observed, all routes, both days");
-    expect(text).toContain("at most 1 min early, at most 5 min late");
-    expect(stopTooltip(stop(3, 0.4, 4, false), 10)).toContain("Too few arrivals to score (fewer than 10)");
+    expect(stopTooltip(stop(3, 0.4, 4, false), 10, "bus", 0.455, "45.5 %")).toContain(
+      "Too few arrivals to score (fewer than 10)",
+    );
+
+    const gridText = gridTooltip([-73.97, 40.75, 400, 0.25, 6, 6, "5 AV & E 72", "M4"], 0.455, "45.5 %", "sans-serif");
+    expect(gridText).toContain("5 AV &amp; E 72");
+    expect(gridText).toContain("bus stop median (45.5 %)");
   });
 });
 

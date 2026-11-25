@@ -70,9 +70,31 @@ describe("exported JSON matches the site's contract", () => {
       const { data } = schemas.parseView(file, read(file), schemas.stopMap);
       for (const row of data.stops) expect(inside([row[col("lon")] as number, row[col("lat")] as number])).toBe(true);
     }
-    const background = schemas.basemap.parse(
-      JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../public/basemap/nyc.json"), "utf8")),
+    for (const file of files("map-grid")) {
+      const { data } = schemas.parseView(file, read(file), schemas.stopMapGrid);
+      expect(data.worst_rows.length).toBeGreaterThan(0);
+      if (data.tile_spec) {
+        for (const tile of data.tile_spec.tiles) {
+          expect(() =>
+            schemas.parseView(`map-tiles/bus/t-${tile}.json`, read(`map-tiles/bus/t-${tile}.json`), schemas.stopMapTile),
+          ).not.toThrow();
+        }
+      }
+    }
+    const basemapDir = path.resolve(__dirname, "../../public/basemap");
+    const background = schemas.basemap.parse(JSON.parse(fs.readFileSync(path.join(basemapDir, "nyc.json"), "utf8")));
+    const subOnly = schemas.basemapSubway.parse(
+      JSON.parse(fs.readFileSync(path.join(basemapDir, "nyc-subway.json"), "utf8")),
     );
+    const streetsOnly = schemas.basemapStreets.parse(
+      JSON.parse(fs.readFileSync(path.join(basemapDir, "nyc-streets.json"), "utf8")),
+    );
+    const boroughs = schemas.nycBoroughs.parse(
+      JSON.parse(fs.readFileSync(path.join(basemapDir, "nyc-boroughs.geojson"), "utf8")),
+    );
+    expect(boroughs.features).toHaveLength(5);
+    expect(subOnly.subway).toEqual(background.subway);
+    expect(streetsOnly.streets).toEqual(background.streets);
     const points = [...background.streets.flat(), ...background.subway.flatMap((s) => s.lines.flat())];
     expect(points.length).toBeGreaterThan(1000);
     expect(points.every(inside)).toBe(true);
