@@ -42,7 +42,7 @@ MIN_SEGMENTS = 20  # segment-hours with fewer observations are not ranked
 DEVELOPMENT_DAY, HELD_OUT_DAY = "20260922", "20260923"  # rules were tuned on the first day only
 MIN_PRECISION = 0.6  # early-warning acceptance, declared before the held-out day was computed
 
-GROUPS = {"bus": "MTA Bus", "subway": "NYC Subway (lines 1–7, S)"}
+GROUPS = {"bus": "MTA Bus", "subway": "NYC Subway (lines 1 to 7, S)"}
 SHORT_GROUPS = {"bus": "Bus", "subway": "Subway"}
 FEEDS = {
     "bus_tu": "Bus trip updates",
@@ -106,7 +106,7 @@ FEED_CHECKS: dict[str, tuple[str, str, str]] = {
 DATASETS = [
     ("MTA Bus trip updates", "Predicted stop times per trip", "gtfsrt.io archive (MTA feed)"),
     ("MTA Bus vehicle positions", "GPS position of every bus", "gtfsrt.io archive (MTA feed)"),
-    ("NYC Subway trip updates", "Lines 1–7 and S", "gtfsrt.io archive (MTA feed)"),
+    ("NYC Subway trip updates", "Lines 1 to 7 and S", "gtfsrt.io archive (MTA feed)"),
     ("MTA static timetables (GTFS)", "Scheduled trips and stop times", "MTA"),
 ]
 
@@ -239,7 +239,7 @@ def trust(folder: Path) -> Row:
             "passed": passed,
             "total": total,
             # Per layer, so a reader sees what was compared (not one ambiguous total).
-            "display": " · ".join(
+            "display": ", ".join(
                 f"{layer['layer'].title()} {layer['passed']} / {layer['total']}"
                 for layer in parity["layers"]
             ),
@@ -432,7 +432,7 @@ SCORECARD_DEFINITIONS = (
 
 def _rank_interval(row: Row) -> str:
     low, high = row["rank_low"], row["rank_high"]
-    return "—" if low is None or high is None else f"{int(low)}–{int(high)}"
+    return "—" if low is None or high is None else f"{int(low)} to {int(high)}"
 
 
 def route_scorecards(con: Con, src: Source, grp: str) -> Row:
@@ -664,7 +664,7 @@ def findings(con: Con, src: Source) -> list[Row]:
                 f"{pct(last['on_time_share'])} on time."
             ),
             "detail": (
-                f"95 % interval {pct(last['ci_low'])} – {pct(last['ci_high'])}, "
+                f"95 % interval {pct(last['ci_low'])} to {pct(last['ci_high'])}, "
                 f"plausible ranks {last['rank_interval']}, from {count(last['events'])} arrivals."
             ),
             "page": "scorecards",
@@ -726,7 +726,7 @@ DELAY_DEFINITIONS = (
     "- **Attribution:** final delay = delay at the first observed stop + the sum of the "
     "excesses; exact in whole seconds for every trip.\n"
     "- The ranking uses adjacent stops only and leaves out negative observed travel times "
-    "(a late prediction at the earlier stop, 1–2 % of segments)."
+    "(a late prediction at the earlier stop, 1 to 2 % of segments)."
 )
 
 
@@ -773,8 +773,8 @@ def costly_segments(con: Con, src: Source, grp: str) -> Row:
         {
             **r,
             "segment": (
-                f"{int(r['service_hour']):02d}:00 · {r['route_id']} · "
-                f"{r['from_name']} → {r['to_name']}"
+                f"{int(r['service_hour']):02d}:00, {r['route_id']}: "
+                f"{r['from_name']} to {r['to_name']}"
             ),
         }
         for r in kpis.costly_segments(con, src, grp, MIN_SEGMENTS, limit=RANKED_ROUTES)

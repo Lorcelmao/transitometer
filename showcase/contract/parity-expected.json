@@ -398,7 +398,7 @@
   ],
   "validation": {
     "archive_rows": "607,076,700",
-    "parity": "Silver 4 / 4 · Gold 23 / 23",
+    "parity": "Silver 4 / 4, Gold 23 / 23",
     "tests": "307 / 307"
   }
 }

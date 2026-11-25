@@ -31,7 +31,7 @@ from transitometer.app import (  # noqa: E402
 )
 
 st.set_page_config(
-    page_title="Transitometer · transit reliability",
+    page_title="Transitometer: transit reliability",
     page_icon=":material/directions_bus:",
     layout="wide",
 )
@@ -118,7 +118,7 @@ navigation = st.navigation(
 common.snapshot_banner()
 with st.sidebar:
     st.caption(
-        "Real archived NYC bus and subway feeds, processed by a Kafka → Spark → Delta Lake "
+        "Real archived NYC bus and subway feeds, processed by a Kafka, Spark, and Delta Lake "
         "pipeline and checked against an independent DuckDB reference."
     )
 navigation.run()

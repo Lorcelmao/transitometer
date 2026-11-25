@@ -50,7 +50,7 @@ def snapshot_banner() -> None:
     st.caption(
         f":material/inventory_2: Snapshot of the Spark pipeline's Gold output, validated on "
         f"{info['validated_on']} (commit `{info['validated_commit'][:7]}`). The streaming pipeline "
-        f"(Kafka → Spark → Delta Lake) runs locally, not on this server; see the "
+        f"(Kafka, Spark, and Delta Lake) runs locally, not on this server; see the "
         f"[repository]({REPOSITORY_URL})."
     )
 
@@ -113,7 +113,7 @@ def provenance_note() -> None:
     st.divider()
     st.caption(
         f"Data: real archived MTA GTFS-Realtime feeds (via the gtfsrt.io archive) for the service "
-        f"days {days}, replayed through the pipeline — not a live feed. Values on this page come "
+        f"days {days}, replayed through the pipeline (not a live feed). Values on this page come "
         f"from {origin}. Source data from the MTA, used under the MTA Terms of Use; this project "
         f"is not endorsed by the MTA."
     )

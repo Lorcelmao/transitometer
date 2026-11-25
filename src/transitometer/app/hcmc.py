@@ -67,7 +67,7 @@ def page_hcmc() -> None:
         "by Resolution 1685/NQ-UBTVQH15 (16 Jun 2025). M1 divides walk-shed area by natural "
         "administrative area (including Cần Giờ mangroves and waterways), so it measures **% of "
         "land area**, not **% of population**. M2 relies solely on OSM `interval` tags (0 % "
-        "`duration` tagged — no actual arrival times). All active HCMC bus stops are buffered "
+        "`duration` tagged, so no actual arrival times). All active HCMC bus stops are buffered "
         "before clipping so border-adjacent stops still cover neighboring wards."
     )
 
@@ -230,6 +230,6 @@ def page_hcmc() -> None:
     st.caption(
         f"Data: static OpenStreetMap snapshot ({prov['attribution']}, fetched "
         f"{prov['retrieved_utc'] or 'pinned'}) processed with DuckDB Spatial ({prov['crs']}, "
-        f"{int(prov['walk_radius_m'])} m buffer) — not a live service and not an official agency "
+        f"{int(prov['walk_radius_m'])} m buffer); not a live service and not an official agency "
         "timetable."
     )
