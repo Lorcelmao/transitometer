@@ -9,15 +9,20 @@ import { readMeta } from "@/data/load";
 import "./globals.css";
 
 // Self-hosted at build time by next/font: the site makes no font request to Google at runtime.
-const display = Newsreader({ subsets: ["latin"], variable: "--font-newsreader", display: "optional" });
+// Include the Vietnamese subset so HCMC ward/route diacritics preload cleanly without system fallback.
+const display = Newsreader({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-newsreader",
+  display: "optional",
+});
 const sans = IBM_Plex_Sans({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600"],
   variable: "--font-plex-sans",
   display: "optional",
 });
 const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   weight: ["400", "500"],
   variable: "--font-plex-mono",
   display: "optional",
