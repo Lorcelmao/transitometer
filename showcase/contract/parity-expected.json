@@ -97,29 +97,29 @@
       "key": "coverage_freq"
     },
     {
-      "display": "169",
+      "display": "171",
       "key": "routes_mapped"
     },
     {
-      "display": "93.0 %",
+      "display": "93.1 %",
       "key": "interval_coverage"
     }
   ],
   "hcmc/merged_city_all": [
     {
-      "display": "10.1 %",
+      "display": "11.1 %",
       "key": "coverage_any"
     },
     {
-      "display": "6.5 %",
+      "display": "6.8 %",
       "key": "coverage_freq"
     },
     {
-      "display": "169",
+      "display": "171",
       "key": "routes_mapped"
     },
     {
-      "display": "93.0 %",
+      "display": "93.1 %",
       "key": "interval_coverage"
     }
   ],
@@ -356,7 +356,7 @@
     "messages": "52,756,838",
     "silver": "4 / 4",
     "stop_events": "2,955,606",
-    "tests": "307 / 307"
+    "tests": "308 / 308"
   },
   "scorecards/bus": {
     "least": "QM42",
@@ -399,6 +399,6 @@
   "validation": {
     "archive_rows": "607,076,700",
     "parity": "Silver 4 / 4, Gold 23 / 23",
-    "tests": "307 / 307"
+    "tests": "308 / 308"
   }
 }

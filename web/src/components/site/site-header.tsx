@@ -170,18 +170,20 @@ export function AppShell({
         Skip to content
       </a>
 
-      {/* Desktop B1 persistent left sidebar */}
-      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-rule bg-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
-        <Link
-          href="/"
-          prefetch={false}
-          className="flex min-h-[58px] items-center gap-2.5 border-b border-rule px-4 text-[17px] font-bold tracking-tight text-ink no-underline"
-        >
-          <BrandMark />
-          <span>Transitometer</span>
-        </Link>
-        <SidebarLinks pathname={pathname} />
-        <SidebarFooter />
+      {/* Desktop B1 persistent left sidebar: full-height rail with viewport-pinned sticky content */}
+      <aside className="hidden w-[248px] shrink-0 border-r border-rule bg-surface lg:block">
+        <div className="sticky top-0 flex h-screen flex-col overflow-y-auto">
+          <Link
+            href="/"
+            prefetch={false}
+            className="flex min-h-[58px] shrink-0 items-center gap-2.5 border-b border-rule px-4 text-[17px] font-bold tracking-tight text-ink no-underline"
+          >
+            <BrandMark />
+            <span>Transitometer</span>
+          </Link>
+          <SidebarLinks pathname={pathname} />
+          <SidebarFooter />
+        </div>
       </aside>
 
       {/* Main content column */}
