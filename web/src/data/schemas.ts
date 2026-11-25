@@ -509,6 +509,135 @@ export const validation = z.object({
       passed: z.optional(num),
       failed: z.optional(num),
       skipped: z.optional(num),
+      ran: z.optional(num),
   }),
 });
 export type Validation = z.infer<typeof validation>;
+
+const hcmcWard = z.object({
+  ward_id: z.string(),
+  osm_rel_id: num,
+  ward_name: z.string(),
+  name_en: z.string(),
+  admin_level: z.string(),
+  in_core_hcmc: z.boolean(),
+  area_km2: num,
+  covered_any_km2: num,
+  coverage_any_400m_share: num,
+  covered_freq_conservative_km2: num,
+  coverage_freq_conservative_share: num,
+  covered_freq_midpoint_km2: num,
+  coverage_freq_midpoint_share: num,
+  active_stops: num,
+  frequent_stops_conservative: num,
+  frequent_stops_midpoint: num,
+  stops_per_km2: num,
+  distinct_routes: num,
+  coverage_any_display: z.string(),
+  coverage_freq_cons_display: z.string(),
+  coverage_freq_mid_display: z.string(),
+  area_display: z.string(),
+  stops_per_km2_display: z.string(),
+});
+export type HcmcWard = z.infer<typeof hcmcWard>;
+
+export const hcmcHandCheck = z.object({
+  route_ref: z.string(),
+  corridor: z.string(),
+  operator: z.string(),
+  osm_length_km: num,
+  published_length_km: z.string(),
+  osm_hours: z.string(),
+  published_hours: z.string(),
+  osm_headway_min: z.string(),
+  published_headway_min: z.string(),
+  osm_stops_per_dir: num,
+  assessment: z.string(),
+});
+export type HcmcHandCheck = z.infer<typeof hcmcHandCheck>;
+
+export const hcmcCoverage = z.object({
+  available: z.boolean(),
+  scope: z.string(),
+  scope_label: z.string(),
+  scopes: z.array(z.object({ key: z.string(), label: z.string(), short: z.string() })),
+  summary: z.nullable(z.looseObject({ wards: num, total_area_km2: num })),
+  figures: z.array(figure),
+  wards: z.array(hcmcWard),
+  bottom_wards: z.array(hcmcWard),
+  top_wards: z.array(hcmcWard),
+  routes: z.array(
+    z.object({
+      route_ref: z.string(),
+      route_name: z.string(),
+      operator: z.string(),
+      directions: num,
+      avg_stops_per_dir: num,
+      avg_length_km: num,
+      interval_min_min: maybeNum,
+      interval_max_min: maybeNum,
+      sample_interval: z.nullable(z.string()),
+      sample_opening_hours: z.nullable(z.string()),
+      is_ptv2_all: z.boolean(),
+      has_duration: z.boolean(),
+    }),
+  ),
+  quality: z.array(
+    z.object({
+      metric: z.string(),
+      label: z.string(),
+      value: num,
+      numerator: num,
+      denominator: num,
+      threshold: num,
+      passed: z.boolean(),
+      description: z.string(),
+      value_display: z.string(),
+      threshold_display: z.string(),
+      ratio_display: z.string(),
+      result: z.string(),
+    }),
+  ),
+  quality_passed: num,
+  quality_total: num,
+  hand_checks: z.array(hcmcHandCheck),
+  definitions: z.string(),
+  provenance: z.object({
+    schema: z.string(),
+    city: z.string(),
+    primary_network: z.string(),
+    license: z.string(),
+    attribution: z.string(),
+    crs: z.string(),
+    walk_radius_m: num,
+    frequent_buses_per_hour: num,
+    retrieved_utc: z.string(),
+    bus_sha256: z.string(),
+    osm_city_timestamp: z.string(),
+    tables: z.array(z.string()),
+  }),
+});
+export type HcmcCoverage = z.infer<typeof hcmcCoverage>;
+
+export const hcmcBasemap = z.object({
+  schema: z.literal("transitometer.hcmc-basemap/1"),
+  source: z.string(),
+  core_frame: z.object({ lon: z.tuple([num, num]), lat: z.tuple([num, num]) }),
+  wards: z.object({
+    type: z.literal("FeatureCollection"),
+    features: z.array(
+      z.object({
+        type: z.literal("Feature"),
+        properties: z.object({
+          name: z.string(),
+          ward_name: z.string(),
+          in_core_hcmc: z.boolean(),
+        }),
+        geometry: z.looseObject({ type: z.string() }),
+      }),
+    ),
+  }),
+  routes: z.array(polyline),
+  stops: z.array(z.tuple([num, num, num, z.boolean()])),
+});
+export type HcmcBasemap = z.infer<typeof hcmcBasemap>;

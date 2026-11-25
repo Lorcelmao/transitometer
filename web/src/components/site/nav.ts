@@ -31,6 +31,12 @@ export const NAV = [
       { page: "validation", href: "/data/validation/", label: "Data & validation", blurb: "The evidence behind every number on this site.", preview: "evidence" },
     ],
   },
+  {
+    section: "Case study",
+    links: [
+      { page: "hcmc", href: "/case-study/hcmc/", label: "HCMC bus coverage", blurb: "Static 400 m walk-shed coverage in Ho Chi Minh City from OpenStreetMap (ODbL 1.0).", preview: "map" },
+    ],
+  },
 ] as const satisfies readonly { section: string; links: readonly { page: string; href: string; label: string; blurb: string; preview: Preview }[] }[];
 
 export type NavLink = (typeof NAV)[number]["links"][number];

@@ -87,6 +87,42 @@
     "route": "19.9 %",
     "warning": "0.79"
   },
+  "hcmc/core_hcmc": [
+    {
+      "display": "27.6 %",
+      "key": "coverage_any"
+    },
+    {
+      "display": "20.5 %",
+      "key": "coverage_freq"
+    },
+    {
+      "display": "169",
+      "key": "routes_mapped"
+    },
+    {
+      "display": "93.0 %",
+      "key": "interval_coverage"
+    }
+  ],
+  "hcmc/merged_city_all": [
+    {
+      "display": "10.1 %",
+      "key": "coverage_any"
+    },
+    {
+      "display": "6.5 %",
+      "key": "coverage_freq"
+    },
+    {
+      "display": "169",
+      "key": "routes_mapped"
+    },
+    {
+      "display": "93.0 %",
+      "key": "interval_coverage"
+    }
+  ],
   "headways/bus/20260922": [
     {
       "display": "1,376,197",
@@ -320,7 +356,7 @@
     "messages": "52,756,838",
     "silver": "4 / 4",
     "stop_events": "2,955,606",
-    "tests": "220 / 221"
+    "tests": "307 / 307"
   },
   "scorecards/bus": {
     "least": "QM42",
@@ -363,6 +399,6 @@
   "validation": {
     "archive_rows": "607,076,700",
     "parity": "Silver 4 / 4 · Gold 23 / 23",
-    "tests": "220 / 221"
+    "tests": "307 / 307"
   }
 }

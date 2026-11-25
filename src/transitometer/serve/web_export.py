@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from transitometer.serve import kpis, snapshot, views
+from transitometer.serve import hcmc_views, kpis, snapshot, views
 from transitometer.serve.format import day_label
 
 SCHEMA = "transitometer.web/1"
@@ -96,6 +96,7 @@ PAGES = {
         "Feed health", "/data/feed-health/", ("feed_quality_score", "feed_quality_metrics")
     ),
     "validation": Page("Data & validation", "/data/validation/", ()),
+    "hcmc": Page("HCMC bus coverage", "/case-study/hcmc/", ()),
 }
 
 
@@ -365,12 +366,15 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
         writer.parity["validation"] = {
             "parity": trust["parity"]["display"],
             "archive_rows": trust["integrity"]["archive_rows_display"],
-            "tests": (
-                f"{validation['tests']['passed']:,} / {validation['tests']['total']:,}"
-                if validation["tests"]["available"]
-                else "not yet measured"
-            ),
+            "tests": writer.parity["pipeline"]["tests"] or "not yet measured",
         }
+
+        hcmc_dir = snapshot_dir / "hcmc"
+        if (hcmc_dir / "manifest.json").exists():
+            for scope in hcmc_views.SCOPES:
+                hview = hcmc_views.hcmc_coverage(con, hcmc_dir, scope=scope)
+                writer.write("hcmc", f"hcmc/{scope}.json", {"scope": scope}, hview)
+                writer.expect(f"hcmc/{scope}", hview["figures"])
 
     evidence_out.mkdir(parents=True, exist_ok=True)
     for name in sorted(manifest["evidence"]):

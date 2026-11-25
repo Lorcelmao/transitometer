@@ -1114,6 +1114,113 @@ def task_web_basemap(_: argparse.Namespace) -> int:
     return 0
 
 
+def task_hcmc_fetch(args: argparse.Namespace) -> int:
+    """BR11: fetch HCMC OSM bus routes & ward boundaries into landing/hcmc/ and pin checksums."""
+    from transitometer.hcmc import load_config
+    from transitometer.hcmc.fetch_osm import fetch_hcmc
+
+    cfg = load_config(ROOT / "config" / "hcmc_sources.json")
+    summary = fetch_hcmc(cfg, landing_dir(), MANIFEST_FILE, force=args.force, source=args.source)
+    print(json.dumps(summary, indent=2))
+    return 0
+
+
+def task_hcmc_build(_: argparse.Namespace) -> int:
+    """BR11: convert OSM -> frequency-GTFS, run DuckDB Spatial coverage -> showcase/data/hcmc/."""
+    from transitometer.hcmc import load_config, load_core_wards
+    from transitometer.hcmc.osm_to_gtfs import convert_osm_to_gtfs
+    from transitometer.hcmc.spatial import (
+        audit_core_ward_matching,
+        compute_coverage,
+        wards_from_osm,
+    )
+    from transitometer.ingest.fetch import load_manifest
+    from transitometer.serve import kpis
+
+    cfg = load_config(ROOT / "config" / "hcmc_sources.json")
+    core_spec = load_core_wards(ROOT / "config" / "hcmc_core_wards.json")
+    landing = landing_dir()
+    bus_path = landing / cfg.bus_routes_relpath
+    wards_path = landing / cfg.admin_wards_relpath
+    for required in (bus_path, wards_path):
+        if not required.exists():
+            print(f"missing {required}: run `python tasks.py hcmc-fetch` first")
+            return 1
+    manifest_entries = load_manifest(MANIFEST_FILE)
+    bus_entry = manifest_entries.get(cfg.bus_routes_relpath)
+    wards_entry = manifest_entries.get(cfg.admin_wards_relpath)
+    retrieved = (bus_entry.retrieved_utc if bus_entry else "2026-11-24")[:10]
+
+    exports_dir = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "hcmc"
+    bus_doc = json.loads(bus_path.read_text(encoding="utf-8"))
+    gtfs_summary = convert_osm_to_gtfs(bus_doc, cfg, exports_dir, feed_version=retrieved)
+    print(f"gtfs: {gtfs_summary}")
+
+    wards_doc = json.loads(wards_path.read_text(encoding="utf-8"))
+    wards = wards_from_osm(wards_doc, cfg.bbox, core_ward_names=core_spec.ward_names)
+    core_audit = audit_core_ward_matching(wards, core_spec)
+    print(
+        f"wards parsed: {len(wards)} "
+        f"({core_audit['matched']}/{core_audit['expected']} matched Res. {core_spec.resolution}, "
+        f"missing={core_audit['missing_from_osm']})"
+    )
+
+    source_meta = {
+        "bus_routes": {
+            "relpath": cfg.bus_routes_relpath,
+            "sha256": bus_entry.sha256 if bus_entry else "",
+            "retrieved_utc": bus_entry.retrieved_utc if bus_entry else "",
+        },
+        "admin_wards": {
+            "relpath": cfg.admin_wards_relpath,
+            "sha256": wards_entry.sha256 if wards_entry else "",
+            "retrieved_utc": wards_entry.retrieved_utc if wards_entry else "",
+        },
+        "osm_city_relation_id": cfg.osm_city_relation_id,
+        "osm_city_timestamp": wards_doc.get("city_timestamp", ""),
+        "core_scope": core_audit,
+    }
+    hcmc_manifest = compute_coverage(
+        exports_dir / "gtfs",
+        wards,
+        cfg,
+        kpis.SNAPSHOT_DIR / "hcmc",
+        source_meta=source_meta,
+    )
+    total_bytes = sum(t["bytes"] for t in hcmc_manifest["tables"].values())
+    print(
+        f"hcmc snapshot: {len(hcmc_manifest['tables'])} tables ({total_bytes / 1e6:.2f} MB) "
+        f"-> {kpis.SNAPSHOT_DIR / 'hcmc'}"
+    )
+    return 0
+
+
+def task_hcmc_basemap(_: argparse.Namespace) -> int:
+    """BR11: simplified ward polygons + bus corridors -> web/public/basemap/hcmc.json."""
+    from transitometer.hcmc import load_config, load_core_wards
+    from transitometer.hcmc.spatial import wards_from_osm
+    from transitometer.serve import hcmc_basemap, kpis
+
+    cfg = load_config(ROOT / "config" / "hcmc_sources.json")
+    core_spec = load_core_wards(ROOT / "config" / "hcmc_core_wards.json")
+    wards_path = landing_dir() / cfg.admin_wards_relpath
+    gtfs_dir = Path(host_settings()["TRANSITOMETER_DATA_ROOT"]) / "exports" / "hcmc" / "gtfs"
+    hcmc_dir = kpis.SNAPSHOT_DIR / "hcmc"
+    for required in (wards_path, gtfs_dir / "shapes.parquet", hcmc_dir / "hcmc_stops.parquet"):
+        if not required.exists():
+            print(f"missing {required}: run `hcmc-fetch` and `hcmc-build` first")
+            return 1
+    wards_doc = json.loads(wards_path.read_text(encoding="utf-8"))
+    wards = wards_from_osm(wards_doc, cfg.bbox, core_ward_names=core_spec.ward_names)
+    summary = hcmc_basemap.write(hcmc_basemap.build(wards, gtfs_dir, hcmc_dir, cfg))
+    print(
+        f"hcmc basemap: {summary['wards']} wards, {summary['routes']} routes, "
+        f"{summary['stops']:,} stops ({summary['bytes'] / 1e3:.1f} KB) "
+        "-> web/public/basemap/hcmc.json"
+    )
+    return 0
+
+
 def task_down(_: argparse.Namespace) -> int:
     """Stop every service; named volumes are kept (use Docker directly for deliberate resets)."""
     return run(compose_cmd("--profile", "*", "down"))
@@ -1142,6 +1249,14 @@ def build_parser() -> argparse.ArgumentParser:
             task_web_basemap,
             "stop map background from the static timetables -> web/public/basemap/",
         ),
+        "hcmc-build": (
+            task_hcmc_build,
+            "BR11: OSM -> GTFS + DuckDB Spatial coverage -> showcase/data/hcmc/",
+        ),
+        "hcmc-basemap": (
+            task_hcmc_basemap,
+            "BR11: simplified ward polygons + bus routes -> web/public/basemap/hcmc.json",
+        ),
         "bench-report": (task_bench_report, "S10 summary tables and charts from the raw CSVs"),
         "down": (task_down, "stop all services (keeps volumes)"),
     }
@@ -1151,6 +1266,16 @@ def build_parser() -> argparse.ArgumentParser:
     web = sub.add_parser("web-data", help="JSON for the Next.js site from the snapshot")
     web.add_argument("--check", action="store_true", help="fail if the committed JSON is stale")
     web.set_defaults(func=task_web_data)
+
+    hfetch = sub.add_parser("hcmc-fetch", help="BR11: fetch HCMC OSM data into landing/hcmc/")
+    hfetch.add_argument("--force", action="store_true", help="re-download even if checksum matches")
+    hfetch.add_argument(
+        "--source",
+        choices=("geofabrik", "overpass"),
+        default="geofabrik",
+        help="OSM extract source (default: geofabrik PBF via DuckDB ST_ReadOSM)",
+    )
+    hfetch.set_defaults(func=task_hcmc_fetch)
 
     for test_name, test_task, test_help in (
         ("test", task_test, "pytest"),

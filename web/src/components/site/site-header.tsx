@@ -31,6 +31,22 @@ function DesktopNav({ pathname }: { pathname: string }) {
       <NavigationMenuList className="gap-1">
         {NAV.map((group) => {
           const active = group.links.some((l) => l.href === pathname);
+          if (group.links.length === 1) {
+            const only = group.links[0];
+            return (
+              <NavigationMenuItem key={group.section}>
+                <NavigationMenuLink asChild>
+                  <Link
+                    href={only.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`inline-flex h-11 items-center px-3 text-sm text-ink no-underline hover:bg-panel ${active ? "font-semibold underline decoration-accent-red decoration-2 underline-offset-[6px]" : ""}`}
+                  >
+                    {group.section}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            );
+          }
           return (
             <NavigationMenuItem key={group.section}>
               <NavigationMenuTrigger

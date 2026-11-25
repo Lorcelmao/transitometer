@@ -72,6 +72,9 @@ def test_every_page_and_filter_combination_is_exported(
             assert (data / "stops" / grp / route["file"]).exists()
     for name in ("meta.json", "overview.json", "feed-health.json", "validation.json"):
         assert (data / name).exists()
+    if (SNAPSHOT / "hcmc" / "manifest.json").exists():
+        for scope in ("core_hcmc", "merged_city_all"):
+            assert (data / "hcmc" / f"{scope}.json").exists()
     assert sorted(p.name for p in (out / "evidence").iterdir()) == sorted(
         json.loads((SNAPSHOT / "manifest.json").read_text(encoding="utf-8"))["evidence"]
     )

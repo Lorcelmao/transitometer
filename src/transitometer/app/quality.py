@@ -152,7 +152,7 @@ def page_validation() -> None:
         _not_measured("Recorded test results", tests["file"], where)
     else:
         left, right = st.columns(2)
-        left.metric("Tests passed", f"{tests['passed']:,} / {tests['total']:,}", border=True)
+        left.metric("Tests passed", f"{tests['passed']:,} / {tests['ran']:,}", border=True)
         right.metric("Failed", f"{tests['failed']:,}", border=True)
         if tests["skipped"]:
             st.caption(f"{tests['skipped']} test(s) skipped in the recorded run.")

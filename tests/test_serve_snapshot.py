@@ -86,6 +86,18 @@ def test_a_validated_run_becomes_a_byte_identical_snapshot(
     assert snapshot.load_manifest(out) == manifest
 
 
+def test_a_rebuild_drops_stale_tables_but_keeps_sibling_folders(
+    run: tuple[Path, Path], tmp_path: Path
+) -> None:
+    out = tmp_path / "snapshot"
+    (out / "hcmc").mkdir(parents=True)
+    (out / "hcmc" / "manifest.json").write_text("{}", encoding="utf-8")
+    (out / "dropped_table.parquet").write_bytes(b"stale")
+    snapshot.build(*run, POLICY, out, ORIGIN)
+    assert (out / "hcmc" / "manifest.json").read_text(encoding="utf-8") == "{}"
+    assert not (out / "dropped_table.parquet").exists()
+
+
 def test_the_snapshot_source_reads_the_snapshot_tables(
     run: tuple[Path, Path], tmp_path: Path
 ) -> None:

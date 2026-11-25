@@ -107,3 +107,18 @@ test("overview findings show the values the views computed", async ({ page }) =>
     await expect(page.getByTestId(`finding-${key}`)).toContainText(value);
   }
 });
+
+test("hcmc case study: headline figures equal the parity file for both scopes", async ({ page }) => {
+  const failures = watchFailures(page);
+  await page.goto("/case-study/hcmc/");
+  for (const scope of ["core_hcmc", "merged_city_all"]) {
+    const toggle = page.getByTestId(`scope-${scope}`);
+    if ((await toggle.getAttribute("data-state")) !== "on") await toggle.click();
+    await expect(toggle).toHaveAttribute("data-state", "on");
+    const expected = PARITY[`hcmc/${scope}`] as FigureParity;
+    for (const figure of expected) {
+      await expect(page.getByTestId(`value-${figure.key}`)).toHaveText(figure.display);
+    }
+  }
+  expect(failures).toEqual([]);
+});
