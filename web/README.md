@@ -16,8 +16,8 @@ npm run build              # static export -> web/out/ (every JSON file schema-c
 
 - The JSON in `public/data/` is committed. CI regenerates it from the snapshot and fails on any byte difference (`tests/test_web_export.py`).
 - `src/data/schemas.ts` is the contract with the export (zod). A missing field, a retyped value or a schema-version change fails the build.
-- The stop map's background, `public/basemap/nyc.json`, is reference geometry rather than a view: `python tasks.py web-basemap` draws it from the route shapes of the pinned static timetables (it needs the landing zone, so CI does not regenerate it; `src/data/contract.test.ts` checks its schema and that it fits the map's frame). The map fetches it from the site itself, so there are still no map tiles and no third-party requests.
-- The file for each page's default filters is built into the HTML. Other modes and days, and stop routes, are fetched from `/data/` when chosen, and are validated against the same schemas.
+- The stop map's background uses self-hosted reference geometry rather than a view: `public/basemap/nyc-boroughs.geojson` (simplified NYC Department of City Planning Borough Boundaries, downloaded `2026-11-25`, `SHA-256: e79e5c1277d08ba99c8a220d50b71c1c25d2ff667e68c8d1368041c89c62e33d`, see `docs/nyc-basemap-notice.md`) together with MTA route shapes written by `python tasks.py web-basemap` (`nyc.json`, plus split `nyc-subway.json` and lazy-loaded merged `nyc-streets.json`). `src/data/contract.test.ts` checks their schemas and bounds. The map fetches them from the site itself, so there are no map tiles and no third-party requests.
+- Most pages build their default filter's JSON into the HTML. The Stop map instead embeds only lightweight metadata and fetches `data/map-grid/bus.json` (670 m neighborhood grid) on load, then lazy-loads spatial stop tiles (`data/map-tiles/bus/t-*.json`) when zooming in, `data/map/bus.json` for full-city search, and `data/map-grid/subway.json` when switching to Subway.
 
 ## Commands
 

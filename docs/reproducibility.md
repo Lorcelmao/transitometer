@@ -7,6 +7,7 @@ Everything a run depends on is pinned in a file that the code checks. This page 
 | Input | Pinned in | Checked by |
 |---|---|---|
 | Source data (MTA archive, GTFS) | [`data-manifest.json`](../data-manifest.json): every file with its SHA-256 | `python tasks.py fetch` and `validate-landing` |
+| NYC borough basemap (NYC DCP, downloaded `2026-11-25`) | [`web/public/basemap/nyc-boroughs.geojson`](../web/public/basemap/nyc-boroughs.geojson) (`SHA-256: e79e5c1277d08ba99c8a220d50b71c1c25d2ff667e68c8d1368041c89c62e33d`, documented in [`docs/nyc-basemap-notice.md`](nyc-basemap-notice.md)) | `tests/test_basemap.py` and `web/src/data/contract.test.ts` |
 | Docker images (Kafka, Spark base, Flink base, ClickHouse) | [`docker/versions.env`](../docker/versions.env): tag and digest | `python tasks.py verify-lock` |
 | Python packages in the Spark tooling image | [`docker/spark-tools/requirements.lock`](../docker/spark-tools/requirements.lock) | image build |
 | JVM libraries (Delta, Kafka, Protobuf connectors) | `docker/versions.env` (`DELTA_VERSION`, `SPARK_*_ARTIFACT`, `FLINK_KAFKA_CONNECTOR_VERSION`) | image build |

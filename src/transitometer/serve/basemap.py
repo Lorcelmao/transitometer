@@ -24,12 +24,21 @@ from transitometer.ingest.sources import Sources, schedule_dir
 from transitometer.serve import kpis
 
 SCHEMA = "transitometer.basemap/1"
-OUT = kpis.REPO / "web" / "public" / "basemap" / "nyc.json"
+SUBWAY_SCHEMA = "transitometer.basemap-subway/1"
+STREETS_SCHEMA = "transitometer.basemap-streets/1"
+BASEMAP_DIR = kpis.REPO / "web" / "public" / "basemap"
+OUT = BASEMAP_DIR / "nyc.json"
+SUBWAY_OUT = BASEMAP_DIR / "nyc-subway.json"
+STREETS_OUT = BASEMAP_DIR / "nyc-streets.json"
+BOROUGHS_OUT = BASEMAP_DIR / "nyc-boroughs.geojson"
 
 Point = tuple[float, float]  # (lon, lat)
 
-# Simplification tolerances in degrees (about 10 m and 7 m at New York's latitude).
-STREET_EPS = 0.00012
+# Simplification and network-merging tolerances in degrees (about 12 m pre-merge simplify,
+# 20 m snapping grid, 25 m post-merge simplify for bus streets; 7 m for subway tracks).
+STREET_PRE_EPS = 0.00012
+STREET_GRID = 0.0002
+STREET_EPS = 0.00025
 SUBWAY_EPS = 0.00008
 SUBWAY_GRID = 0.00005  # snapping grid that merges subway shapes sharing a track
 FALLBACK_COLOR = "808183"  # the MTA's grey, for a route without a colour
@@ -142,10 +151,11 @@ def build(landing: Path, sources: Sources) -> dict[str, Any]:
             raise FileNotFoundError(f"{group} {table}: run `python tasks.py fetch` ({missing})")
         return paths
 
-    streets = [
-        _round(simplify([(p["x"], p["y"]) for p in pts], STREET_EPS), 4)
+    bus_lines = [
+        simplify([(p["x"], p["y"]) for p in pts], STREET_PRE_EPS)
         for _, pts in _shapes(tables("bus", "shapes"))
     ]
+    streets = [_round(simplify(c, STREET_EPS), 4) for c in merge(bus_lines, STREET_GRID)]
     by_color: dict[str, list[list[Point]]] = {}
     for _, color, pts in _shapes(tables("subway", "shapes"), tables("subway", "trips")):
         key = f"#{(color or FALLBACK_COLOR).strip().lower()}"
@@ -170,6 +180,33 @@ def write(basemap: dict[str, Any], out: Path = OUT) -> dict[str, int]:
     out.write_text(
         json.dumps(basemap, separators=(",", ":")) + "\n", encoding="utf-8", newline="\n"
     )
+    if out == OUT:
+        SUBWAY_OUT.write_text(
+            json.dumps(
+                {
+                    "schema": SUBWAY_SCHEMA,
+                    "source": basemap["source"],
+                    "subway": basemap["subway"],
+                },
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        STREETS_OUT.write_text(
+            json.dumps(
+                {
+                    "schema": STREETS_SCHEMA,
+                    "source": basemap["source"],
+                    "streets": basemap["streets"],
+                },
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
     return {
         "streets": len(basemap["streets"]),
         "subway_lines": sum(len(s["lines"]) for s in basemap["subway"]),

@@ -41,3 +41,16 @@ def test_the_committed_basemap_covers_new_york() -> None:
     points += [p for s in data["subway"] for line in s["lines"] for p in line]
     assert all(-74.6 < lon < -73.4 and 40.4 < lat < 41.2 for lon, lat in points)
     assert all(s["color"].startswith("#") and len(s["color"]) == 7 for s in data["subway"])
+
+    subway_split = json.loads(basemap.SUBWAY_OUT.read_text(encoding="utf-8"))
+    assert subway_split["schema"] == basemap.SUBWAY_SCHEMA
+    assert subway_split["subway"] == data["subway"]
+
+    streets_split = json.loads(basemap.STREETS_OUT.read_text(encoding="utf-8"))
+    assert streets_split["schema"] == basemap.STREETS_SCHEMA
+    assert streets_split["streets"] == data["streets"]
+
+    boroughs = json.loads(basemap.BOROUGHS_OUT.read_text(encoding="utf-8"))
+    assert boroughs["type"] == "FeatureCollection"
+    names = {f["properties"]["name"] for f in boroughs["features"]}
+    assert names == {"Manhattan", "Bronx", "Brooklyn", "Queens", "Staten Island"}
