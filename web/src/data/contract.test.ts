@@ -52,6 +52,14 @@ describe("exported JSON matches the site's contract", () => {
     expect(() => schemas.parseView("overview", read("overview.json"), schemas.overview)).not.toThrow();
     expect(() => schemas.parseView("feed", read("feed-health.json"), schemas.feedHealth)).not.toThrow();
     expect(() => schemas.parseView("validation", read("validation.json"), schemas.validation)).not.toThrow();
+    for (const file of files("hcmc")) {
+      expect(() => schemas.parseView(file, read(file), schemas.hcmcCoverage)).not.toThrow();
+    }
+    const hcmcBg = schemas.hcmcBasemap.parse(
+      JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../public/basemap/hcmc.json"), "utf8")),
+    );
+    expect(hcmcBg.wards.features.length).toBeGreaterThan(50);
+    expect(hcmcBg.routes.length).toBeGreaterThan(50);
   });
 
   it("stop maps fit the map's fixed frame, and so does the background", () => {

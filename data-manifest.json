@@ -1,5 +1,35 @@
 {
   "files": {
+    "hcmc/osm_admin_wards.json": {
+      "url": "https://download.geofabrik.de/asia/vietnam-latest.osm.pbf#relation/1973756",
+      "sha256": "94342408526f34d32e04bfbba174090c2fe025af30d9496f5552d37929babfd8",
+      "bytes": 5515448,
+      "rows": null,
+      "kind": "case_study",
+      "source": "osm_hcmc",
+      "license": "OpenStreetMap contributors, ODbL 1.0",
+      "retrieved_utc": "2026-11-24T14:25:40+00:00"
+    },
+    "hcmc/osm_bus_routes.json": {
+      "url": "https://download.geofabrik.de/asia/vietnam-latest.osm.pbf#hcmc_bus_routes",
+      "sha256": "ce55e1092aa3d10f6f8f3f6bbd656a75651e39e62320e5a2446a504d8d622206",
+      "bytes": 15907817,
+      "rows": null,
+      "kind": "case_study",
+      "source": "osm_hcmc",
+      "license": "OpenStreetMap contributors, ODbL 1.0",
+      "retrieved_utc": "2026-11-24T14:25:40+00:00"
+    },
+    "hcmc/vietnam-latest.osm.pbf": {
+      "url": "https://download.geofabrik.de/asia/vietnam-latest.osm.pbf",
+      "sha256": "13c7d711eaa29e80faadf86a9c40735a0473be9c42d7416082d26cf04bb9c317",
+      "bytes": 333895415,
+      "rows": null,
+      "kind": "case_study",
+      "source": "osm_hcmc",
+      "license": "OpenStreetMap contributors, ODbL 1.0",
+      "retrieved_utc": "2026-11-24T14:25:40+00:00"
+    },
     "realtime/trip_updates/date=2026-09-17/feed=mta_bus/data.parquet": {
       "url": "https://storage.googleapis.com/parquet.gtfsrt.io/trip_updates/date=2026-09-17/base64url=aHR0cHM6Ly9ndGZzcnQucHJvZC5vYmFueWMuY29tL3RyaXBVcGRhdGVz/data.parquet",
       "sha256": "c6fe75d1476219b3c47b1466a29d6a9fdb206d83d54346dbbd9b20e0441c7130",

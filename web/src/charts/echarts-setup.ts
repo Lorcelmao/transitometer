@@ -3,7 +3,7 @@
  * and accessible markup. Loaded lazily by EChart when a chart is about to scroll into view, so a
  * visitor who never reaches a chart never downloads it.
  */
-import { CustomChart, HeatmapChart, LinesChart, ScatterChart } from "echarts/charts";
+import { CustomChart, HeatmapChart, LinesChart, MapChart, ScatterChart } from "echarts/charts";
 import {
   AriaComponent,
   GeoComponent,
@@ -21,6 +21,7 @@ echarts.use([
   ScatterChart,
   CustomChart,
   LinesChart, // the stop map's background (bus and subway route shapes)
+  MapChart, // HCMC ward-level choropleth (BR11 case study)
   GeoComponent, // the stop map's zoomable, pannable longitude/latitude frame
   GridComponent,
   TooltipComponent,

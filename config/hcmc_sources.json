@@ -1,0 +1,28 @@
+{
+  "city": "Ho Chi Minh City",
+  "osm_city_relation_id": 1973756,
+  "bbox": {
+    "south": 10.34,
+    "west": 106.35,
+    "north": 11.17,
+    "east": 107.03
+  },
+  "primary_network": "Xe buýt Thành phố Hồ Chí Minh",
+  "license": "OpenStreetMap contributors, ODbL 1.0",
+  "attribution": "© OpenStreetMap contributors (ODbL 1.0)",
+  "crs": "EPSG:32648",
+  "walk_radius_m": 400.0,
+  "frequent_buses_per_hour": 4.0,
+  "osm_api_base": "https://api.openstreetmap.org/api/0.6",
+  "overpass_endpoints": [
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+  ],
+  "fallback_geofabrik_pbf": "https://download.geofabrik.de/asia/vietnam-latest.osm.pbf",
+  "ward_chunk_size": 20,
+  "landing_files": {
+    "bus_routes": "hcmc/osm_bus_routes.json",
+    "admin_wards": "hcmc/osm_admin_wards.json"
+  }
+}

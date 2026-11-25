@@ -1,0 +1,72 @@
+{
+  "schema": "transitometer.hcmc-hand-checks/1",
+  "checked_date": "2026-11-25",
+  "source_note": "Manual spot-check comparing OSM-derived GTFS attributes against published operator / HCMC public-transport route disclosures (SaigonBus, FUTA Bus Lines, VinBus, HTX 19/5).",
+  "routes": [
+    {
+      "route_ref": "01",
+      "corridor": "Bến xe Chợ Lớn – Ga Ba Son",
+      "operator": "FUTA Bus Lines",
+      "osm_length_km": 9.4,
+      "published_length_km": "9.0–9.6",
+      "osm_hours": "05:00–22:00",
+      "published_hours": "05:00–22:00",
+      "osm_headway_min": "8–20",
+      "published_headway_min": "5–20",
+      "osm_stops_per_dir": 33,
+      "assessment": "Within published length range (outbound 10.49 km vs inbound 8.30 km due to one-way downtown streets); OSM reflects post-Metro-1 Ba Son terminus; peak bound 8 min vs published 5 min."
+    },
+    {
+      "route_ref": "08",
+      "corridor": "Bến xe Quận 8 – Đại học Quốc gia",
+      "operator": "FUTA Bus Lines",
+      "osm_length_km": 34.2,
+      "published_length_km": "32.7–33.0",
+      "osm_hours": "04:30–22:00",
+      "published_hours": "04:30–22:00",
+      "osm_headway_min": "4–15",
+      "published_headway_min": "4–15",
+      "osm_stops_per_dir": 75,
+      "assessment": "+3.5 to +4.5% longer than published (+1.2–1.5 km): OSM maps 5.80 km (outbound, rel/17376396: 34.31 km) and 5.31 km (inbound, rel/17376397: 34.01 km) of internal VNU-HCM (ĐHQG) campus loops and terminal turnaround ways, plus 0.14 km of duplicate ways on outbound. Hours and 4–15 min headway match."
+    },
+    {
+      "route_ref": "19",
+      "corridor": "Bến xe Sài Gòn – KCX Linh Trung – ĐH Quốc gia",
+      "operator": "HTX Vận tải 19/5",
+      "osm_length_km": 29.4,
+      "published_length_km": "~28.0",
+      "osm_hours": "05:00–20:15",
+      "published_hours": "05:00–20:15",
+      "osm_headway_min": "8–12",
+      "published_headway_min": "6–15",
+      "osm_stops_per_dir": 67,
+      "assessment": "+5% longer than ~28 km published corridor (29.73 km outbound vs 29.03 km inbound) due to internal ĐHQG loop ways; outbound OSM relation had 1 out-of-order way fixed during way-sum computation; OSM interval (8–12 min) is narrower than published 6–15 min."
+    },
+    {
+      "route_ref": "50",
+      "corridor": "Đại học Bách khoa – Đại học Quốc gia",
+      "operator": "SaigonBus",
+      "osm_length_km": 29.5,
+      "published_length_km": "~26.5",
+      "osm_hours": "05:30–18:30",
+      "published_hours": "05:30–18:30",
+      "osm_headway_min": "10–30",
+      "published_headway_min": "15–25",
+      "osm_stops_per_dir": 61,
+      "assessment": "+11.3% longer (+3.0 km) than SaigonBus's ~26.5 km figure: outbound rel/17428226 (30.08 km) and inbound rel/17431068 (29.01 km) differ by 1.07 km on one-way approaches and include extended internal ĐHQG Khu A / KTX / Bách khoa CS2 campus loops (5.85 km outbound, 7.03 km inbound) with appended/reordered terminal stops and 0.22 km duplicate outbound ways. Outbound interval (15–25 min) matches official; inbound retains stale 10–30 min tag. Duration missing on OSM (published ~65 min)."
+    },
+    {
+      "route_ref": "150",
+      "corridor": "Bến xe Chợ Lớn – Bến xe Miền Đông mới",
+      "operator": "VinBus",
+      "osm_length_km": 27.0,
+      "published_length_km": "~26.6",
+      "osm_hours": "04:00–22:00",
+      "published_hours": "04:00–22:00",
+      "osm_headway_min": "10–15",
+      "published_headway_min": "10–15 peak / 15–20 off-peak",
+      "osm_stops_per_dir": 55,
+      "assessment": "+1.4% length difference (26.71 km outbound vs 27.21 km inbound); OSM tags peak 10–15 min band only (omits 15–20 min off-peak band), showing OSM headway can slightly overstate off-peak frequency."
+    }
+  ]
+}

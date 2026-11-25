@@ -1,0 +1,61 @@
+{
+  "attribution": "© OpenStreetMap contributors (ODbL 1.0)",
+  "city": "Ho Chi Minh City",
+  "crs": "EPSG:32648",
+  "frequent_buses_per_hour": 4.0,
+  "license": "OpenStreetMap contributors, ODbL 1.0",
+  "primary_network": "Xe buýt Thành phố Hồ Chí Minh",
+  "schema": "transitometer.hcmc/1",
+  "sources": {
+    "admin_wards": {
+      "relpath": "hcmc/osm_admin_wards.json",
+      "retrieved_utc": "2026-11-24T14:25:40+00:00",
+      "sha256": "94342408526f34d32e04bfbba174090c2fe025af30d9496f5552d37929babfd8"
+    },
+    "bus_routes": {
+      "relpath": "hcmc/osm_bus_routes.json",
+      "retrieved_utc": "2026-11-24T14:25:40+00:00",
+      "sha256": "ce55e1092aa3d10f6f8f3f6bbd656a75651e39e62320e5a2446a504d8d622206"
+    },
+    "core_scope": {
+      "expected": 102,
+      "matched": 102,
+      "missing_from_osm": [],
+      "non_core_osm_count": 66,
+      "official_pre_merger_area_km2": 2095.0,
+      "resolution": "1685/NQ-UBTVQH15",
+      "resolution_date": "2025-06-16",
+      "total_osm_wards": 168
+    },
+    "osm_city_relation_id": 1973756,
+    "osm_city_timestamp": ""
+  },
+  "tables": {
+    "hcmc_data_quality": {
+      "bytes": 4017,
+      "rows": 16,
+      "sha256": "7b42a172f7f34ee6c05001fa042877a3ed1396dd0e2a6078514a0b9156cceb72"
+    },
+    "hcmc_route_summary": {
+      "bytes": 12096,
+      "rows": 169,
+      "sha256": "61bd28b49cde386ff3030b211d81a9547c19f902bd2b79613626fe3602a65361"
+    },
+    "hcmc_stops": {
+      "bytes": 223300,
+      "rows": 5689,
+      "sha256": "090c41d5547a7b277e3b73d67dc65629fd46b5c071c5a457c9cf476c01acce7e"
+    },
+    "hcmc_summary": {
+      "bytes": 2831,
+      "rows": 2,
+      "sha256": "0018d82c2c02874ea34a56d83f41e02a3c2a5bd8ce4d270f7aa7a37bc8445258"
+    },
+    "hcmc_ward_coverage": {
+      "bytes": 15471,
+      "rows": 168,
+      "sha256": "14a6b12f1235606c0877636964d5f9cafb6156cc1ddac57f51496f9db0c7a622"
+    }
+  },
+  "walk_radius_m": 400.0
+}

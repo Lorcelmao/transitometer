@@ -30,6 +30,7 @@ PAGES = [
     ("diagnostics", "page_early_warning"),
     ("quality", "page_feed_health"),
     ("quality", "page_validation"),
+    ("hcmc", "page_hcmc"),
 ]
 
 
@@ -94,6 +95,24 @@ def test_headlines_equal_the_shared_parity_file(
     app.run()
     app.segmented_control(key=f"{prefix}-grp").set_value(grp)
     app.selectbox(key=f"{prefix}-day").set_value(day)
+    app.run()
+    assert not app.exception, [e.value for e in app.exception]
+    assert [m.value for m in app.metric][: len(expected)] == [f["display"] for f in expected]
+
+
+@pytest.mark.parametrize("scope", ["core_hcmc", "merged_city_all"])
+def test_hcmc_headlines_equal_the_shared_parity_file(scope: str) -> None:
+    if not PARITY.exists():
+        pytest.skip("no parity file yet (python tasks.py web-data)")
+    parity = json.loads(PARITY.read_text(encoding="utf-8"))
+    if f"hcmc/{scope}" not in parity:
+        pytest.skip("no HCMC snapshot yet (python tasks.py hcmc-build)")
+    expected = parity[f"hcmc/{scope}"]
+    app = AppTest.from_string(
+        "from transitometer.app import hcmc\nhcmc.page_hcmc()", default_timeout=120
+    )
+    app.run()
+    app.segmented_control(key="hcmc-scope").set_value(scope)
     app.run()
     assert not app.exception, [e.value for e in app.exception]
     assert [m.value for m in app.metric][: len(expected)] == [f["display"] for f in expected]

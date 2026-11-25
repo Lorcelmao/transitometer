@@ -15,6 +15,7 @@ export const ROUTES = [
   "/diagnostics/early-warning/",
   "/data/feed-health/",
   "/data/validation/",
+  "/case-study/hcmc/",
   "/about/",
 ];
 
@@ -45,7 +46,7 @@ export function watchFailures(page: Page): string[] {
   page.on("response", (response) => {
     // Data and evidence files only (Windows builds of Next.js 16 also emit 404s for route
     // prefetches, vercel/next.js#92339; navigation still works, and Linux builds are unaffected).
-    if (response.status() >= 400 && /\/(data|evidence)\/.*\.json/.test(response.url())) {
+    if (response.status() >= 400 && /\/(data|evidence|basemap)\/.*\.json/.test(response.url())) {
       failures.push(`${response.status()} ${response.url()}`);
     }
   });

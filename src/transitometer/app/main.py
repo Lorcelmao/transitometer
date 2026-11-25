@@ -23,6 +23,7 @@ except ModuleNotFoundError:
 from transitometer.app import (  # noqa: E402
     common,
     diagnostics,
+    hcmc,
     overview,
     quality,
     reliability,
@@ -96,6 +97,12 @@ pages = {
         icon=":material/verified:",
         url_path="validation",
     ),
+    "hcmc": st.Page(
+        hcmc.page_hcmc,
+        title="HCMC bus coverage",
+        icon=":material/public:",
+        url_path="hcmc",
+    ),
 }
 overview.LINKS.update(pages)
 
@@ -105,6 +112,7 @@ navigation = st.navigation(
         "Reliability": [pages["otp"], pages["headways"], pages["missing"]],
         "Diagnostics": [pages["scorecards"], pages["stop"], pages["delay"], pages["warning"]],
         "Data quality": [pages["feed"], pages["validation"]],
+        "Case study": [pages["hcmc"]],
     }
 )
 common.snapshot_banner()

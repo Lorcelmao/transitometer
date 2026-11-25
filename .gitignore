@@ -33,6 +33,8 @@ config/.env
 !/golden/queries/*.parquet
 # The validated snapshot the hosted apps serve (copies of exported Gold tables; tasks.py snapshot).
 !/showcase/data/*.parquet
+# Precomputed BR11 HCMC case-study summary tables (Produced Work under ODbL 1.0; no raw OSM/GTFS).
+!/showcase/data/hcmc/*.parquet
 # Full error output of container runs (the JSON reports next to them are committed).
 /results/*.stderr.log
 # Reports of runs on scratch topic prefixes (demo, trials).

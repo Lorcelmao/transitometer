@@ -419,3 +419,145 @@ export function stopMapOption(
     series: stopMapSeries(stops, background, layers, showStreets),
   };
 }
+
+export type HcmcMapWard = {
+  ward_id: string;
+  ward_name: string;
+  area_display: string;
+  active_stops: number;
+  distinct_routes: number;
+  coverage_any_400m_share: number;
+  coverage_freq_conservative_share: number;
+  coverage_freq_midpoint_share: number;
+  coverage_any_display: string;
+  coverage_freq_cons_display: string;
+  coverage_freq_mid_display: string;
+};
+
+export type HcmcMetricKey = "any" | "freq_cons" | "freq_mid";
+
+/**
+ * Ward-level choropleth + optional bus corridors & stops for BR11 (Ho Chi Minh City), drawn from
+ * self-hosted /basemap/hcmc.json (no map tiles, no third-party requests).
+ */
+export function hcmcChoroplethOption(
+  mapName: string,
+  wards: HcmcMapWard[],
+  routes: number[][][],
+  stops: [number, number, number, boolean][],
+  metric: HcmcMetricKey,
+  metricLabel: string,
+  showRoutes: boolean,
+  showStops: boolean,
+  font: string,
+): EChartsCoreOption {
+  const byId = new Map(wards.map((w) => [w.ward_id, w]));
+  const pickValue = (w: HcmcMapWard) =>
+    metric === "any"
+      ? w.coverage_any_400m_share
+      : metric === "freq_cons"
+        ? w.coverage_freq_conservative_share
+        : w.coverage_freq_midpoint_share;
+
+  const series: Record<string, unknown>[] = [
+    {
+      name: metricLabel,
+      type: "map",
+      geoIndex: 0,
+      data: wards.map((w) => ({ name: w.ward_id, value: pickValue(w) })),
+    },
+  ];
+
+  if (showRoutes && routes.length) {
+    series.push({
+      id: "hcmc-routes",
+      type: "lines",
+      coordinateSystem: "geo",
+      polyline: true,
+      silent: true,
+      large: true,
+      largeThreshold: 0,
+      z: 2,
+      data: routes.map((coords) => ({ coords })),
+      lineStyle: { color: COLORS.ink, width: 0.9, opacity: 0.35 },
+    });
+  }
+
+  if (showStops && stops.length) {
+    const freqStops = stops.filter((s) => s[3]).map((s) => [s[0], s[1], s[2]]);
+    const otherStops = stops.filter((s) => !s[3]).map((s) => [s[0], s[1], s[2]]);
+    if (otherStops.length) {
+      series.push({
+        id: "hcmc-stops-other",
+        type: "scatter",
+        coordinateSystem: "geo",
+        silent: true,
+        large: true,
+        largeThreshold: 0,
+        z: 3,
+        symbolSize: 3,
+        data: otherStops,
+        itemStyle: { color: COLORS.muted, opacity: 0.55 },
+      });
+    }
+    if (freqStops.length) {
+      series.push({
+        id: "hcmc-stops-freq",
+        type: "scatter",
+        coordinateSystem: "geo",
+        silent: true,
+        large: true,
+        largeThreshold: 0,
+        z: 4,
+        symbolSize: 4,
+        data: freqStops,
+        itemStyle: { color: COLORS.accent, opacity: 0.78 },
+      });
+    }
+  }
+
+  return {
+    tooltip: {
+      trigger: "item",
+      formatter: (params: { name?: string }) => {
+        const w = params.name ? byId.get(params.name) : undefined;
+        if (!w) return "";
+        return [
+          `<b>${escapeHtml(w.ward_name)}</b>`,
+          `Area: ${escapeHtml(w.area_display)} · ${count(w.active_stops)} stops · ${count(w.distinct_routes)} routes`,
+          `400 m (any stop): <b>${escapeHtml(w.coverage_any_display)}</b>`,
+          `≥ 4 buses/h (conservative): <b>${escapeHtml(w.coverage_freq_cons_display)}</b>`,
+          `≥ 4 buses/h (midpoint): ${escapeHtml(w.coverage_freq_mid_display)}`,
+        ].join("<br/>");
+      },
+    },
+    visualMap: {
+      seriesIndex: 0,
+      min: 0,
+      max: 1,
+      orient: "horizontal",
+      top: 4,
+      left: "center",
+      itemWidth: 10,
+      itemHeight: 160,
+      calculable: false,
+      text: ["100 % covered", "0 %"],
+      textStyle: { color: COLORS.muted, fontFamily: font, fontSize: 11 },
+      inRange: { color: [...COLORS.sequential] },
+    },
+    geo: {
+      map: mapName,
+      roam: true,
+      aspectScale: Math.cos((10.77 * Math.PI) / 180),
+      layoutCenter: ["50%", "54%"],
+      layoutSize: "88%",
+      scaleLimit: { min: 0.9, max: 18 },
+      itemStyle: { areaColor: COLORS.panel, borderColor: COLORS.paper, borderWidth: 0.8 },
+      emphasis: {
+        label: { show: false },
+        itemStyle: { areaColor: COLORS.accent, borderColor: COLORS.ink, borderWidth: 1.2 },
+      },
+    },
+    series,
+  };
+}

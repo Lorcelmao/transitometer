@@ -75,6 +75,7 @@ export function ChartFrame({
   chart,
   table,
   source,
+  provenance,
   note,
 }: {
   title: string;
@@ -82,7 +83,8 @@ export function ChartFrame({
   summary: string;
   chart: ReactNode;
   table: ReactNode;
-  source: Source;
+  source?: Source;
+  provenance?: ReactNode;
   note?: ReactNode;
 }) {
   const [asTable, setAsTable] = useState(false);
@@ -105,7 +107,7 @@ export function ChartFrame({
       <figcaption className="mt-3 space-y-1 text-sm text-muted-ink">
         <p id={summaryId}>{summary}</p>
         {note ? <div>{note}</div> : null}
-        <ProvenanceLine source={source} />
+        {provenance ?? (source ? <ProvenanceLine source={source} /> : null)}
       </figcaption>
     </figure>
   );

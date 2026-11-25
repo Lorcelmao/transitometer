@@ -10,7 +10,7 @@ for (const route of ROUTES) {
     const failures = watchFailures(page);
     await page.goto(route);
     await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.getByTestId("provenance").first()).toContainText("validated run");
+    await expect(page.getByTestId("provenance").first()).toContainText(/validated run|OSM static snapshot/);
     await expect(page.getByText(/not a live service/).first()).toBeVisible();
     expect(failures).toEqual([]);
   });
@@ -47,8 +47,10 @@ test("the site works with the network to third parties blocked", async ({ page }
     }
     return route.continue();
   });
-  await page.goto("/reliability/on-time/");
-  await expect(page.locator("h1")).toBeVisible();
+  for (const route of ["/reliability/on-time/", "/case-study/hcmc/"]) {
+    await page.goto(route);
+    await expect(page.locator("h1")).toBeVisible();
+  }
   expect(external).toEqual([]);
 });
 
@@ -65,7 +67,7 @@ test("the Content-Security-Policy of vercel.json blocks nothing the site uses", 
       (window as unknown as { __csp: string[] }).__csp.push(`${e.violatedDirective} ${e.blockedURI}`),
     );
   });
-  for (const route of ["/", "/reliability/on-time/", "/diagnostics/stops/"]) {
+  for (const route of ["/", "/reliability/on-time/", "/diagnostics/stops/", "/case-study/hcmc/"]) {
     await page.goto(route);
     await page.mouse.wheel(0, 1500); // bring the charts into view so ECharts loads
     await page.waitForLoadState("networkidle");
