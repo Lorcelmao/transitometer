@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from transitometer.app.common import (
+    badge_markdown,
     connection,
     definitions,
     evidence_folder,
@@ -35,6 +36,8 @@ def page_feed_health() -> None:
             continue
         info = feeds[feed]
         column.metric(info["label"], info["display"], help=info["help"], border=True)
+        if info.get("badge"):
+            column.markdown(badge_markdown(info["badge"]))
         if info["failed"]:
             column.caption(f":material/error: Failed: {', '.join(info['failed'])}")
         else:
