@@ -139,6 +139,18 @@ def sum_way_lengths_km(ways: list[list[tuple[float, float]]]) -> float:
     return total
 
 
+def sum_in_bbox_way_lengths_km(ways: list[list[tuple[float, float]]], bbox: BBox) -> float:
+    """Sum lengths of OSM way segments whose midpoint falls inside the study bounding box."""
+    total = 0.0
+    for way in ways:
+        for a, b in zip(way, way[1:], strict=False):
+            mid_lat = 0.5 * (a[0] + b[0])
+            mid_lon = 0.5 * (a[1] + b[1])
+            if bbox.contains(mid_lat, mid_lon):
+                total += haversine_km(a[0], a[1], b[0], b[1])
+    return total
+
+
 def stitch_way_chain(ways: list[list[tuple[float, float]]]) -> list[tuple[float, float]]:
     """Orient and stitch route ways end-to-end so shape_pt_sequence follows the corridor."""
     cleaned = [list(w) for w in ways if len(w) >= 2]
@@ -252,6 +264,7 @@ ROUTES_SCHEMA = pa.schema(
         ("opening_hours_raw", pa.string()),
         ("opening_hours_ok", pa.bool_()),
         ("shape_length_km", pa.float64()),
+        ("in_bbox_length_km", pa.float64()),
     ]
 )
 
@@ -426,6 +439,7 @@ def convert_osm_to_gtfs(
 
         stitched = stitch_way_chain(route_ways)
         way_km = sum_way_lengths_km(route_ways)
+        in_bbox_km = sum_in_bbox_way_lengths_km(route_ways, bbox)
         cum_km = 0.0
         for idx, (lat, lon) in enumerate(stitched, start=1):
             if idx > 1:
@@ -461,6 +475,7 @@ def convert_osm_to_gtfs(
                 "opening_hours_raw": oh_raw or "",
                 "opening_hours_ok": oh_ok,
                 "shape_length_km": round(way_km, 3),
+                "in_bbox_length_km": round(in_bbox_km, 3),
             }
         )
         trips_rows.append(

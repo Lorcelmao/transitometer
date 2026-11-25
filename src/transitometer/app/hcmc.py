@@ -187,6 +187,39 @@ def page_hcmc() -> None:
             hide_index=True,
         )
 
+    if view["routes"]:
+        st.subheader("Mapped HCMC bus routes (OSM-derived)")
+        routes_df = pd.DataFrame(view["routes"])
+        flagged_n = int(routes_df["osm_incomplete"].sum())
+        st.caption(
+            f"{len(routes_df)} distinct routes in `Xe buýt Thành phố Hồ Chí Minh`. "
+            f"{flagged_n} inter-provincial route(s) are marked **Incomplete OSM data** instead of "
+            "displaying unreliable OSM way sums (missing intermediate stops or unverified external "
+            "detours outside the HCMC bounding box); stop-based walk-shed coverage is unaffected."
+        )
+        route_display = routes_df[
+            [
+                "route_ref",
+                "route_name",
+                "directions",
+                "avg_stops_per_dir",
+                "length_display",
+                "sample_interval",
+                "osm_note",
+            ]
+        ].rename(
+            columns={
+                "route_ref": "Route",
+                "route_name": "Corridor",
+                "directions": "Dirs",
+                "avg_stops_per_dir": "In-bbox stops / dir",
+                "length_display": "Length",
+                "sample_interval": "OSM interval",
+                "osm_note": "OSM data note",
+            }
+        )
+        st.dataframe(route_display, width="stretch", hide_index=True)
+
     if view["hand_checks"]:
         st.subheader("Manual cross-check against official HCMC bus information")
         st.dataframe(pd.DataFrame(view["hand_checks"]), width="stretch", hide_index=True)

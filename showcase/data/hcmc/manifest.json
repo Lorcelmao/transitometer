@@ -37,9 +37,9 @@
       "sha256": "7b42a172f7f34ee6c05001fa042877a3ed1396dd0e2a6078514a0b9156cceb72"
     },
     "hcmc_route_summary": {
-      "bytes": 12096,
+      "bytes": 13665,
       "rows": 169,
-      "sha256": "61bd28b49cde386ff3030b211d81a9547c19f902bd2b79613626fe3602a65361"
+      "sha256": "dbccd75e0c3848af53e7460e6c16348bee011e1c05c31bc1e04e01a3a8f643ff"
     },
     "hcmc_stops": {
       "bytes": 223300,

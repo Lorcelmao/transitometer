@@ -346,6 +346,53 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
         </div>
       </section>
 
+      {view.routes.length > 0 ? (
+        <section className="my-12" aria-labelledby="hcmc-routes">
+          <div className="border-b border-ink pb-2">
+            <h2 id="hcmc-routes" className="font-display text-2xl md:text-3xl">
+              Mapped HCMC bus routes (OSM-derived)
+            </h2>
+          </div>
+          <p className="mt-3 max-w-prose text-sm text-muted-ink">
+            {count(view.routes.length)} distinct routes in <code>{view.provenance.primary_network}</code>.{" "}
+            {count(view.routes.filter((r) => r.osm_incomplete).length)} inter-provincial route(s) are flagged{" "}
+            <strong>Incomplete OSM data</strong> instead of displaying unreliable OSM way sums (missing intermediate
+            stops or unverified external detours outside the HCMC bounding box); stop-based coverage is unaffected.
+          </p>
+          <div className="mt-4">
+            <DataTable
+              rows={view.routes}
+              columns={[
+                { key: "ref", label: "Route", render: (r) => r.route_ref },
+                { key: "name", label: "Corridor", render: (r) => r.route_name },
+                { key: "dirs", label: "Dirs", numeric: true, render: (r) => count(r.directions) },
+                {
+                  key: "stops",
+                  label: "In-bbox stops / dir",
+                  numeric: true,
+                  render: (r) => r.avg_stops_per_dir.toFixed(1),
+                },
+                {
+                  key: "length",
+                  label: "Length",
+                  numeric: true,
+                  render: (r) =>
+                    r.osm_incomplete ? (
+                      <span className="font-semibold text-warn">{r.length_display}</span>
+                    ) : (
+                      r.length_display
+                    ),
+                },
+                { key: "interval", label: "OSM interval", render: (r) => r.sample_interval ?? "—" },
+                { key: "note", label: "OSM data note", render: (r) => r.osm_note || "—" },
+              ]}
+              caption="Mapped HCMC bus routes from OpenStreetMap"
+              rowKey={(r) => `route-${r.route_ref}`}
+            />
+          </div>
+        </section>
+      ) : null}
+
       {view.hand_checks.length > 0 ? (
         <section className="my-12" aria-labelledby="hcmc-hand-checks">
           <div className="border-b border-ink pb-2">

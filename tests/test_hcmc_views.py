@@ -89,6 +89,7 @@ def _write_minimal_gtfs(gtfs_dir: Path, stop_lon: float, stop_lat: float) -> Non
                     "opening_hours_raw": "Mo-Su 05:00-21:00",
                     "opening_hours_ok": True,
                     "shape_length_km": 1.0,
+                    "in_bbox_length_km": 1.0,
                 }
             ],
             ROUTES_SCHEMA,

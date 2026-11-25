@@ -106,6 +106,7 @@ def _write_synthetic_gtfs(
                 "opening_hours_raw": "Mo-Su 05:00-21:00",
                 "opening_hours_ok": True,
                 "shape_length_km": 1.0,
+                "in_bbox_length_km": 1.0,
             }
         )
         trips.append(
@@ -329,3 +330,176 @@ def test_core_wards_config_and_name_matching_audit() -> None:
     assert audit["expected"] == 102
     assert audit["non_core_osm_count"] == 1
     assert "Xã Hưng Long" in audit["missing_from_osm"]
+
+
+def test_incomplete_osm_routes_are_flagged_without_affecting_coverage(tmp_path: Path) -> None:
+    """Flag routes with < 2 in-bbox stops or > 120 km external detours, not bogus km."""
+    cfg = load_config()
+    with connect_spatial() as con:
+        ward = _square_ward(con, "rel_1", BASE_E, BASE_N, 1000.0)
+        s1 = _utm_to_wgs84(con, BASE_E + 400.0, BASE_N + 500.0)
+        s2 = _utm_to_wgs84(con, BASE_E + 600.0, BASE_N + 500.0)
+
+    gtfs_dir = tmp_path / "gtfs"
+    gtfs_dir.mkdir(parents=True, exist_ok=True)
+    routes = [
+        {
+            "route_id": "r_normal",
+            "agency_id": "AG_1",
+            "route_short_name": "72-2B",
+            "route_long_name": "Normal inter-provincial",
+            "route_type": 3,
+            "osm_rel_id": 1,
+            "network": "Xe buýt Thành phố Hồ Chí Minh",
+            "is_hcmc_network": True,
+            "operator": "Test",
+            "from_name": "A",
+            "to_name": "B",
+            "is_ptv2": True,
+            "has_duration": False,
+            "opening_hours_raw": "05:00-21:00",
+            "opening_hours_ok": True,
+            "shape_length_km": 109.6,
+            "in_bbox_length_km": 54.9,
+        },
+        {
+            "route_id": "r_detour",
+            "agency_id": "AG_1",
+            "route_short_name": "72-1",
+            "route_long_name": "External detour > 120 km",
+            "route_type": 3,
+            "osm_rel_id": 2,
+            "network": "Xe buýt Thành phố Hồ Chí Minh",
+            "is_hcmc_network": True,
+            "operator": "Test",
+            "from_name": "A",
+            "to_name": "B",
+            "is_ptv2": True,
+            "has_duration": False,
+            "opening_hours_raw": "05:00-21:00",
+            "opening_hours_ok": True,
+            "shape_length_km": 180.02,
+            "in_bbox_length_km": 55.25,
+        },
+        {
+            "route_id": "r_sparse",
+            "agency_id": "AG_1",
+            "route_short_name": "72-2C",
+            "route_long_name": "Sparse stops + external detour",
+            "route_type": 3,
+            "osm_rel_id": 3,
+            "network": "Xe buýt Thành phố Hồ Chí Minh",
+            "is_hcmc_network": True,
+            "operator": "Test",
+            "from_name": "A",
+            "to_name": "B",
+            "is_ptv2": True,
+            "has_duration": False,
+            "opening_hours_raw": "05:00-21:00",
+            "opening_hours_ok": True,
+            "shape_length_km": 137.13,
+            "in_bbox_length_km": 52.0,
+        },
+    ]
+    trips = [
+        {
+            "route_id": r["route_id"],
+            "service_id": "DAILY",
+            "trip_id": f"t_{r['route_id']}",
+            "trip_headsign": "B",
+            "direction_id": 0,
+            "shape_id": None,
+        }
+        for r in routes
+    ]
+    stop_times = [
+        {
+            "trip_id": "t_r_normal",
+            "arrival_time": None,
+            "departure_time": None,
+            "stop_id": "S1",
+            "stop_sequence": 1,
+            "timepoint": 0,
+        },
+        {
+            "trip_id": "t_r_normal",
+            "arrival_time": None,
+            "departure_time": None,
+            "stop_id": "S2",
+            "stop_sequence": 2,
+            "timepoint": 0,
+        },
+        {
+            "trip_id": "t_r_detour",
+            "arrival_time": None,
+            "departure_time": None,
+            "stop_id": "S1",
+            "stop_sequence": 1,
+            "timepoint": 0,
+        },
+        {
+            "trip_id": "t_r_detour",
+            "arrival_time": None,
+            "departure_time": None,
+            "stop_id": "S2",
+            "stop_sequence": 2,
+            "timepoint": 0,
+        },
+        {
+            "trip_id": "t_r_sparse",
+            "arrival_time": None,
+            "departure_time": None,
+            "stop_id": "S1",
+            "stop_sequence": 1,
+            "timepoint": 0,
+        },
+    ]
+    stops = [
+        {
+            "stop_id": "S1",
+            "stop_name": "S1",
+            "stop_lat": s1[1],
+            "stop_lon": s1[0],
+            "in_bbox": True,
+            "osm_type": "node",
+            "osm_id": 1,
+        },
+        {
+            "stop_id": "S2",
+            "stop_name": "S2",
+            "stop_lat": s2[1],
+            "stop_lon": s2[0],
+            "in_bbox": True,
+            "osm_type": "node",
+            "osm_id": 2,
+        },
+    ]
+    for name, rows_data, schema in (
+        ("routes.parquet", routes, ROUTES_SCHEMA),
+        ("stops.parquet", stops, STOPS_SCHEMA),
+        ("trips.parquet", trips, TRIPS_SCHEMA),
+        ("stop_times.parquet", stop_times, STOP_TIMES_SCHEMA),
+        ("frequencies.parquet", [], FREQUENCIES_SCHEMA),
+        ("shapes.parquet", [], SHAPES_SCHEMA),
+    ):
+        cols = {f.name: [r.get(f.name) for r in rows_data] for f in schema}
+        pq.write_table(pa.table(cols, schema=schema), gtfs_dir / name)
+
+    out = tmp_path / "snap"
+    compute_coverage(gtfs_dir, [ward], cfg, out)
+
+    from transitometer.serve import hcmc_views
+
+    with duckdb.connect() as con:
+        view = hcmc_views.hcmc_coverage(con, out, scope="core_hcmc", hand_checks_path=None)
+    by_ref = {r["route_ref"]: r for r in view["routes"]}
+    assert by_ref["72-2B"]["osm_incomplete"] is False
+    assert by_ref["72-2B"]["avg_length_km"] == pytest.approx(109.6)
+    assert by_ref["72-2B"]["length_display"] == "109.6 km"
+    assert by_ref["72-1"]["osm_incomplete"] is True
+    assert by_ref["72-1"]["avg_length_km"] is None
+    assert by_ref["72-1"]["length_display"] == "Incomplete OSM data"
+    assert by_ref["72-2C"]["osm_incomplete"] is True
+    assert by_ref["72-2C"]["avg_length_km"] is None
+    assert by_ref["72-2C"]["length_display"] == "Incomplete OSM data"
+    assert view["wards"][0]["active_stops"] == 2

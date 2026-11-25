@@ -23,6 +23,11 @@ from transitometer.hcmc.quality import evaluate_quality
 
 HCMC_SCHEMA = "transitometer.hcmc/1"
 BUFFER_SEGMENTS = 16  # 16 segments per quadrant (64-gon: < 0.16 % area error vs exact pi*r^2)
+# Route-level OSM completeness guards for route_summary (stop-based coverage is never filtered):
+# flag inter-provincial routes with < 2 in-bbox stops or > 50 % outside-bbox detours (> 120 km).
+MIN_ROUTE_IN_BBOX_STOPS = 2
+MAX_PLAUSIBLE_INTERPROVINCIAL_KM = 120.0
+OUTSIDE_BBOX_DETOUR_SHARE = 0.50
 HCMC_TABLES = (
     "hcmc_summary",
     "hcmc_ward_coverage",
@@ -547,6 +552,7 @@ def compute_coverage(
                         THEN r.shape_length_km
                         ELSE sl.utm_length_km
                     END AS length_km,
+                    coalesce(r.in_bbox_length_km, 0.0) AS in_bbox_length_km,
                     f.interval_raw,
                     f.interval_min_s,
                     f.interval_mid_s,
@@ -560,22 +566,75 @@ def compute_coverage(
                 LEFT JOIN read_parquet({freq_p}) f ON f.trip_id = t.trip_id
                 LEFT JOIN shape_lines sl ON sl.shape_id = t.shape_id
                 WHERE r.is_hcmc_network = true
+            ),
+            grouped AS (
+                SELECT
+                    route_ref,
+                    min(route_long_name) AS route_name,
+                    min(operator) AS operator,
+                    count(*)::INTEGER AS directions,
+                    round(avg(stops_in_dir), 1) AS avg_stops_per_dir,
+                    avg(length_km) AS raw_length_km,
+                    avg(in_bbox_length_km) AS avg_in_bbox_km,
+                    min(stops_in_dir) AS min_stops_in_dir,
+                    CASE
+                        WHEN avg(length_km) > 0
+                        THEN greatest(
+                            0.0, least(1.0, 1.0 - avg(in_bbox_length_km) / avg(length_km))
+                        )
+                        ELSE 0.0
+                    END AS outside_bbox_share,
+                    round(min(interval_min_s) / 60.0, 1) AS interval_min_min,
+                    round(max(interval_max_s) / 60.0, 1) AS interval_max_min,
+                    min(nullif(interval_raw, '')) AS sample_interval,
+                    min(nullif(opening_hours_raw, '')) AS sample_opening_hours,
+                    bool_and(is_ptv2) AS is_ptv2_all,
+                    bool_or(has_duration) AS has_duration
+                FROM per_rel
+                GROUP BY route_ref
+            ),
+            flagged AS (
+                SELECT
+                    *,
+                    (min_stops_in_dir < {MIN_ROUTE_IN_BBOX_STOPS}) AS sparse_stops,
+                    (
+                        raw_length_km > {MAX_PLAUSIBLE_INTERPROVINCIAL_KM}
+                        AND outside_bbox_share > {OUTSIDE_BBOX_DETOUR_SHARE}
+                    ) AS external_detour
+                FROM grouped
             )
             SELECT
                 route_ref,
-                min(route_long_name) AS route_name,
-                min(operator) AS operator,
-                count(*)::INTEGER AS directions,
-                round(avg(stops_in_dir), 1) AS avg_stops_per_dir,
-                round(avg(length_km), 2) AS avg_length_km,
-                round(min(interval_min_s) / 60.0, 1) AS interval_min_min,
-                round(max(interval_max_s) / 60.0, 1) AS interval_max_min,
-                min(nullif(interval_raw, '')) AS sample_interval,
-                min(nullif(opening_hours_raw, '')) AS sample_opening_hours,
-                bool_and(is_ptv2) AS is_ptv2_all,
-                bool_or(has_duration) AS has_duration
-            FROM per_rel
-            GROUP BY route_ref
+                route_name,
+                operator,
+                directions,
+                avg_stops_per_dir,
+                CASE
+                    WHEN sparse_stops OR external_detour THEN NULL
+                    ELSE round(raw_length_km, 2)
+                END AS avg_length_km,
+                round(avg_in_bbox_km, 2) AS in_bbox_length_km,
+                (sparse_stops OR external_detour) AS osm_incomplete,
+                CASE
+                    WHEN sparse_stops AND external_detour THEN
+                        'Only ' || cast(min_stops_in_dir AS VARCHAR)
+                        || ' in-bbox stop per direction; '
+                        || cast(round(outside_bbox_share * 100, 0)::INTEGER AS VARCHAR)
+                        || '% of OSM ways outside HCMC bbox'
+                    WHEN sparse_stops THEN
+                        'Fewer than {MIN_ROUTE_IN_BBOX_STOPS} in-bbox stops mapped in OSM'
+                    WHEN external_detour THEN
+                        cast(round(outside_bbox_share * 100, 0)::INTEGER AS VARCHAR)
+                        || '% of OSM ways outside HCMC bbox with unverified detour (> 120 km)'
+                    ELSE ''
+                END AS osm_note,
+                interval_min_min,
+                interval_max_min,
+                sample_interval,
+                sample_opening_hours,
+                is_ptv2_all,
+                has_duration
+            FROM flagged
             ORDER BY route_ref
             """
         )

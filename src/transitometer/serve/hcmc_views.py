@@ -172,16 +172,32 @@ def hcmc_coverage(
         ),
     )[:RANKED_WARDS]
 
-    route_rows = _rows(
+    raw_route_rows = _rows(
         con,
         f"""
         SELECT route_ref, route_name, operator, directions, avg_stops_per_dir,
-               avg_length_km, interval_min_min, interval_max_min,
+               avg_length_km, in_bbox_length_km, osm_incomplete, osm_note,
+               interval_min_min, interval_max_min,
                sample_interval, sample_opening_hours, is_ptv2_all, has_duration
         FROM {_scan(folder / "hcmc_route_summary.parquet")}
-        ORDER BY avg_length_km DESC, route_ref ASC
+        ORDER BY osm_incomplete DESC, avg_length_km DESC NULLS LAST, route_ref ASC
         """,
     )
+    route_rows = [
+        {
+            **r,
+            "length_display": (
+                "Incomplete OSM data"
+                if r["osm_incomplete"]
+                else (
+                    f"{decimal(r['avg_length_km'], 1)} km"
+                    if r["avg_length_km"] is not None
+                    else "—"
+                )
+            ),
+        }
+        for r in raw_route_rows
+    ]
     quality_rows = _rows(
         con,
         f"""
