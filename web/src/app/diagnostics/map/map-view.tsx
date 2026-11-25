@@ -33,11 +33,14 @@ type View = { center?: number[]; zoom?: number };
 
 function explorerHref(mode: string, row: Row) {
   const dir = row[col.direction_id];
-  const params = new URLSearchParams({ mode, route: row[col.route_id] as string, stop: `${dir ?? "-"}:${row[col.stop_id]}` });
+  const params = new URLSearchParams({
+    mode,
+    route: row[col.route_id] as string,
+    stop: `${dir ?? "-"}:${row[col.stop_id]}`,
+  });
   return `/diagnostics/stops/?${params.toString()}`;
 }
 
-/** The background is fetched once per visit, only when the map page is opened. */
 let backgroundRequest: Promise<MapBackground> | null = null;
 function loadBackground(): Promise<MapBackground> {
   backgroundRequest ??= fetch(BASEMAP_URL)
@@ -47,13 +50,12 @@ function loadBackground(): Promise<MapBackground> {
     })
     .then((body) => basemap.parse(body))
     .catch((error) => {
-      backgroundRequest = null; // let a later visit retry
+      backgroundRequest = null;
       throw error;
     });
   return backgroundRequest;
 }
 
-/** How to read the map: every encoding and every line of the tooltip, in words. */
 function MapKey({ minEvents }: { minEvents: number }) {
   const ramp = `linear-gradient(90deg, ${COLORS.sequential.join(", ")})`;
   const dot = (d: number, hollow = false) => (
@@ -67,18 +69,22 @@ function MapKey({ minEvents }: { minEvents: number }) {
     />
   );
   return (
-    <section aria-labelledby="map-key" className="mt-4 border border-rule bg-paper p-4 text-sm text-ink" data-testid="map-key">
-      <h3 id="map-key" className="font-display text-lg">
+    <section
+      aria-labelledby="map-key"
+      className="mt-3 rounded-lg border border-rule bg-surface p-4 text-xs text-ink"
+      data-testid="map-key"
+    >
+      <h3 id="map-key" className="text-sm font-semibold text-ink">
         How to read this map
       </h3>
-      <div className="mt-3 grid gap-6 lg:grid-cols-2">
-        <dl className="grid grid-cols-[4.5rem_1fr] items-center gap-x-3 gap-y-3">
+      <div className="mt-3 grid gap-5 lg:grid-cols-2">
+        <dl className="grid grid-cols-[4.5rem_1fr] items-center gap-x-3 gap-y-2.5">
           <dt aria-hidden="true">
-            <span className="block h-2.5 w-[4.5rem]" style={{ background: ramp }} />
+            <span className="block h-2.5 w-[4.5rem] rounded-full" style={{ background: ramp }} />
           </dt>
           <dd className="text-muted-ink">
-            <b className="font-semibold text-ink">Colour</b>: share of the stop&apos;s arrivals that were on time (at
-            most 1 min early, at most 5 min late), from 0 % (palest) to 100 % (darkest).
+            <strong className="font-semibold text-ink">Colour:</strong> share of the stop&apos;s arrivals that were on
+            time (at most 1 min early, at most 5 min late), from 0 % (palest) to 100 % (darkest).
           </dd>
           <dt aria-hidden="true">
             <svg width="72" height="16" viewBox="0 0 72 16">
@@ -88,8 +94,8 @@ function MapKey({ minEvents }: { minEvents: number }) {
             </svg>
           </dt>
           <dd className="text-muted-ink">
-            <b className="font-semibold text-ink">Size</b>: how many arrivals were observed there, all routes and both
-            days (about 130, 500 and 1,000 or more).
+            <strong className="font-semibold text-ink">Size:</strong> arrivals observed there across all routes and
+            both days (about 130, 500 and 1,000 or more).
           </dd>
           <dt aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 16 16">
@@ -97,8 +103,8 @@ function MapKey({ minEvents }: { minEvents: number }) {
             </svg>
           </dt>
           <dd className="text-muted-ink">
-            <b className="font-semibold text-ink">Hollow grey</b>: fewer than {count(minEvents)} arrivals, too few to
-            score. Shown so the network stays complete.
+            <strong className="font-semibold text-ink">Hollow grey:</strong> fewer than {count(minEvents)} arrivals,
+            too few to score. Shown so the network stays complete.
           </dd>
           <dt aria-hidden="true">
             <svg width="72" height="16" viewBox="0 0 72 16">
@@ -107,28 +113,27 @@ function MapKey({ minEvents }: { minEvents: number }) {
             </svg>
           </dt>
           <dd className="text-muted-ink">
-            <b className="font-semibold text-ink">Thin grey lines</b>: bus routes, which trace the streets (shown once you
-            zoom in on bus stops). <b className="font-semibold text-ink">Darker lines</b>: subway lines. Both come from the
-            MTA timetables.
+            <strong className="font-semibold text-ink">Thin grey lines:</strong> bus routes (shown once you zoom in).{" "}
+            <strong className="font-semibold text-ink">Darker lines:</strong> subway lines, from MTA timetables.
           </dd>
         </dl>
         <div>
-          <p className="font-medium">What a stop&apos;s tooltip says</p>
+          <p className="font-semibold text-ink">What a stop&apos;s tooltip says</p>
           <ol className="mt-2 space-y-1.5 text-muted-ink">
             <li>
-              <b className="font-semibold text-ink">Name</b>: the stop&apos;s name in the MTA timetable.
+              <strong className="font-semibold text-ink">Name:</strong> the stop&apos;s name in the MTA timetable.
             </li>
             <li>
-              <b className="font-semibold text-ink">Stop ID</b>: its MTA identifier. Each direction of a street has its own
-              stop and ID.
+              <strong className="font-semibold text-ink">Stop ID:</strong> its MTA identifier. Each direction of a
+              street has its own stop and ID.
             </li>
             <li>
-              <b className="font-semibold text-ink">Arrivals observed</b>: arrivals inferred from the real-time feed at the
-              stop, every route that serves it, both service days pooled.
+              <strong className="font-semibold text-ink">Arrivals observed:</strong> inferred arrivals at the stop,
+              every route serving it, both service days pooled.
             </li>
             <li>
-              <b className="font-semibold text-ink">On time</b>: the share of those arrivals within the on-time band. Click
-              the stop to see it hour by hour.
+              <strong className="font-semibold text-ink">On time:</strong> share of arrivals within the on-time band.
+              Click any stop to see it hour by hour.
             </li>
           </ol>
         </div>
@@ -176,16 +181,21 @@ function Body({ data, source, mode }: { data: StopMap; source: Initial<StopMap>[
   );
   const showStreets = mode !== "bus" || zoomedIn;
   const build = useCallback(() => {
-    // Keep the visitor's zoom and pan when a layer changes; start from the whole city otherwise.
     const current = chart.current?.getOption() as { geo?: View[] } | undefined;
     const view = resetView.current ? undefined : current?.geo?.[0];
     resetView.current = false;
-    return stopMapOption(stops, background, layers, showStreets, data.min_events, view && { center: view.center, zoom: view.zoom });
+    return stopMapOption(
+      stops,
+      background,
+      layers,
+      showStreets,
+      data.min_events,
+      view && { center: view.center, zoom: view.zoom },
+    );
   }, [stops, background, layers, showStreets, data.min_events]);
 
   const onReady = useCallback((instance: EChartsType) => {
     chart.current = instance;
-    // Track the zoom from the roam deltas (reading the whole option on every wheel step is slow).
     instance.on("georoam", (event) => {
       const step = (event as { zoom?: number }).zoom;
       if (!step) return;
@@ -210,7 +220,6 @@ function Body({ data, source, mode }: { data: StopMap; source: Initial<StopMap>[
     resetView.current = true;
     zoom.current = 1;
     setZoomedIn(false);
-    // Redraw even when the layers did not change (the build function is the same).
     setLayers((l) => ({ ...l }));
   };
 
@@ -223,31 +232,34 @@ function Body({ data, source, mode }: { data: StopMap; source: Initial<StopMap>[
     [stops, rows, mode, router],
   );
 
-  // The rows arrive least reliable first (sufficient stops), then the thinly observed ones.
   const needle = query.trim().toLowerCase();
-  const listed = (needle ? rows.filter((r) => (r[col.label] as string).toLowerCase().includes(needle)) : rows).slice(0, SHOWN);
+  const listed = (needle ? rows.filter((r) => (r[col.label] as string).toLowerCase().includes(needle)) : rows).slice(
+    0,
+    SHOWN,
+  );
   const toggle = (key: keyof MapLayers, label: string) => (
-    <label className="inline-flex min-h-11 cursor-pointer items-center gap-2">
+    <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-ink">
       <input
         type="checkbox"
-        className="size-4 accent-[var(--ink)]"
+        className="size-4 accent-brand"
         checked={layers[key]}
         onChange={(e) => setLayers((l) => ({ ...l, [key]: e.target.checked }))}
       />
-      {label}
+      <span>{label}</span>
     </label>
   );
-  const button = "inline-flex min-h-11 min-w-11 items-center justify-center border border-rule bg-paper px-3 hover:bg-panel";
+  const button =
+    "inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-rule bg-paper px-3 text-sm font-medium text-ink transition-colors hover:bg-panel";
   return (
     <>
       <ChartFrame
         title="Every located stop, coloured by how often it was on time"
         lead={
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" role="group" aria-label="Map layers and view">
+          <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" role="group" aria-label="Map layers and view">
             {toggle("streets", "Streets (bus routes)")}
             {toggle("subway", "Subway lines")}
             {toggle("lineColors", "MTA line colours")}
-            <span className="inline-flex gap-1">
+            <span className="inline-flex gap-1.5">
               <button type="button" className={button} onClick={() => zoomBy(ZOOM_STEP)} aria-label="Zoom in">
                 +
               </button>
@@ -281,22 +293,33 @@ function Body({ data, source, mode }: { data: StopMap; source: Initial<StopMap>[
         table={
           <div>
             <label className="mb-3 flex max-w-md flex-col gap-1 text-sm">
-              <span className="text-xs font-medium uppercase tracking-widest text-muted-ink">Find a stop</span>
+              <span className="text-xs font-semibold text-muted-ink">Find a stop</span>
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="min-h-11 border border-rule bg-paper px-3"
+                className="min-h-11 rounded-lg border border-rule-strong bg-surface px-3 text-sm"
                 placeholder="Stop name or id"
               />
             </label>
-            <div className="max-h-[32rem] overflow-auto border-y border-rule" tabIndex={0} role="region" aria-label="Stops, least reliable first">
-              <table className="w-full text-sm">
+            <div
+              className="max-h-[30rem] max-w-full overflow-auto rounded-lg border border-rule bg-surface"
+              tabIndex={0}
+              role="region"
+              aria-label="Stops, least reliable first"
+            >
+              <table className="w-full border-collapse text-sm">
                 <caption className="sr-only">Stops, least reliable first</caption>
-                <thead className="sticky top-0 bg-panel">
+                <thead className="sticky top-0 bg-paper">
                   <tr>
                     {["Stop", "Arrivals", "On time", "Busiest route"].map((h, i) => (
-                      <th key={h} scope="col" className={`px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-ink ${i ? "text-right" : "text-left"}`}>
+                      <th
+                        key={h}
+                        scope="col"
+                        className={`border-b border-rule px-3 py-2 text-xs font-semibold text-muted-ink ${
+                          i ? "text-right" : "text-left"
+                        }`}
+                      >
                         {h}
                       </th>
                     ))}
@@ -304,16 +327,18 @@ function Body({ data, source, mode }: { data: StopMap; source: Initial<StopMap>[
                 </thead>
                 <tbody>
                   {listed.map((r) => (
-                    <tr key={r[col.stop_id] as string} className="border-t border-rule/60">
-                      <th scope="row" className="px-3 py-1.5 text-left font-medium">
-                        <Link href={explorerHref(mode, r)}>{r[col.label]}</Link>
+                    <tr key={r[col.stop_id] as string} className="border-t border-panel hover:bg-paper/70">
+                      <th scope="row" className="px-3 py-2 text-left font-medium">
+                        <Link href={explorerHref(mode, r)} prefetch={false}>
+                  {r[col.label]}
+                </Link>
                       </th>
-                      <td className="num px-3 py-1.5 text-right">{count(r[col.events] as number)}</td>
-                      <td className="num px-3 py-1.5 text-right">
+                      <td className="num px-3 py-2 text-right">{count(r[col.events] as number)}</td>
+                      <td className="num px-3 py-2 text-right">
                         {r[col.display]}
                         {r[col.sufficient] ? "" : " (too few)"}
                       </td>
-                      <td className="num px-3 py-1.5 text-right">{r[col.route_id]}</td>
+                      <td className="num px-3 py-2 text-right">{r[col.route_id]}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -327,8 +352,9 @@ function Body({ data, source, mode }: { data: StopMap; source: Initial<StopMap>[
         note={
           <>
             <p>
-              Solid dots: stops with at least {data.min_events} arrivals over both days ({count(data.sufficient)}); hollow grey
-              dots: fewer. Scroll or pinch to zoom, drag to move, click a stop to open its hour-by-hour reliability.
+              Solid dots: stops with at least {data.min_events} arrivals over both days ({count(data.sufficient)});
+              hollow grey dots: fewer. Scroll or pinch to zoom, drag to move, click a stop to open its hour-by-hour
+              reliability.
             </p>
             <MapKey minEvents={data.min_events} />
           </>
@@ -348,7 +374,6 @@ export function MapView({ meta, initial }: { meta: Meta; initial: Initial<StopMa
       schema={stopMap}
       initial={initial}
       withDay={false}
-      // A new key per mode: other stops, so the map starts again from the whole city.
       render={({ data, source, mode }) => <Body key={mode} data={data} source={source} mode={mode} />}
     />
   );

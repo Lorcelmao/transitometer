@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { EChart } from "@/charts/echart";
 import { hcmcChoroplethOption, type HcmcMetricKey } from "@/charts/options";
+import { FilterBar } from "@/components/site/filters";
 import { ChartFrame, DataTable, type Column } from "@/components/story/chart-frame";
-import { KpiRow } from "@/components/story/kpi-figure";
+import { KpiRow, type KpiExtra } from "@/components/story/kpi-figure";
+import { CheckStrip } from "@/components/story/micro-viz";
 import { Caveat, Definitions } from "@/components/story/page-parts";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { fetchView } from "@/data/fetch-view";
@@ -59,7 +61,7 @@ const METRIC_LABELS: Record<HcmcMetricKey, string> = {
 };
 
 const WARD_COLUMNS: Column<HcmcWard>[] = [
-  { key: "ward_name", label: "Ward / Commune", render: (w) => w.ward_name },
+  { key: "ward_name", label: "Ward / Commune", lang: "vi", render: (w) => w.ward_name },
   { key: "area", label: "Area", numeric: true, render: (w) => w.area_display },
   { key: "any", label: "400 m (any)", numeric: true, render: (w) => w.coverage_any_display },
   {
@@ -81,12 +83,12 @@ const WARD_COLUMNS: Column<HcmcWard>[] = [
 
 const HAND_CHECK_COLUMNS: Column<HcmcHandCheck>[] = [
   { key: "ref", label: "Route", render: (r) => r.route_ref },
-  { key: "corridor", label: "Corridor", render: (r) => r.corridor },
+  { key: "corridor", label: "Corridor", lang: "vi", render: (r) => r.corridor },
   { key: "osm_km", label: "OSM km", numeric: true, render: (r) => `${r.osm_length_km.toFixed(1)} km` },
   { key: "pub_km", label: "Published km", numeric: true, render: (r) => r.published_length_km },
   { key: "osm_hw", label: "OSM interval", render: (r) => `${r.osm_headway_min} min` },
   { key: "pub_hw", label: "Published headway", render: (r) => r.published_headway_min },
-  { key: "note", label: "Spot-check note", render: (r) => r.assessment },
+  { key: "note", label: "Spot-check note", lang: "vi", render: (r) => r.assessment },
 ];
 
 export function HcmcView({ initial }: { initial: HcmcCoverage }) {
@@ -150,9 +152,9 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
     const p = view.provenance;
     const fetched = p.retrieved_utc ? p.retrieved_utc.slice(0, 10) : "pinned";
     return (
-      <p className="font-mono text-xs text-muted-ink" data-testid="provenance">
-        Source: {p.tables.join(", ")} · OSM static snapshot ({p.attribution}, {p.crs}, fetched {fetched}) · not a
-        live service
+      <p className="text-xs text-muted-ink" data-testid="provenance">
+        Source: <span className="mono-id">{p.tables.join(", ")}</span>. OSM static snapshot ({p.attribution},{" "}
+        <span className="mono-id">{p.crs}</span>, fetched {fetched}); not a live service.
       </p>
     );
   }, [view.provenance]);
@@ -165,24 +167,52 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
     return `${count(view.wards.length)} wards/communes in ${view.scope_label}. Lowest 400 m coverage: ${lowest || "none"}.`;
   }, [view]);
 
+  const incompleteRoutesCount = useMemo(
+    () => view.routes.filter((r) => r.osm_incomplete).length,
+    [view.routes],
+  );
+
+  const kpiExtras: Record<string, KpiExtra> = useMemo(
+    () => ({
+      coverage_any: {
+        badge: { label: "% of land area", tone: "neutral" },
+      },
+      coverage_freq: {
+        badge: { label: "OSM interval only", tone: "attention" },
+      },
+      routes_mapped: {
+        badge: { label: "Primary network", tone: "neutral" },
+      },
+      interval_coverage: {
+        badge:
+          view.quality_passed === view.quality_total
+            ? { label: "All checks passed", tone: "pass" }
+            : { label: `${view.quality_total - view.quality_passed} below target`, tone: "fail" },
+        viz: <CheckStrip passed={view.quality_passed} total={view.quality_total} />,
+      },
+    }),
+    [view.quality_passed, view.quality_total],
+  );
+
   return (
-    <div className="mt-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-y border-rule py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-ink">Scope</span>
+    <div className="space-y-5">
+      <FilterBar>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] font-medium text-muted-ink">Scope</span>
           <ToggleGroup
             type="single"
             value={scope}
             onValueChange={handleScopeChange}
             aria-label="Geographic scope"
-            className="gap-1"
+            className="inline-flex flex-wrap rounded-lg border border-rule bg-panel p-0.5"
+            spacing={0}
           >
             {view.scopes.map((s) => (
               <ToggleGroupItem
                 key={s.key}
                 value={s.key}
                 data-testid={`scope-${s.key}`}
-                className="min-h-11 rounded-none border border-rule px-3 text-sm data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:text-paper"
+                className="min-h-10 rounded-md border-0 bg-transparent px-3 text-xs font-medium text-muted-ink shadow-none data-[state=on]:bg-surface data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:shadow-xs sm:text-sm"
               >
                 {s.short}
               </ToggleGroupItem>
@@ -190,74 +220,72 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
           </ToggleGroup>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-ink">Layer</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] font-medium text-muted-ink">Layer</span>
           <ToggleGroup
             type="single"
             value={metric}
             onValueChange={(v) => v && setMetric(v as HcmcMetricKey)}
             aria-label="Coverage metric layer"
-            className="gap-1"
+            className="inline-flex flex-wrap rounded-lg border border-rule bg-panel p-0.5"
+            spacing={0}
           >
             {(Object.keys(METRIC_LABELS) as HcmcMetricKey[]).map((key) => (
               <ToggleGroupItem
                 key={key}
                 value={key}
                 data-testid={`metric-${key}`}
-                className="min-h-11 rounded-none border border-rule px-3 text-sm data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:text-paper"
+                className="min-h-10 rounded-md border-0 bg-transparent px-2.5 text-xs font-medium text-muted-ink shadow-none data-[state=on]:bg-surface data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:shadow-xs sm:px-3"
               >
                 {METRIC_LABELS[key]}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
         </div>
-      </div>
+      </FilterBar>
 
-      {loadError ? (
-        <Caveat>Could not load scope data: {loadError}</Caveat>
-      ) : null}
+      {loadError ? <Caveat>Could not load scope data: {loadError}</Caveat> : null}
 
-      <div className="mt-8">
-        <KpiRow figures={view.figures} />
-      </div>
+      <KpiRow figures={view.figures} extras={kpiExtras} />
 
       <Caveat>
-        <strong>Scope &amp; limitations:</strong> OpenStreetMap is community-maintained open data (
+        <strong>Scope and limitations:</strong> OpenStreetMap is community-maintained open data (
         {view.provenance.attribution}), not an official timetable or live service.{" "}
-        <strong>Pre-merger HCMC (102)</strong> selects strictly the 102 commune-level units formed on pre-merger
-        Ho Chi Minh City territory under Resolution <code>1685/NQ-UBTVQH15</code> (16 Jun 2025;{" "}
-        <strong>Merged city (168)</strong> adds the 36 former Bình Dương and 30 former Bà Rịa–Vũng Tàu units).
-        Because M1 uses natural administrative area (including Cần Giờ mangrove forests and waterways) as its
-        denominator, it measures <strong>% of land area</strong>, not <strong>% of population</strong>. M2 relies
-        solely on OSM <code>interval</code> tags (<code>duration</code> is tagged on 0 % of routes, so there are
-        no actual arrival times). All active HCMC bus stops are buffered before clipping so border-adjacent stops
-        still contribute their 400 m walk-shed inside neighboring wards.
+        <strong>Pre-merger HCMC (102)</strong> selects strictly the 102 commune-level units formed on pre-merger Ho Chi
+        Minh City territory under Resolution <code className="mono-id text-xs">1685/NQ-UBTVQH15</code> (16 Jun 2025;{" "}
+        <strong>Merged city (168)</strong> adds the 36 former <span lang="vi">Bình Dương</span> and 30 former{" "}
+        <span lang="vi">Bà Rịa - Vũng Tàu</span> units). Because M1 uses natural administrative area (including{" "}
+        <span lang="vi">Cần Giờ</span> mangrove forests and waterways) as its denominator, it measures{" "}
+        <strong>% of land area</strong>, not <strong>% of population</strong>. M2 relies solely on OSM{" "}
+        <code className="mono-id text-xs">interval</code> tags (<code className="mono-id text-xs">duration</code> is
+        tagged on 0 % of routes, so there are no actual arrival times). All active HCMC bus stops are buffered before
+        clipping so border-adjacent stops still contribute their 400 m walk-shed inside neighboring wards.
       </Caveat>
 
       <ChartFrame
         title="400 m walk-shed coverage by ward / commune"
         lead={
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-ink">
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-ink">
             <span>
               Zoom or hover a ward to compare overall 400 m access against guaranteed frequent service (≥ 4 buses/h).
             </span>
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-ink">
+            <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-ink">
               <input
                 type="checkbox"
                 checked={showRoutes}
                 onChange={(e) => setShowRoutes(e.target.checked)}
-                className="size-4 accent-ink"
+                className="size-4 accent-brand"
               />
-              Bus routes
+              <span>Bus routes</span>
             </label>
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-ink">
+            <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-ink">
               <input
                 type="checkbox"
                 checked={showStops}
                 onChange={(e) => setShowStops(e.target.checked)}
-                className="size-4 accent-ink"
+                className="size-4 accent-brand"
               />
-              Active stops
+              <span>Active stops</span>
             </label>
           </div>
         }
@@ -265,19 +293,20 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
         provenance={provenanceNode}
         chart={
           mapError ? (
-            <p className="border border-rule bg-panel p-4 text-sm text-muted-ink">
+            <p className="rounded-lg border border-rule bg-paper p-4 text-sm text-muted-ink">
               Could not load map geometry ({mapError}). Use &ldquo;Show as table&rdquo; to inspect every ward.
             </p>
           ) : basemap ? (
             <EChart
               build={buildMap}
-              height={540}
+              height={520}
               renderer="canvas"
+              lang="vi"
               label={`Ho Chi Minh City bus coverage map (${METRIC_LABELS[metric]})`}
             />
           ) : (
-            <div className="flex h-[540px] items-center justify-center border border-rule bg-panel text-sm text-muted-ink">
-              Loading ward boundaries and bus corridors…
+            <div className="flex h-[520px] items-center justify-center rounded-lg border border-rule bg-paper text-sm text-muted-ink">
+              Loading ward boundaries and bus corridors...
             </div>
           )
         }
@@ -291,15 +320,16 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
         }
       />
 
-      <section className="my-12" aria-labelledby="hcmc-gaps">
-        <div className="border-b border-ink pb-2">
-          <h2 id="hcmc-gaps" className="font-display text-2xl md:text-3xl">
-            Priority gaps for network planners (U7)
-          </h2>
-        </div>
-        <p className="mt-3 max-w-prose text-sm text-muted-ink">
-          Lowest-covered wards and communes in <strong>{view.scope_label}</strong>, ordered by 400 m walk-shed
-          share (largest land area first on ties).
+      <section
+        className="rounded-xl border border-rule bg-surface p-4 shadow-xs md:p-5"
+        aria-labelledby="hcmc-gaps"
+      >
+        <h2 id="hcmc-gaps" className="text-[17px] font-semibold text-ink">
+          Priority gaps for network planners (U7)
+        </h2>
+        <p className="mt-1 max-w-prose text-xs text-muted-ink">
+          Lowest-covered wards and communes in <strong>{view.scope_label}</strong>, ordered by 400 m walk-shed share
+          (largest land area first on ties).
         </p>
         <div className="mt-4">
           <DataTable
@@ -311,16 +341,25 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
         </div>
       </section>
 
-      <section className="my-12" aria-labelledby="hcmc-quality">
-        <div className="border-b border-ink pb-2">
-          <h2 id="hcmc-quality" className="font-display text-2xl md:text-3xl">
+      <section
+        className="rounded-xl border border-rule bg-surface p-4 shadow-xs md:p-5"
+        aria-labelledby="hcmc-quality"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="hcmc-quality" className="text-[17px] font-semibold text-ink">
             OpenStreetMap completeness audit (BR7 counterpart)
           </h2>
+          <span className="num rounded-full bg-panel px-2.5 py-0.5 text-xs font-semibold text-ink">
+            {view.quality_passed} of {view.quality_total} passed
+          </span>
         </div>
-        <p className="mt-3 max-w-prose text-sm text-muted-ink">
-          {view.quality_passed} of {view.quality_total} open-data checks passed on{" "}
-          <code>{view.provenance.primary_network}</code>. Missing <code>duration</code> tags explain why derived
-          GTFS keeps stop order and headways without synthetic arrival times.
+        <p className="mt-1 max-w-prose text-xs text-muted-ink">
+          Checked on{" "}
+          <span lang="vi" className="font-semibold text-ink">
+            {view.provenance.primary_network}
+          </span>
+          . Missing <code className="mono-id">duration</code> tags explain why derived GTFS keeps stop order and
+          headways without synthetic arrival times.
         </p>
         <div className="mt-4">
           <DataTable
@@ -334,7 +373,11 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
                 key: "status",
                 label: "Status",
                 render: (q) => (
-                  <span className={q.passed ? "font-medium text-ink" : "font-semibold text-accent-red"}>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      q.passed ? "bg-pass-soft text-pass-text" : "bg-fail-soft text-fail-text"
+                    }`}
+                  >
                     {q.result}
                   </span>
                 ),
@@ -347,24 +390,36 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
       </section>
 
       {view.routes.length > 0 ? (
-        <section className="my-12" aria-labelledby="hcmc-routes">
-          <div className="border-b border-ink pb-2">
-            <h2 id="hcmc-routes" className="font-display text-2xl md:text-3xl">
+        <section
+          className="rounded-xl border border-rule bg-surface p-4 shadow-xs md:p-5"
+          aria-labelledby="hcmc-routes"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="hcmc-routes" className="text-[17px] font-semibold text-ink">
               Mapped HCMC bus routes (OSM-derived)
             </h2>
+            {incompleteRoutesCount > 0 ? (
+              <span className="rounded-full bg-attention-soft px-2.5 py-0.5 text-xs font-semibold text-attention-text">
+                {incompleteRoutesCount} flagged incomplete OSM
+              </span>
+            ) : null}
           </div>
-          <p className="mt-3 max-w-prose text-sm text-muted-ink">
-            {count(view.routes.length)} distinct routes in <code>{view.provenance.primary_network}</code>.{" "}
-            {count(view.routes.filter((r) => r.osm_incomplete).length)} inter-provincial route(s) are flagged{" "}
-            <strong>Incomplete OSM data</strong> instead of displaying unreliable OSM way sums (missing intermediate
-            stops or unverified external detours outside the HCMC bounding box); stop-based coverage is unaffected.
+          <p className="mt-1 max-w-prose text-xs text-muted-ink">
+            {count(view.routes.length)} distinct routes in{" "}
+            <span lang="vi" className="font-semibold text-ink">
+              {view.provenance.primary_network}
+            </span>
+            . {count(incompleteRoutesCount)} inter-provincial route(s) are marked{" "}
+            <strong className="text-ink">Incomplete OSM data</strong> instead of displaying unreliable OSM way sums
+            (missing intermediate stops or unverified external detours outside the HCMC bounding box); stop-based
+            walk-shed coverage is unaffected.
           </p>
           <div className="mt-4">
             <DataTable
               rows={view.routes}
               columns={[
                 { key: "ref", label: "Route", render: (r) => r.route_ref },
-                { key: "name", label: "Corridor", render: (r) => r.route_name },
+                { key: "name", label: "Corridor", lang: "vi", render: (r) => r.route_name },
                 { key: "dirs", label: "Dirs", numeric: true, render: (r) => count(r.directions) },
                 {
                   key: "stops",
@@ -378,7 +433,9 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
                   numeric: true,
                   render: (r) =>
                     r.osm_incomplete ? (
-                      <span className="font-semibold text-warn">{r.length_display}</span>
+                      <span className="inline-flex rounded-full bg-attention-soft px-2.5 py-0.5 text-xs font-semibold text-attention-text">
+                        {r.length_display}
+                      </span>
                     ) : (
                       r.length_display
                     ),
@@ -394,13 +451,14 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
       ) : null}
 
       {view.hand_checks.length > 0 ? (
-        <section className="my-12" aria-labelledby="hcmc-hand-checks">
-          <div className="border-b border-ink pb-2">
-            <h2 id="hcmc-hand-checks" className="font-display text-2xl md:text-3xl">
-              Spot-check against published HCMC routes
-            </h2>
-          </div>
-          <p className="mt-3 max-w-prose text-sm text-muted-ink">
+        <section
+          className="rounded-xl border border-rule bg-surface p-4 shadow-xs md:p-5"
+          aria-labelledby="hcmc-hand-checks"
+        >
+          <h2 id="hcmc-hand-checks" className="text-[17px] font-semibold text-ink">
+            Spot-check against published HCMC routes
+          </h2>
+          <p className="mt-1 max-w-prose text-xs text-muted-ink">
             Five familiar Ho Chi Minh City corridors (including HCMUT campus routes 08, 19 and 50) compared against
             published operator disclosures to quantify OSM accuracy and drift.
           </p>
@@ -415,7 +473,7 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
         </section>
       ) : null}
 
-      <Definitions text={view.definitions} />
+      <Definitions text={view.definitions} lang="vi" />
     </div>
   );
 }

@@ -474,6 +474,8 @@ export const feedHealth = z.object({
               passed: z.boolean(),
               result: z.string(),
               check: z.string(),
+              value: maybeNum,
+              threshold: num,
               measured: z.string(),
               threshold_display: z.string(),
               description: z.string(),

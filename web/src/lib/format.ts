@@ -88,3 +88,22 @@ export function checkThreshold(threshold: number, unit: string): string {
 export function seconds(value: number | null | undefined): string {
   return isMissing(value) ? MISSING : `${grouped(fixed(value, 0))} s`;
 }
+
+/**
+ * Format a GTFS service-day hour so hours past midnight are explicit.
+ * Hours 0..23 render as '00:00'..'23:00'; hours >= 24 render as '00:00 (+1)', '03:00 (+1)', etc.
+ */
+export function serviceHour(hour: number): string {
+  if (hour >= 24) {
+    return `${String(hour - 24).padStart(2, "0")}:00 (+1)`;
+  }
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+/** Compact label for tight chart axes: '00:00', '12:00', '00:00 (+1)'. */
+export function serviceHourShort(hour: number): string {
+  if (hour >= 24) {
+    return `${String(hour - 24).padStart(2, "0")}:00 (+1)`;
+  }
+  return `${String(hour).padStart(2, "0")}:00`;
+}

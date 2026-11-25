@@ -93,11 +93,27 @@ test("the intro plays once per session and never under reduced motion", async ({
   await calm.close();
 });
 
-test("section menus open and lead to their pages", async ({ page }) => {
+test("sidebar navigation leads directly to NYC diagnostic pages and the HCMC case study", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Diagnostics" }).click();
-  await page.getByRole("link", { name: /Stop map/ }).first().click();
+  const sidebar = page.getByRole("navigation", { name: "Site navigation" });
+  await expect(sidebar).toBeVisible();
+  await sidebar.getByRole("link", { name: "Stop map" }).click();
   await expect(page).toHaveURL(/\/diagnostics\/map\/$/);
   await expect(page.getByRole("navigation", { name: "Previous and next page" })).toBeVisible();
+
+  await sidebar.getByRole("link", { name: "HCMC bus coverage" }).click();
+  await expect(page).toHaveURL(/\/case-study\/hcmc\/$/);
+  await expect(page.locator("h1")).toContainText(/Ho Chi Minh City/);
+});
+
+test("mobile navigation drawer opens and leads to its pages", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open navigation menu" }).click();
+  const drawerNav = page.getByRole("dialog").getByRole("navigation", { name: "Site navigation" });
+  await expect(drawerNav).toBeVisible();
+  await drawerNav.getByRole("link", { name: "HCMC bus coverage" }).click();
+  await expect(page).toHaveURL(/\/case-study\/hcmc\/$/);
+  await expect(page.locator("h1")).toContainText(/Ho Chi Minh City/);
 });

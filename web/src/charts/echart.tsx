@@ -17,6 +17,7 @@ export function EChart({
   aspectRatio,
   label,
   renderer = "svg",
+  lang,
   onPointClick,
   onReady,
 }: {
@@ -26,6 +27,8 @@ export function EChart({
   aspectRatio?: string;
   label: string;
   renderer?: "svg" | "canvas";
+  /** Pass "vi" for charts that render Vietnamese labels/tooltips (uses Be Vietnam Pro). */
+  lang?: "vi" | "en";
   /** Called with the clicked data item (the object passed in the series data). */
   onPointClick?: (item: unknown) => void;
   /** Called once with the chart after its first draw (for events and actions beyond a click). */
@@ -34,16 +37,15 @@ export function EChart({
   const container = useRef<HTMLDivElement>(null);
   const chart = useRef<EChartsType | null>(null);
   const latest = useRef(build);
-  // The latest click handler: it may depend on the data shown, which changes with the filters.
   const click = useRef(onPointClick);
   useEffect(() => {
     click.current = onPointClick;
   }, [onPointClick]);
 
   function apply(instance: EChartsType, builder: BuildOption) {
-    const font =
-      getComputedStyle(document.documentElement).getPropertyValue("--font-plex-mono").trim() ||
-      "monospace";
+    const styles = getComputedStyle(document.documentElement);
+    const varName = lang === "vi" ? "--font-be-vietnam" : "--font-atkinson";
+    const font = styles.getPropertyValue(varName).trim() || "sans-serif";
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     instance.setOption(
       {
@@ -62,7 +64,6 @@ export function EChart({
     let resize: ResizeObserver | undefined;
     const element = container.current;
     if (!element) return;
-    // Download and draw the chart only when it is about to scroll into view.
     const visible = new IntersectionObserver(
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
@@ -99,6 +100,13 @@ export function EChart({
   }, [build]);
 
   return (
-    <div ref={container} role="img" aria-label={label} style={{ height, aspectRatio }} className="w-full" />
+    <div
+      ref={container}
+      role="img"
+      aria-label={label}
+      lang={lang}
+      style={{ height, aspectRatio }}
+      className="w-full"
+    />
   );
 }

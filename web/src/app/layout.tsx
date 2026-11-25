@@ -1,35 +1,32 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Be_Vietnam_Pro } from "next/font/google";
 
+import { AppShell } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
-import { SiteHeader } from "@/components/site/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { readMeta } from "@/data/load";
 
 import "./globals.css";
 
-// Self-hosted at build time by next/font: the site makes no font request to Google at runtime.
-// Include the Vietnamese subset so HCMC ward/route diacritics preload cleanly without system fallback.
-const display = Newsreader({
-  subsets: ["latin", "vietnamese"],
-  variable: "--font-newsreader",
-  display: "optional",
+// Self-hosted at build time by next/font: zero external font requests at runtime.
+// Atkinson Hyperlegible Next powers the English dashboard UI; Be Vietnam Pro renders any
+// lang="vi" element cleanly with full Vietnamese diacritics (no cross-font glyph mixing).
+const atkinson = Atkinson_Hyperlegible_Next({
+  subsets: ["latin"],
+  variable: "--font-atkinson",
+  display: "swap",
 });
-const sans = IBM_Plex_Sans({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-sans",
-  display: "optional",
-});
-const mono = IBM_Plex_Mono({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500"],
-  variable: "--font-plex-mono",
-  display: "optional",
+
+const beVietnam = Be_Vietnam_Pro({
+  subsets: ["vietnamese", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-be-vietnam",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
-  title: { default: "Transitometer · was the promised transit service delivered?", template: "%s · Transitometer" },
+  title: { default: "Transitometer: NYC bus and subway reliability", template: "%s | Transitometer" },
   description:
     "Bus and subway reliability in New York, measured from two days of real archived GTFS-Realtime feeds by a Kafka, Spark and Delta Lake pipeline, and checked against an independent reference.",
 };
@@ -37,11 +34,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const meta = readMeta();
   const days = meta.days.map((d) => d.label);
-  const marker = `Archived data · ${days.join(" and ")} · not a live service`;
+  const marker = `Archived data for ${days.join(" and ")} (not a live service)`;
   return (
-    // The intro animation plays once per browser session: this runs before first paint and marks
-    // later page loads as "seen" (the attribute differs from the server HTML on purpose).
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${atkinson.variable} ${beVietnam.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -50,13 +45,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           }}
         />
       </head>
-      <body className="flex min-h-screen flex-col">
-        <TooltipProvider>
-          <SiteHeader marker={marker} />
-          <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 md:px-6">
+      <body className="min-h-screen bg-paper text-ink">
+        <TooltipProvider delayDuration={150}>
+          <AppShell marker={marker} footer={<SiteFooter meta={meta} />}>
             {children}
-          </main>
-          <SiteFooter meta={meta} />
+          </AppShell>
         </TooltipProvider>
       </body>
     </html>

@@ -8,28 +8,27 @@ import { ChartFrame, DataTable } from "@/components/story/chart-frame";
 import { Definitions } from "@/components/story/page-parts";
 import { earlyWarning, type EarlyWarning, type Meta } from "@/data/schemas";
 import type { Initial } from "@/hooks/use-view";
-import { count, decimal, pct } from "@/lib/format";
+import { count, decimal, pct, serviceHour } from "@/lib/format";
 
 type Source = Initial<EarlyWarning>["source"];
 
-/**
- * What the rules would have shown a dispatcher on the held-out day: where and when they warned,
- * how many warnings came true, and example trips. Every number and string comes from the view.
- */
 function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source: Source }) {
   if (!data.available) return null;
   const routes = data.routes ?? [];
   const hours = data.hours ?? [];
   const examples = data.examples ?? [];
   return (
-    <section aria-labelledby="dispatcher" className="mt-14">
-      <h2 id="dispatcher" className="border-b border-ink pb-2 font-display text-2xl md:text-3xl">
-        What a dispatcher would have seen on {data.day_label}
-      </h2>
-      <p className="mt-3 max-w-prose">
-        A replay of the held-out day: at each trip&apos;s decision point the rules either warned or stayed quiet, and
-        the trip&apos;s real outcome shows whether the warning came true.
-      </p>
+    <section aria-labelledby="dispatcher" className="space-y-5">
+      <div className="rounded-xl border border-rule bg-surface p-5 shadow-xs">
+        <h2 id="dispatcher" className="text-lg font-bold tracking-tight text-ink">
+          What a dispatcher would have seen on {data.day_label}
+        </h2>
+        <p className="mt-1.5 max-w-prose text-sm text-muted-ink">
+          A replay of the held-out day: at each trip&apos;s decision point the rules either warned or stayed quiet, and
+          the trip&apos;s real outcome shows whether the warning came true.
+        </p>
+      </div>
+
       <ChartFrame
         title="Routes with the most warnings"
         summary={data.routes_caption ?? ""}
@@ -61,6 +60,7 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
         }
         source={source}
       />
+
       <ChartFrame
         title="Warnings through the day"
         summary={data.hours_caption ?? ""}
@@ -69,7 +69,7 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
             label="Warnings per hour of the service day on the held-out day"
             rows={hours.map((h) => ({
               key: String(h.service_hour),
-              label: h.label,
+              label: serviceHour(h.service_hour),
               share: h.bar,
               display: count(h.warnings),
               detail: `late warnings: ${h.late_display}`,
@@ -82,7 +82,7 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
             rows={hours}
             rowKey={(h) => String(h.service_hour)}
             columns={[
-              { key: "hour", label: "Hour", render: (h) => h.label },
+              { key: "hour", label: "Hour", render: (h) => serviceHour(h.service_hour) },
               { key: "decisions", label: "Trips judged", numeric: true, render: (h) => count(h.decisions) },
               { key: "warnings", label: "Warnings", numeric: true, render: (h) => count(h.warnings) },
               { key: "late", label: "Late warnings", render: (h) => h.late_display },
@@ -92,11 +92,15 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
         }
         source={source}
       />
-      <section aria-labelledby="examples" className="my-10">
-        <h3 id="examples" className="border-b border-ink pb-2 font-display text-xl md:text-2xl">
+
+      <section
+        aria-labelledby="examples"
+        className="overflow-hidden rounded-xl border border-rule bg-surface p-4 shadow-xs md:p-5"
+      >
+        <h3 id="examples" className="text-[17px] font-semibold text-ink">
           Example warnings
         </h3>
-        <p className="mt-3 max-w-prose text-sm text-muted-ink">{data.examples_caption}</p>
+        <p className="mt-1 max-w-prose text-xs text-muted-ink">{data.examples_caption}</p>
         <div className="mt-4">
           <DataTable
             caption="Example trips the late rule warned about"
@@ -121,51 +125,69 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
 function Body({ data, source }: { data: EarlyWarning; source: Source }) {
   const outcomes = Array.from(new Set(data.comparison.map((r) => r.outcome)));
   return (
-    <>
-      <section aria-labelledby="verdicts" className="mt-4">
-        <h2 id="verdicts" className="border-b border-ink pb-2 font-display text-2xl md:text-3xl">
+    <div className="space-y-6">
+      <section aria-labelledby="verdicts" className="space-y-3.5">
+        <h2 id="verdicts" className="text-lg font-bold tracking-tight text-ink">
           Held-out day ({data.held_out_label}): did the rules pass?
         </h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="grid gap-3.5 md:grid-cols-2">
           {data.verdicts.map((v) =>
             v.available ? (
-              <article key={v.outcome} className="border-t-2 border-ink pt-3" data-testid={`verdict-${v.outcome}`}>
-                <h3 className="flex items-center gap-2 text-lg font-semibold">
-                  {v.passed ? (
-                    <CircleCheck className="size-5 text-pass" aria-hidden="true" />
-                  ) : (
-                    <CircleX className="size-5 text-fail" aria-hidden="true" />
-                  )}
-                  {v.title}: <span className={v.passed ? "text-pass" : "text-fail"}>{v.verdict}</span>
-                </h3>
-                <p className="mt-2">
+              <article
+                key={v.outcome}
+                className="flex flex-col gap-2 rounded-xl border border-rule bg-surface p-4 shadow-xs"
+                data-testid={`verdict-${v.outcome}`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-2 text-base font-bold text-ink">
+                    {v.passed ? (
+                      <CircleCheck className="size-5 shrink-0 text-pass" aria-hidden="true" />
+                    ) : (
+                      <CircleX className="size-5 shrink-0 text-fail" aria-hidden="true" />
+                    )}
+                    <span>{v.title}</span>
+                  </h3>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      v.passed ? "bg-pass-soft text-pass-text" : "bg-fail-soft text-fail-text"
+                    }`}
+                  >
+                    {v.verdict}
+                  </span>
+                </div>
+                <p className="text-sm text-ink">
                   F1 <span className="num font-semibold">{v.f1_display}</span> vs baseline{" "}
-                  <span className="num">{v.baseline_f1_display}</span> · precision{" "}
+                  <span className="num">{v.baseline_f1_display}</span>; precision{" "}
                   <span className="num font-semibold">{v.precision_display}</span> (target ≥{" "}
-                  <span className="num">{data.min_precision_display}</span>) · recall{" "}
-                  <span className="num">{v.recall_display}</span>
+                  <span className="num">{data.min_precision_display}</span>); recall{" "}
+                  <span className="num">{v.recall_display}</span>.
                 </p>
-                <p className="mt-1 text-sm text-muted-ink">{v.caption}</p>
+                <p className="text-xs text-muted-ink">{v.caption}</p>
               </article>
             ) : (
-              <p key={v.outcome}>{v.title}: not measured.</p>
+              <p key={v.outcome} className="rounded-xl border border-rule bg-surface p-4 text-sm text-muted-ink">
+                {v.title}: not measured.
+              </p>
             ),
           )}
         </div>
       </section>
+
       <ChartFrame
         title="Rule vs baseline, both days"
         summary="F1 score of each warning rule and of its naive baseline, on the tuning day and on the held-out day (higher is better)."
         chart={
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             {outcomes.map((outcome) => (
               <div key={outcome}>
-                <h3 className="mb-2 font-semibold capitalize">{outcome}</h3>
+                <h3 className="mb-2 text-sm font-semibold capitalize text-ink">{outcome}</h3>
                 <PairedBars
                   label={`F1 of the rule and the baseline, outcome ${outcome}`}
                   legend={["Baseline", "Rule"]}
                   scaleMax={1}
-                  rows={Array.from(new Set(data.comparison.filter((r) => r.outcome === outcome).map((r) => r.day))).map((day) => {
+                  rows={Array.from(
+                    new Set(data.comparison.filter((r) => r.outcome === outcome).map((r) => r.day)),
+                  ).map((day) => {
                     const rows = data.comparison.filter((r) => r.outcome === outcome && r.day === day);
                     const rule = rows.find((r) => r.method === "rule");
                     const base = rows.find((r) => r.method === "baseline");
@@ -201,9 +223,10 @@ function Body({ data, source }: { data: EarlyWarning; source: Source }) {
         }
         source={source}
       />
+
       <Dispatcher data={data.dispatcher} source={source} />
       <Definitions text={data.definitions} />
-    </>
+    </div>
   );
 }
 

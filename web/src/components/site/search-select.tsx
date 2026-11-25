@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 export type Option = { value: string; label: string };
 
-/** A labelled, searchable single choice (route, stop): keyboard type-ahead, screen-reader listbox. */
+/** A labelled, searchable single choice (route, stop): aligned inline on desktop, full width on mobile. */
 export function SearchSelect({
   label,
   options,
@@ -29,8 +29,8 @@ export function SearchSelect({
   const listId = useId();
   const current = options.find((o) => o.value === value);
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <span id={labelId} className="text-xs font-medium uppercase tracking-widest text-muted-ink">
+    <div className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+      <span id={labelId} className="shrink-0 text-[13px] font-medium text-muted-ink">
         {label}
       </span>
       <Popover open={open} onOpenChange={setOpen}>
@@ -42,13 +42,13 @@ export function SearchSelect({
             aria-controls={listId}
             aria-labelledby={labelId}
             data-testid={testId}
-            className="flex min-h-11 w-full min-w-56 max-w-md items-center justify-between gap-2 border border-rule bg-paper px-3 text-left text-sm"
+            className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-rule-strong bg-surface px-3 text-left text-sm font-medium text-ink transition-colors hover:bg-panel/60 sm:min-w-52 sm:max-w-sm"
           >
             <span className="truncate">{current?.label ?? placeholder}</span>
-            <ChevronsUpDown className="size-4 shrink-0 opacity-60" aria-hidden="true" />
+            <ChevronsUpDown className="size-4 shrink-0 text-muted-ink" aria-hidden="true" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-[min(28rem,calc(100vw-2rem))] rounded-none p-0" align="start">
+        <PopoverContent className="w-[min(26rem,calc(100vw-2rem))] rounded-lg border-rule bg-surface p-0" align="start">
           <Command>
             <CommandInput placeholder={placeholder} aria-label={`Search ${label.toLowerCase()}`} />
             <CommandList id={listId}>

@@ -5,50 +5,34 @@ import type { Meta } from "@/data/schemas";
 // The hosted analyst console; NEXT_PUBLIC_STREAMLIT_URL overrides it (for example for a fork).
 export const STREAMLIT_URL = process.env.NEXT_PUBLIC_STREAMLIT_URL || "https://transitometer.streamlit.app/";
 
-/** What runs where, the data licence, and where to look further. */
+/** Compact dashboard footer: snapshot provenance, data licence, and further links. */
 export function SiteFooter({ meta }: { meta: Meta }) {
   const { snapshot } = meta;
   return (
-    <footer className="mt-20 border-t border-ink bg-panel">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm md:grid-cols-3 md:px-6">
-        <section aria-labelledby="where">
-          <h2 id="where" className="text-xs font-medium uppercase tracking-widest text-muted-ink">
-            What runs where
-          </h2>
-          <p className="mt-2">
-            This site is a static snapshot of the Spark pipeline&apos;s validated Gold tables (run {" "}
-            <span className="num">{snapshot.validated_commit.slice(0, 7)}</span>, {snapshot.validated_on}). The
-            streaming pipeline (Kafka, Spark Structured Streaming, Delta Lake) runs locally from the
-            repository; nothing here is computed live.
-          </p>
-        </section>
-        <section aria-labelledby="data">
-          <h2 id="data" className="text-xs font-medium uppercase tracking-widest text-muted-ink">
-            Data
-          </h2>
-          <p className="mt-2">
-            Real archived MTA GTFS-Realtime feeds (via the gtfsrt.io archive) and MTA static timetables,
-            used under the MTA Terms of Use. Not an official MTA product and not endorsed by the MTA.
-          </p>
-        </section>
-        <section aria-labelledby="more">
-          <h2 id="more" className="text-xs font-medium uppercase tracking-widest text-muted-ink">
-            Look further
-          </h2>
-          <ul className="mt-2 space-y-1">
-            <li>
-              <Link href="/data/validation/">How the numbers were checked</Link>
-            </li>
-            <li>
-              <a href={meta.repository}>Source code and pipeline</a>
-            </li>
-            {STREAMLIT_URL ? (
-              <li>
-                <a href={STREAMLIT_URL}>Analyst console (Streamlit, same snapshot)</a>
-              </li>
-            ) : null}
-          </ul>
-        </section>
+    <footer className="mt-auto border-t border-rule bg-surface px-4 py-5 text-xs text-muted-ink md:px-7">
+      <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <p>
+          Static snapshot of validated Spark Gold tables (run{" "}
+          <span className="mono-id font-medium text-ink">{snapshot.validated_commit.slice(0, 7)}</span>,{" "}
+          {snapshot.validated_on}). Not a live service and not an official MTA product.
+        </p>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span>Data: MTA GTFS-RT (gtfsrt.io) and static timetables</span>
+          <Link href="/data/validation/" prefetch={false} className="inline-flex min-h-7 items-center py-0.5">
+            Validation evidence
+          </Link>
+          <Link href="/about/" prefetch={false} className="inline-flex min-h-7 items-center py-0.5">
+            Limits and methodology
+          </Link>
+          {STREAMLIT_URL ? (
+            <a href={STREAMLIT_URL} className="inline-flex min-h-7 items-center py-0.5">
+              Analyst console (Streamlit)
+            </a>
+          ) : null}
+          <a href={meta.repository} className="inline-flex min-h-7 items-center py-0.5">
+            GitHub
+          </a>
+        </p>
       </div>
     </footer>
   );

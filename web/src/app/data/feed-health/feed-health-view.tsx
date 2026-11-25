@@ -1,10 +1,9 @@
 "use client";
 
-import { CircleCheck, CircleX } from "lucide-react";
-
 import { DaySelect, FilterBar } from "@/components/site/filters";
 import { ProvenanceLine } from "@/components/site/provenance-line";
 import { DataTable } from "@/components/story/chart-frame";
+import { CheckStrip, ThresholdBullet } from "@/components/story/micro-viz";
 import { Definitions } from "@/components/story/page-parts";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { FeedHealth, Meta, Source } from "@/data/schemas";
@@ -17,81 +16,166 @@ export function FeedHealthView({ meta, data, source }: { meta: Meta; data: FeedH
   const [state, setState] = useUrlState({ day: days[0], feed: feedKeys[0] }, { day: days, feed: feedKeys });
   const view = data.views[state.day];
   const feed = view.feeds.find((f) => f.feed === state.feed) ?? view.feeds[0];
+  const feedPassed = feed.checks.filter((c) => c.passed).length;
+  const feedFailed = feed.checks.length - feedPassed;
+
   return (
-    <>
+    <div className="space-y-5">
       <FilterBar>
-        <DaySelect days={meta.days.filter((d) => days.includes(d.key))} value={state.day} onChange={(day) => setState({ day })} />
+        <DaySelect
+          days={meta.days.filter((d) => days.includes(d.key))}
+          value={state.day}
+          onChange={(day) => setState({ day })}
+        />
       </FilterBar>
-      <dl className="grid gap-6 md:grid-cols-3">
-        {view.feeds.map((f) => (
-          <div key={f.feed} className="border-t-2 border-ink pt-2" data-testid={`feed-${f.feed}`}>
-            <dt className="text-xs font-medium uppercase tracking-wider text-muted-ink">{f.label}</dt>
-            <dd className="num mt-1 text-3xl md:text-4xl">{f.display}</dd>
-            <dd className="mt-1 text-sm text-muted-ink">{f.help}</dd>
-            <dd className="mt-2 flex items-start gap-1.5 text-sm">
-              {f.failed.length ? (
-                <>
-                  <CircleX className="mt-0.5 size-4 shrink-0 text-fail" aria-hidden="true" />
-                  <span>
-                    <span className="font-semibold text-fail">Failed:</span> {f.failed.join(", ")}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <CircleCheck className="mt-0.5 size-4 shrink-0 text-pass" aria-hidden="true" />
-                  <span className="font-semibold text-pass">All checks passed</span>
-                </>
-              )}
-            </dd>
-          </div>
-        ))}
+
+      {/* 3 Feed cards with discrete pass/fail check blocks */}
+      <dl className="grid gap-3.5 md:grid-cols-3">
+        {view.feeds.map((f) => {
+          const total = f.checks.length;
+          const passed = f.checks.filter((c) => c.passed).length;
+          const failedCount = total - passed;
+          const selected = f.feed === feed.feed;
+          return (
+            <div
+              key={f.feed}
+              className={`flex flex-col gap-2.5 rounded-xl border bg-surface p-4 shadow-xs transition-colors ${
+                selected ? "border-brand ring-1 ring-brand/25" : "border-rule"
+              }`}
+              data-testid={`feed-${f.feed}`}
+            >
+              <dt className="flex items-start justify-between gap-2 text-[13px] font-semibold text-muted-ink">
+                <span>{f.label}</span>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    failedCount > 0 ? "bg-fail-soft text-fail-text" : "bg-pass-soft text-pass-text"
+                  }`}
+                >
+                  {failedCount > 0 ? `${failedCount} failed` : `All ${total} passed`}
+                </span>
+              </dt>
+              <dd className="num text-[28px] font-bold leading-none tracking-tight text-ink">{f.display}</dd>
+              <dd>
+                <CheckStrip passed={passed} total={total} />
+              </dd>
+              <dd className="text-xs leading-relaxed text-muted-ink">
+                {failedCount > 0
+                  ? `${f.help}. Exceeded limit on: ${f.failed.join(", ")}.`
+                  : `${f.help}. Every automated threshold met for this feed.`}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
-      <section aria-labelledby="checks" className="mt-12">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-ink pb-2">
-          <h2 id="checks" className="font-display text-2xl md:text-3xl">
-            Every check, {view.day_label}
-          </h2>
-          <ToggleGroup
-            type="single"
-            value={feed.feed}
-            onValueChange={(v) => v && setState({ feed: v })}
-            aria-label="Feed"
-            variant="outline"
-            spacing={0}
-            className="flex-wrap"
-          >
-            {view.feeds.map((f) => (
-              <ToggleGroupItem key={f.feed} value={f.feed} className="min-h-11 rounded-none px-3 data-[state=on]:bg-ink data-[state=on]:text-paper">
-                {f.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+
+      {/* Check-by-check dashboard card with measured vs limit bullet bars */}
+      <section
+        aria-labelledby="checks"
+        className="overflow-hidden rounded-xl border border-rule bg-surface shadow-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-panel px-4 py-3.5 md:px-5">
+          <div>
+            <h2 id="checks" className="text-[17px] font-semibold text-ink">
+              {feed.label}: check by check ({feedPassed} of {feed.checks.length} passed, {view.day_label})
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-ink">
+              Lower values are better. Dark vertical tick marks the maximum allowed limit for each check.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <ToggleGroup
+              type="single"
+              value={feed.feed}
+              onValueChange={(v) => v && setState({ feed: v })}
+              aria-label="Feed"
+              className="inline-flex flex-wrap rounded-lg border border-rule bg-panel p-0.5"
+              spacing={0}
+            >
+              {view.feeds.map((f) => (
+                <ToggleGroupItem
+                  key={f.feed}
+                  value={f.feed}
+                  className="min-h-10 rounded-md border-0 bg-transparent px-3 text-xs font-medium text-muted-ink shadow-none data-[state=on]:bg-surface data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:shadow-xs"
+                >
+                  {f.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            {feedFailed > 0 ? (
+              <span className="rounded-full bg-fail-soft px-2.5 py-1 text-xs font-semibold text-fail-text">
+                {feedFailed} {feedFailed === 1 ? "check" : "checks"} exceeded limit
+              </span>
+            ) : (
+              <span className="rounded-full bg-pass-soft px-2.5 py-1 text-xs font-semibold text-pass-text">
+                All checks passed
+              </span>
+            )}
+          </div>
         </div>
-        <div className="mt-4">
+
+        <div className="p-4 md:p-5">
           <DataTable
             caption={`Quality checks of ${feed.label}, ${view.day_label}`}
             rows={feed.checks}
             rowKey={(c) => c.metric}
             columns={[
-              { key: "check", label: "Check", render: (c) => c.check },
               {
-                key: "result",
-                label: "Result",
+                key: "check",
+                label: "Check",
                 render: (c) => (
-                  <span className={`font-semibold ${c.passed ? "text-pass" : "text-fail"}`}>{c.result}</span>
+                  <div>
+                    <p className="font-semibold text-ink">{c.check}</p>
+                    <p className="text-xs font-normal text-muted-ink">{c.description}</p>
+                  </div>
                 ),
               },
-              { key: "measured", label: "Measured", numeric: true, render: (c) => c.measured },
-              { key: "threshold", label: "Threshold", numeric: true, render: (c) => c.threshold_display },
-              { key: "what", label: "What it measures", render: (c) => c.description },
+              {
+                key: "result",
+                label: "Status",
+                render: (c) => (
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      c.passed ? "bg-pass-soft text-pass-text" : "bg-fail-soft text-fail-text"
+                    }`}
+                  >
+                    {c.result}
+                  </span>
+                ),
+              },
+              {
+                key: "bar",
+                label: "Measured vs limit (dark tick = limit)",
+                render: (c) => (
+                  <ThresholdBullet
+                    value={c.value}
+                    threshold={c.threshold}
+                    passed={c.passed}
+                    measured={c.measured}
+                    thresholdDisplay={c.threshold_display}
+                  />
+                ),
+              },
+              {
+                key: "measured",
+                label: "Measured",
+                numeric: true,
+                render: (c) => (
+                  <span className={c.passed ? "font-medium text-ink" : "font-bold text-fail-text"}>
+                    {c.measured}
+                  </span>
+                ),
+              },
+              { key: "threshold", label: "Limit", numeric: true, render: (c) => c.threshold_display },
             ]}
           />
         </div>
-        <div className="mt-3">
+
+        <footer className="border-t border-rule bg-paper px-4 py-3 md:px-5">
           <ProvenanceLine source={source} />
-        </div>
+        </footer>
       </section>
+
       <Definitions text={view.definitions} />
-    </>
+    </div>
   );
 }

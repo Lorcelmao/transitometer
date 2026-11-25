@@ -1,20 +1,38 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Clock,
+  Globe,
+  Info,
+  LayoutGrid,
+  ListChecks,
+  Map,
+  MapPin,
+  Menu,
+  ShieldCheck,
+  SlidersHorizontal,
+  TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { NAV, REPOSITORY } from "@/components/site/nav";
-import { PreviewGlyph } from "@/components/story/preview-glyph";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+import { STREAMLIT_URL } from "@/components/site/site-footer";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
+function BrandMark() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="size-5 shrink-0">
+      <path d="M2 14 L8 6 L12 11 L18 4" fill="none" stroke="var(--brand)" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="8" cy="6" r="2.2" fill="var(--surface)" stroke="var(--ink)" strokeWidth="1.5" />
+      <circle cx="12" cy="11" r="2.2" fill="var(--surface)" stroke="var(--ink)" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 function GitHubMark({ className }: { className?: string }) {
   return (
@@ -24,154 +42,205 @@ function GitHubMark({ className }: { className?: string }) {
   );
 }
 
-/** Desktop: one dropdown per section, each page with its description and a sketch of its chart. */
-function DesktopNav({ pathname }: { pathname: string }) {
+const PAGE_ICONS: Record<string, typeof LayoutGrid> = {
+  "on-time": Clock,
+  headways: SlidersHorizontal,
+  "missing-trips": ListChecks,
+  scorecards: BarChart3,
+  stops: MapPin,
+  map: Map,
+  delay: TrendingUp,
+  "early-warning": AlertTriangle,
+  "feed-health": Activity,
+  validation: ShieldCheck,
+  hcmc: Globe,
+};
+
+function SidebarLinks({ pathname, inSheet = false }: { pathname: string; inSheet?: boolean }) {
+  const wrap = (node: ReactNode) => (inSheet ? <SheetClose asChild>{node}</SheetClose> : node);
+  const itemClass = (active: boolean) =>
+    `flex min-h-9 items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13.5px] no-underline transition-colors ${
+      active
+        ? "bg-brand-soft font-semibold text-brand"
+        : "font-medium text-muted-ink hover:bg-panel hover:text-ink"
+    }`;
+
   return (
-    <NavigationMenu viewport={false} className="hidden lg:flex">
-      <NavigationMenuList className="gap-1">
-        {NAV.map((group) => {
-          const active = group.links.some((l) => l.href === pathname);
-          if (group.links.length === 1) {
-            const only = group.links[0];
-            return (
-              <NavigationMenuItem key={group.section}>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href={only.href}
-                    aria-current={active ? "page" : undefined}
-                    className={`inline-flex h-11 items-center px-3 text-sm text-ink no-underline hover:bg-panel ${active ? "font-semibold underline decoration-accent-red decoration-2 underline-offset-[6px]" : ""}`}
-                  >
-                    {group.section}
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            );
-          }
-          return (
-            <NavigationMenuItem key={group.section}>
-              <NavigationMenuTrigger
-                className={`h-11 rounded-none bg-transparent px-3 text-sm hover:bg-panel data-[state=open]:bg-panel ${active ? "font-semibold underline decoration-accent-red decoration-2 underline-offset-[6px]" : ""}`}
+    <nav aria-label="Site navigation" className="flex flex-1 flex-col gap-4 px-2.5 py-3">
+      <ul className="space-y-0.5">
+        <li>
+          {wrap(
+            <Link
+              href="/"
+              prefetch={false}
+              aria-current={pathname === "/" ? "page" : undefined}
+              className={itemClass(pathname === "/")}
+            >
+              <LayoutGrid className="size-4 shrink-0" aria-hidden="true" />
+              <span>Overview</span>
+            </Link>,
+          )}
+        </li>
+      </ul>
+
+      {NAV.map((group) => (
+        <div key={group.section}>
+          <p className="mb-1 px-2.5 text-xs font-semibold text-muted-ink">{group.section}</p>
+          <ul className="space-y-0.5">
+            {group.links.map((link) => {
+              const Icon = PAGE_ICONS[link.page] ?? LayoutGrid;
+              const active = pathname === link.href;
+              return (
+                <li key={link.href}>
+                  {wrap(
+                    <Link
+                      href={link.href}
+                      prefetch={false}
+                      aria-current={active ? "page" : undefined}
+                      className={itemClass(active)}
+                    >
+                      <Icon className="size-4 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{link.label}</span>
+                    </Link>,
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+
+      <div>
+        <p className="mb-1 px-2.5 text-xs font-semibold text-muted-ink">Project</p>
+        <ul className="space-y-0.5">
+          <li>
+            {wrap(
+              <Link
+                href="/about/"
+                prefetch={false}
+                aria-current={pathname === "/about/" ? "page" : undefined}
+                className={itemClass(pathname === "/about/")}
               >
-                {group.section}
-              </NavigationMenuTrigger>
-              <NavigationMenuContent className="rounded-none border border-rule bg-paper p-2 shadow-none">
-                <ul className="grid w-[30rem] gap-1">
-                  {group.links.map((link) => (
-                    <li key={link.href}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={link.href}
-                          aria-current={pathname === link.href ? "page" : undefined}
-                          className="flex flex-row items-center gap-3 rounded-none p-2 no-underline hover:bg-panel focus:bg-panel"
-                        >
-                          <PreviewGlyph kind={link.preview} className="size-auto h-9 w-14 shrink-0 border border-rule bg-paper" />
-                          <span>
-                            <span className={`block text-sm text-ink ${pathname === link.href ? "font-semibold" : "font-medium"}`}>
-                              {link.label}
-                            </span>
-                            <span className="block text-xs text-muted-ink">{link.blurb}</span>
-                          </span>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          );
-        })}
-        <NavigationMenuItem>
-          <NavigationMenuLink asChild>
-            <Link href="/about/" className="inline-flex h-11 items-center px-3 text-sm text-ink no-underline hover:bg-panel">
-              About
-            </Link>
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+                <Info className="size-4 shrink-0" aria-hidden="true" />
+                <span>About project</span>
+              </Link>,
+            )}
+          </li>
+        </ul>
+      </div>
+    </nav>
   );
 }
 
-function MobileNav({ pathname }: { pathname: string }) {
+function SidebarFooter() {
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <button type="button" className="flex min-h-11 min-w-11 items-center justify-center lg:hidden" aria-label="Open the site menu">
-          <Menu aria-hidden="true" />
-        </button>
-      </SheetTrigger>
-      <SheetContent side="right" className="overflow-y-auto bg-paper">
-        <SheetHeader>
-          <SheetTitle className="font-display text-xl">Transitometer</SheetTitle>
-        </SheetHeader>
-        <nav aria-label="Site" className="flex flex-col gap-6 px-4 pb-8">
-          <SheetClose asChild>
-            <Link href="/" className="text-sm font-medium text-ink no-underline">
-              Overview
-            </Link>
-          </SheetClose>
-          {NAV.map((group) => (
-            <div key={group.section}>
-              <p className="text-[11px] font-medium uppercase tracking-widest text-muted-ink">{group.section}</p>
-              <ul className="mt-1">
-                {group.links.map((link) => (
-                  <li key={link.href}>
-                    <SheetClose asChild>
-                      <Link
-                        href={link.href}
-                        aria-current={pathname === link.href ? "page" : undefined}
-                        className={`block py-2.5 text-sm no-underline ${pathname === link.href ? "font-semibold text-ink underline decoration-accent-red decoration-2 underline-offset-4" : "text-ink"}`}
-                      >
-                        {link.label}
-                      </Link>
-                    </SheetClose>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-          <SheetClose asChild>
-            <Link href="/about/" className="text-sm text-ink no-underline">
-              About this project
-            </Link>
-          </SheetClose>
-          <a href={REPOSITORY} className="inline-flex items-center gap-2 text-sm">
-            <GitHubMark className="size-4" /> Source on GitHub
-          </a>
-        </nav>
-      </SheetContent>
-    </Sheet>
+    <div className="space-y-1.5 border-t border-rule px-4 py-3 text-xs text-muted-ink">
+      <p className="leading-snug">Public scorecard for riders and reviewers (static snapshot).</p>
+      {STREAMLIT_URL ? (
+        <a href={STREAMLIT_URL} className="flex min-h-8 items-center gap-2 font-medium text-brand no-underline hover:underline">
+          <BarChart3 className="size-3.5 shrink-0" aria-hidden="true" />
+          <span>Analyst console (Streamlit)</span>
+        </a>
+      ) : null}
+      <a href={REPOSITORY} className="flex min-h-8 items-center gap-2 font-medium text-brand no-underline hover:underline">
+        <GitHubMark className="size-3.5 shrink-0" />
+        <span>Source code on GitHub</span>
+      </a>
+    </div>
   );
 }
 
-export function SiteHeader({ marker }: { marker: string }) {
+export function AppShell({
+  marker,
+  footer,
+  children,
+}: {
+  marker: string;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
+
   return (
-    <header className="z-40 border-b border-ink bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85 lg:sticky lg:top-0">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:bg-paper focus:px-3 focus:py-2">
+    <div className="flex min-h-screen w-full">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border-2 focus:border-brand focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink focus:no-underline"
+      >
         Skip to content
       </a>
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-1.5 md:px-6">
-        <Link href="/" className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight text-ink no-underline">
-          <svg viewBox="0 0 20 20" aria-hidden="true" className="size-5">
-            <path d="M2 14 L8 6 L12 11 L18 4" fill="none" stroke="var(--link)" strokeWidth="2" />
-            <circle cx="8" cy="6" r="2.2" fill="var(--paper)" stroke="var(--ink)" strokeWidth="1.5" />
-            <circle cx="12" cy="11" r="2.2" fill="var(--paper)" stroke="var(--ink)" strokeWidth="1.5" />
-          </svg>
-          Transitometer
+
+      {/* Desktop B1 persistent left sidebar */}
+      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-rule bg-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:overflow-y-auto">
+        <Link
+          href="/"
+          prefetch={false}
+          className="flex min-h-[58px] items-center gap-2.5 border-b border-rule px-4 text-[17px] font-bold tracking-tight text-ink no-underline"
+        >
+          <BrandMark />
+          <span>Transitometer</span>
         </Link>
-        <DesktopNav pathname={pathname} />
-        <div className="flex items-center gap-1">
-          <a href={REPOSITORY} className="hidden min-h-11 items-center gap-2 px-2 text-sm text-ink no-underline hover:underline md:inline-flex" aria-label="Source code on GitHub">
-            <GitHubMark className="size-4" />
-            <span className="hidden xl:inline">GitHub</span>
-          </a>
-          <MobileNav pathname={pathname} />
+        <SidebarLinks pathname={pathname} />
+        <SidebarFooter />
+      </aside>
+
+      {/* Main content column */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile header + Sheet navigation drawer */}
+        <header className="sticky top-0 z-40 flex min-h-14 items-center justify-between border-b border-rule bg-surface px-4 lg:hidden">
+          <Link href="/" prefetch={false} className="flex items-center gap-2 text-base font-bold tracking-tight text-ink no-underline">
+            <BrandMark />
+            <span>Transitometer</span>
+          </Link>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-rule bg-surface text-ink hover:bg-panel"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="size-5" aria-hidden="true" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex w-[272px] flex-col overflow-y-auto bg-surface p-0">
+              <SheetHeader className="border-b border-rule px-4 py-3.5 text-left">
+                <SheetTitle className="flex items-center gap-2 text-base font-bold tracking-tight text-ink">
+                  <BrandMark />
+                  <span>Transitometer</span>
+                </SheetTitle>
+              </SheetHeader>
+              <SidebarLinks pathname={pathname} inSheet />
+              <SidebarFooter />
+            </SheetContent>
+          </Sheet>
+        </header>
+
+        {/* Archived-data banner (always visible, zero middots) */}
+        <div className="border-b border-rule bg-surface/90 px-4 py-2 md:px-7">
+          <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-2">
+            <p
+              className="inline-flex items-center gap-2 rounded-full border border-rule bg-panel px-3 py-1 text-xs font-medium text-muted-ink"
+              data-testid="archived-marker"
+            >
+              <Clock className="size-3.5 shrink-0 text-brand" aria-hidden="true" />
+              <span>{marker}</span>
+            </p>
+            <div className="hidden items-center gap-4 text-xs text-muted-ink sm:flex">
+              <Link href="/data/validation/" prefetch={false} className="font-medium text-brand no-underline hover:underline">
+                Validation evidence
+              </Link>
+              <Link href="/case-study/hcmc/" prefetch={false} className="font-medium text-brand no-underline hover:underline">
+                HCMC case study
+              </Link>
+            </div>
+          </div>
         </div>
+
+        <main id="main" className="mx-auto w-full max-w-[1180px] flex-1 px-4 py-6 md:px-7 md:py-7">
+          {children}
+        </main>
+        {footer}
       </div>
-      <p className="border-t border-rule px-4 py-1 text-center font-mono text-[11px] text-muted-ink" data-testid="archived-marker">
-        {marker}
-      </p>
-    </header>
+    </div>
   );
 }

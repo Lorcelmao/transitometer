@@ -11,7 +11,13 @@ import { count, seconds } from "@/lib/format";
 
 function SegmentList({ mode, initial }: { mode: string; initial: Initial<Segments> }) {
   const { data, source, pending } = useView<Segments>(`delay/${mode}-segments.json`, segmentsSchema, initial);
-  if (!data.segments.length) return <p className="my-10">No segment was observed often enough to be ranked.</p>;
+  if (!data.segments.length) {
+    return (
+      <p className="my-6 rounded-xl border border-rule bg-surface p-5 text-sm text-muted-ink">
+        No segment was observed often enough to be ranked.
+      </p>
+    );
+  }
   const scale = Math.max(...data.segments.map((s) => Math.max(s.sched_travel_s, s.p50_travel_s)));
   return (
     <div className={pending ? "opacity-60" : ""}>
@@ -26,7 +32,7 @@ function SegmentList({ mode, initial }: { mode: string; initial: Initial<Segment
             rows={data.segments.map((s) => ({
               key: `${s.route_id}-${s.from_stop}-${s.to_stop}-${s.service_hour}`,
               label: s.segment,
-              note: `typically ${seconds(s.median_excess_s)} over the timetable · ${count(s.segments)} observations`,
+              note: `Typically ${seconds(s.median_excess_s)} over the timetable (${count(s.segments)} observations)`,
               a: s.sched_travel_s,
               aDisplay: seconds(s.sched_travel_s),
               b: s.p50_travel_s,
@@ -56,26 +62,42 @@ function SegmentList({ mode, initial }: { mode: string; initial: Initial<Segment
 }
 
 function Body({ data, mode, segments }: { data: Delay; mode: string; segments: Initial<Segments> }) {
-  if (!data.summary) return <p className="my-10">No trips were observed on this day.</p>;
+  if (!data.summary) {
+    return (
+      <p className="my-6 rounded-xl border border-rule bg-surface p-5 text-sm text-muted-ink">
+        No trips were observed on this day.
+      </p>
+    );
+  }
   const shown = Object.fromEntries(data.figures.map((f) => [f.key, f.display]));
   return (
-    <>
-      <p className="max-w-3xl font-display text-2xl leading-snug md:text-3xl" data-testid="headline">
-        A typical trip reached its first observed stop <span className="num">{shown.inherited}</span> late and
-        lost another <span className="num">{shown.gained}</span> along the way, finishing{" "}
-        <span className="num">{shown.final}</span> late.
+    <div className="space-y-5">
+      <p
+        className="rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink"
+        data-testid="headline"
+      >
+        <strong className="font-semibold">Delay split:</strong> A typical trip reached its first observed stop{" "}
+        <span className="num font-semibold">{shown.inherited}</span> late and lost another{" "}
+        <span className="num font-semibold">{shown.gained}</span> along the way, finishing{" "}
+        <span className="num font-semibold">{shown.final}</span> late.
       </p>
-      <div className="mt-8">
-        <KpiRow figures={data.figures} size="md" />
-      </div>
-      {data.caption ? <p className="mt-4 text-sm text-muted-ink">{data.caption}</p> : null}
+      <KpiRow figures={data.figures} size="md" />
+      {data.caption ? <p className="text-xs text-muted-ink">{data.caption}</p> : null}
       <SegmentList mode={mode} initial={segments} />
       <Definitions text={data.definitions} />
-    </>
+    </div>
   );
 }
 
-export function DelayView({ meta, initial, segments }: { meta: Meta; initial: Initial<Delay>; segments: Initial<Segments> }) {
+export function DelayView({
+  meta,
+  initial,
+  segments,
+}: {
+  meta: Meta;
+  initial: Initial<Delay>;
+  segments: Initial<Segments>;
+}) {
   return (
     <ModeDayView<Delay>
       meta={meta}
