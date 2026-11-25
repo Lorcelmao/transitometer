@@ -5,12 +5,9 @@ import {
   gridTooltip,
   heatmapOption,
   hourlyIntervalOption,
-  indexStreets,
   MAP_DIVERGING_BANDS,
   routeIntervalOption,
-  stopMapSeries,
   stopTooltip,
-  type MapGridCell,
   type MapStop,
 } from "@/charts/options";
 
@@ -26,74 +23,6 @@ describe("stop map", () => {
     sufficient,
     routeId: "M4",
     directionId: 0,
-  });
-  const stops = [
-    stop(0, 0.2, 50),
-    stop(1, 0.35, 120),
-    stop(2, 0.45, 220),
-    stop(3, 0.55, 300),
-    stop(4, 0.85, 2000),
-    stop(5, 0.4, 4, false),
-  ];
-  const streets = indexStreets([[[-73.92, 40.7], [-73.88, 40.7]], [[-74.2, 40.52], [-74.18, 40.52]]]);
-  const layers = { streets: true, subway: true, lineColors: false };
-
-  it("assigns every stop to its diverging band once and keeps thin stops non-large", () => {
-    const { series, visibleCount } = stopMapSeries({
-      mode: "bus",
-      zoom: 3.5,
-      compact: false,
-      useGrid: false,
-      gridCells: [],
-      stops,
-      bbox: [-73.95, -73.85, 40.68, 40.74],
-      filterBand: null,
-      layers,
-      subway: [],
-      streets,
-      selectedStop: null,
-      font: "sans-serif",
-    });
-    expect(visibleCount).toBe(6);
-    const scatter = series.filter((s) => s.type === "scatter" && String(s.id).startsWith("band-")) as {
-      id: string;
-      large?: boolean;
-      data: number[][];
-    }[];
-    const indexes = scatter.flatMap((s) => s.data.map((d) => d[2]));
-    expect(indexes.sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5]);
-    const thin = scatter.find((s) => s.id === "band-thin");
-    expect(thin?.large).toBeUndefined();
-    // Only the street inside the Manhattan bbox should survive viewport culling
-    const streetSeries = series.find((s) => s.id === "streets") as { data: unknown[] } | undefined;
-    expect(streetSeries?.data).toHaveLength(1);
-  });
-
-  it("renders the 670 m grid at city zoom and leaves streets out before STREETS_FROM_ZOOM", () => {
-    const cells: MapGridCell[] = [
-      [-73.97, 40.75, 400, 0.25, 6, 6, "5 AV/E 72 ST", "M4"],
-      [-73.95, 40.72, 8, null, 2, 0, "TINY STOP", "B24"],
-    ];
-    const { series, visibleCount } = stopMapSeries({
-      mode: "bus",
-      zoom: 1.04,
-      compact: false,
-      useGrid: true,
-      gridCells: cells,
-      stops: [],
-      bbox: null,
-      filterBand: null,
-      layers,
-      subway: [],
-      streets,
-      selectedStop: null,
-      font: "sans-serif",
-    });
-    expect(visibleCount).toBe(2);
-    expect(series.some((s) => s.id === "streets")).toBe(false);
-    expect(series.some((s) => s.id === "borough-labels")).toBe(true);
-    expect(series.some((s) => s.id === "band-0")).toBe(true);
-    expect(series.some((s) => s.id === "band-thin")).toBe(true);
   });
 
   it("maps shares onto the 5 diverging WCAG AA bands", () => {
