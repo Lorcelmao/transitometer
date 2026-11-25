@@ -13,6 +13,7 @@
       "key": "final"
     }
   ],
+  "delay/bus/20260922/takeaway": "A typical trip reached its first observed stop 3.3 min late and lost another 3.4 min along the way, finishing 6.7 min late.",
   "delay/bus/20260923": [
     {
       "display": "3.0 min",
@@ -27,6 +28,7 @@
       "key": "final"
     }
   ],
+  "delay/bus/20260923/takeaway": "A typical trip reached its first observed stop 3.0 min late and lost another 2.9 min along the way, finishing 5.9 min late.",
   "delay/subway/20260922": [
     {
       "display": "0.0 min",
@@ -41,6 +43,7 @@
       "key": "final"
     }
   ],
+  "delay/subway/20260922/takeaway": "A typical trip reached its first observed stop 0.0 min late and lost another 1.5 min along the way, finishing 1.5 min late.",
   "delay/subway/20260923": [
     {
       "display": "0.2 min",
@@ -55,6 +58,7 @@
       "key": "final"
     }
   ],
+  "delay/subway/20260923/takeaway": "A typical trip reached its first observed stop 0.2 min late and lost another 1.8 min along the way, finishing 1.9 min late.",
   "early-warning/bus": {
     "bunched": "passed",
     "late": "passed"
@@ -89,36 +93,44 @@
   },
   "hcmc/core_hcmc": [
     {
+      "badge": "% of land area",
       "display": "27.6 %",
       "key": "coverage_any"
     },
     {
+      "badge": "OSM interval only",
       "display": "20.5 %",
       "key": "coverage_freq"
     },
     {
+      "badge": "Primary network",
       "display": "171",
       "key": "routes_mapped"
     },
     {
+      "badge": "1 below target",
       "display": "93.1 %",
       "key": "interval_coverage"
     }
   ],
   "hcmc/merged_city_all": [
     {
+      "badge": "% of land area",
       "display": "11.1 %",
       "key": "coverage_any"
     },
     {
+      "badge": "OSM interval only",
       "display": "6.8 %",
       "key": "coverage_freq"
     },
     {
+      "badge": "Primary network",
       "display": "171",
       "key": "routes_mapped"
     },
     {
+      "badge": "1 below target",
       "display": "93.1 %",
       "key": "interval_coverage"
     }
@@ -129,88 +141,108 @@
       "key": "headways"
     },
     {
+      "badge": "On rhythm",
       "display": "30.6 %",
       "key": "regular"
     },
     {
+      "badge": "Watch",
       "display": "10.2 %",
       "key": "bunched"
     },
     {
+      "badge": "Watch",
       "display": "11.8 %",
       "key": "gaps"
     },
     {
+      "badge": "Off rhythm",
       "display": "47.3 %",
       "key": "irregular"
     }
   ],
+  "headways/bus/20260922/takeaway": "30.6 % of 1,376,197 observed headways kept to the timetable, while 10.2 % bunched together and 11.8 % left long gaps.",
   "headways/bus/20260923": [
     {
       "display": "1,421,778",
       "key": "headways"
     },
     {
+      "badge": "On rhythm",
       "display": "30.7 %",
       "key": "regular"
     },
     {
+      "badge": "Watch",
       "display": "10.4 %",
       "key": "bunched"
     },
     {
+      "badge": "Watch",
       "display": "11.0 %",
       "key": "gaps"
     },
     {
+      "badge": "Off rhythm",
       "display": "47.9 %",
       "key": "irregular"
     }
   ],
+  "headways/bus/20260923/takeaway": "30.7 % of 1,421,778 observed headways kept to the timetable, while 10.4 % bunched together and 11.0 % left long gaps.",
   "headways/subway/20260922": [
     {
       "display": "81,035",
       "key": "headways"
     },
     {
+      "badge": "On rhythm",
       "display": "45.7 %",
       "key": "regular"
     },
     {
+      "badge": "Low",
       "display": "0.8 %",
       "key": "bunched"
     },
     {
+      "badge": "Watch",
       "display": "5.8 %",
       "key": "gaps"
     },
     {
+      "badge": "Off rhythm",
       "display": "47.7 %",
       "key": "irregular"
     }
   ],
+  "headways/subway/20260922/takeaway": "45.7 % of 81,035 observed headways kept to the timetable, while 0.8 % bunched together and 5.8 % left long gaps.",
   "headways/subway/20260923": [
     {
       "display": "77,920",
       "key": "headways"
     },
     {
+      "badge": "On rhythm",
       "display": "44.5 %",
       "key": "regular"
     },
     {
+      "badge": "Low",
       "display": "0.5 %",
       "key": "bunched"
     },
     {
+      "badge": "Watch",
       "display": "6.1 %",
       "key": "gaps"
     },
     {
+      "badge": "Off rhythm",
       "display": "48.9 %",
       "key": "irregular"
     }
   ],
+  "headways/subway/20260923/takeaway": "44.5 % of 77,920 observed headways kept to the timetable, while 0.5 % bunched together and 6.1 % left long gaps.",
   "map/bus": {
     "display": "0.0 %",
     "located": "12451",
@@ -227,128 +259,160 @@
       "key": "scheduled"
     },
     {
+      "badge": "Check feed",
       "display": "6.7 %",
       "key": "not_delivered"
     },
     {
+      "badge": "Excluded",
       "display": "0",
       "key": "unknown"
     }
   ],
+  "missing-trips/bus/20260922/takeaway": "6.7 % of 55,159 observable scheduled trips were not seen running (1,367 never reported, 2,311 announced without moving).",
   "missing-trips/bus/20260923": [
     {
       "display": "55,159",
       "key": "scheduled"
     },
     {
+      "badge": "Check feed",
       "display": "5.6 %",
       "key": "not_delivered"
     },
     {
+      "badge": "Excluded",
       "display": "0",
       "key": "unknown"
     }
   ],
+  "missing-trips/bus/20260923/takeaway": "5.6 % of 55,159 observable scheduled trips were not seen running (1,331 never reported, 1,741 announced without moving).",
   "missing-trips/subway/20260922": [
     {
       "display": "3,379",
       "key": "scheduled"
     },
     {
+      "badge": "Elevated",
       "display": "10.2 %",
       "key": "not_delivered"
     },
     {
+      "badge": "Excluded",
       "display": "0",
       "key": "unknown"
     }
   ],
+  "missing-trips/subway/20260922/takeaway": "10.2 % of 3,379 observable scheduled trips were not seen running (116 never reported, 228 announced without moving); read with care because 10.9 % of real-time trips had unmatched IDs.",
   "missing-trips/subway/20260923": [
     {
       "display": "3,379",
       "key": "scheduled"
     },
     {
+      "badge": "Elevated",
       "display": "12.4 %",
       "key": "not_delivered"
     },
     {
+      "badge": "Excluded",
       "display": "0",
       "key": "unknown"
     }
   ],
+  "missing-trips/subway/20260923/takeaway": "12.4 % of 3,379 observable scheduled trips were not seen running (146 never reported, 272 announced without moving); read with care because 11.6 % of real-time trips had unmatched IDs.",
   "overview/bus/20260922": [
     {
+      "badge": "Below 50 %",
       "display": "47.4 %",
       "key": "on_time"
     },
     {
+      "badge": "Watch",
       "display": "10.2 %",
       "key": "bunched"
     },
     {
+      "badge": "Check feed",
       "display": "6.7 %",
       "key": "not_delivered"
     },
     {
+      "badge": "1 failed",
       "display": "87.5 / 100",
       "key": "feed_score"
     }
   ],
+  "overview/bus/20260922/takeaway": "Fewer than half of bus arrivals kept to schedule, bunching ran more than ten times higher than subway, and 1 feed quality check exceeded its limit.",
   "overview/bus/20260923": [
     {
+      "badge": "Below 50 %",
       "display": "46.9 %",
       "key": "on_time"
     },
     {
+      "badge": "Watch",
       "display": "10.4 %",
       "key": "bunched"
     },
     {
+      "badge": "Check feed",
       "display": "5.6 %",
       "key": "not_delivered"
     },
     {
+      "badge": "1 failed",
       "display": "87.5 / 100",
       "key": "feed_score"
     }
   ],
+  "overview/bus/20260923/takeaway": "Fewer than half of bus arrivals kept to schedule, bunching ran more than ten times higher than subway, and 1 feed quality check exceeded its limit.",
   "overview/subway/20260922": [
     {
+      "badge": "Higher on-time",
       "display": "67.5 %",
       "key": "on_time"
     },
     {
+      "badge": "Low",
       "display": "0.8 %",
       "key": "bunched"
     },
     {
+      "badge": "Elevated",
       "display": "10.2 %",
       "key": "not_delivered"
     },
     {
+      "badge": "3 failed",
       "display": "62.5 / 100",
       "key": "feed_score"
     }
   ],
+  "overview/subway/20260922/takeaway": "Roughly two-thirds of subway arrivals kept to schedule with low bunching, but 3 feed quality checks failed and warrant caution when reading missing trips.",
   "overview/subway/20260923": [
     {
+      "badge": "Higher on-time",
       "display": "69.0 %",
       "key": "on_time"
     },
     {
+      "badge": "Low",
       "display": "0.5 %",
       "key": "bunched"
     },
     {
+      "badge": "Elevated",
       "display": "12.4 %",
       "key": "not_delivered"
     },
     {
+      "badge": "3 failed",
       "display": "62.5 / 100",
       "key": "feed_score"
     }
   ],
+  "overview/subway/20260923/takeaway": "Roughly two-thirds of subway arrivals kept to schedule with low bunching, but 3 feed quality checks failed and warrant caution when reading missing trips.",
   "pipeline": {
     "archive_rows": "607,076,700",
     "gold": "23 / 23",
@@ -356,7 +420,7 @@
     "messages": "52,756,838",
     "silver": "4 / 4",
     "stop_events": "2,955,606",
-    "tests": "308 / 308"
+    "tests": "315 / 315"
   },
   "scorecards/bus": {
     "least": "QM42",
@@ -399,6 +463,6 @@
   "validation": {
     "archive_rows": "607,076,700",
     "parity": "Silver 4 / 4, Gold 23 / 23",
-    "tests": "308 / 308"
+    "tests": "315 / 315"
   }
 }
