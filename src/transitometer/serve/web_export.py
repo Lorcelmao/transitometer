@@ -16,6 +16,7 @@ import json
 import math
 import re
 import shutil
+import statistics
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -23,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from transitometer.serve import hcmc_views, kpis, snapshot, views
-from transitometer.serve.format import day_label
+from transitometer.serve.format import day_label, pct
 
 SCHEMA = "transitometer.web/1"
 WEB_DATA = kpis.REPO / "web" / "public" / "data"
@@ -206,6 +207,26 @@ MAP_COLUMNS = (
 )
 
 
+MAP_CELL_LAT = 0.006  # ~670 m grid cell matching overview hero_map
+MAP_CELL_LON = 0.008
+MAP_TILE_BOUNDS = (-74.26, -73.69, 40.49, 40.94)  # (min_lon, max_lon, min_lat, max_lat)
+MAP_TILE_GRID = 3
+MAP_WORST_TABLE = 50
+MAP_BAND_LIMITS = (0.30, 0.40, 0.50, 0.65)
+
+
+def _map_band_index(share: float) -> int:
+    for idx, limit in enumerate(MAP_BAND_LIMITS):
+        if share < limit:
+            return idx
+    return len(MAP_BAND_LIMITS)
+
+
+def _strip_stop_id(label: str, stop_id: str) -> str:
+    suffix = f" ({stop_id})"
+    return label[: -len(suffix)] if label.endswith(suffix) else label
+
+
 def _compact_map(view: dict[str, Any]) -> dict[str, Any]:
     """views.stop_map for the site, column-oriented (about 20,000 stops per mode), same order."""
     return {
@@ -216,6 +237,127 @@ def _compact_map(view: dict[str, Any]) -> dict[str, Any]:
         "min_events": view["min_events"],
         "summary": view["summary"],
         "definitions": view["definitions"],
+    }
+
+
+def _map_tiles(compact_stops: list[list[Any]]) -> dict[str, list[list[Any]]]:
+    """Partition compact stop rows into a deterministic 3x3 NYC spatial grid."""
+    min_lon, max_lon, min_lat, max_lat = MAP_TILE_BOUNDS
+    lat_i = MAP_COLUMNS.index("lat")
+    lon_i = MAP_COLUMNS.index("lon")
+    buckets: dict[str, list[list[Any]]] = {}
+    lon_span = max_lon - min_lon
+    lat_span = max_lat - min_lat
+    for row in compact_stops:
+        lon = float(row[lon_i])
+        lat = float(row[lat_i])
+        cx = min(MAP_TILE_GRID - 1, max(0, int((lon - min_lon) / lon_span * MAP_TILE_GRID)))
+        cy = min(MAP_TILE_GRID - 1, max(0, int((lat - min_lat) / lat_span * MAP_TILE_GRID)))
+        buckets.setdefault(f"{cx}-{cy}", []).append(row)
+    return dict(sorted(buckets.items()))
+
+
+def _compact_map_grid(
+    grp: str, view: dict[str, Any], compact: dict[str, Any], tiles: dict[str, list[list[Any]]]
+) -> dict[str, Any]:
+    """Lightweight payload for /diagnostics/map/: summary stats, 670 m grid, top-50 worst."""
+    stops: list[dict[str, Any]] = view["stops"]
+    scored_shares = [
+        float(s["on_time_share"])
+        for s in stops
+        if s["sufficient"] and s["on_time_share"] is not None
+    ]
+    median_share = round(statistics.median(scored_shares), 4) if scored_shares else None
+    band_counts = [0, 0, 0, 0, 0]
+    for sh in scored_shares:
+        band_counts[_map_band_index(sh)] += 1
+
+    grid_cells: list[list[Any]] = []
+    if grp == "bus":
+        cells: dict[tuple[int, int], dict[str, Any]] = {}
+        for s in stops:
+            lat, lon = float(s["lat"]), float(s["lon"])
+            key = (math.floor(lon / MAP_CELL_LON), math.floor(lat / MAP_CELL_LAT))
+            cell = cells.get(key)
+            if cell is None:
+                cell = {
+                    "lon_sum": 0.0,
+                    "lat_sum": 0.0,
+                    "n": 0,
+                    "suff_n": 0,
+                    "ev": 0,
+                    "suff_ev": 0,
+                    "ot_weighted": 0.0,
+                    "top_ev": -1,
+                    "top_name": "",
+                    "routes": {},
+                }
+                cells[key] = cell
+            ev = int(s["events"])
+            cell["lon_sum"] += lon
+            cell["lat_sum"] += lat
+            cell["n"] += 1
+            cell["ev"] += ev
+            route = str(s["route_id"] or "")
+            if route:
+                routes_map: dict[str, int] = cell["routes"]
+                routes_map[route] = routes_map.get(route, 0) + ev
+            name = _strip_stop_id(str(s["label"]), str(s["stop_id"]))
+            if ev > cell["top_ev"] or (ev == cell["top_ev"] and name < cell["top_name"]):
+                cell["top_ev"] = ev
+                cell["top_name"] = name
+            if s["sufficient"] and s["on_time_share"] is not None:
+                cell["suff_n"] += 1
+                cell["suff_ev"] += ev
+                cell["ot_weighted"] += float(s["on_time_share"]) * ev
+
+        for _, cell in sorted(cells.items()):
+            share = round(cell["ot_weighted"] / cell["suff_ev"], 4) if cell["suff_ev"] > 0 else None
+            routes_dict: dict[str, int] = cell["routes"]
+            top_route = (
+                min(routes_dict.items(), key=lambda kv: (-kv[1], kv[0]))[0] if routes_dict else ""
+            )
+            grid_cells.append(
+                [
+                    round(cell["lon_sum"] / cell["n"], 5),
+                    round(cell["lat_sum"] / cell["n"], 5),
+                    int(cell["ev"]),
+                    share,
+                    int(cell["n"]),
+                    int(cell["suff_n"]),
+                    str(cell["top_name"]),
+                    top_route,
+                ]
+            )
+
+    min_lon, max_lon, min_lat, max_lat = MAP_TILE_BOUNDS
+    return {
+        "mode": grp,
+        "columns": list(MAP_COLUMNS),
+        "total": len(stops),
+        "sufficient": int(view["sufficient"]),
+        "thin": len(stops) - int(view["sufficient"]),
+        "min_events": int(view["min_events"]),
+        "stop_median_share": median_share,
+        "stop_median_display": pct(median_share),
+        "band_counts": band_counts,
+        "summary": view["summary"],
+        "definitions": view["definitions"],
+        "worst_rows": compact["stops"][:MAP_WORST_TABLE],
+        "grid_cells": grid_cells,
+        "stops": compact["stops"] if grp != "bus" else [],
+        "tile_spec": (
+            {
+                "min_lon": min_lon,
+                "max_lon": max_lon,
+                "min_lat": min_lat,
+                "max_lat": max_lat,
+                "n": MAP_TILE_GRID,
+                "tiles": list(tiles),
+            }
+            if grp == "bus"
+            else None
+        ),
     }
 
 
@@ -312,7 +454,22 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
                 "ranked": str(len(cards["ranked"])),
             }
             stop_map = views.stop_map(con, src, grp)
-            writer.write("map", f"map/{grp}.json", filters, _compact_map(stop_map))
+            compact_map = _compact_map(stop_map)
+            writer.write("map", f"map/{grp}.json", filters, compact_map)
+            tiles = _map_tiles(compact_map["stops"]) if grp == "bus" else {}
+            writer.write(
+                "map",
+                f"map-grid/{grp}.json",
+                filters,
+                _compact_map_grid(grp, stop_map, compact_map, tiles),
+            )
+            for tile_key, tile_rows in tiles.items():
+                writer.write(
+                    "map",
+                    f"map-tiles/{grp}/t-{tile_key}.json",
+                    {"mode": grp, "tile": tile_key},
+                    {"columns": list(MAP_COLUMNS), "stops": tile_rows},
+                )
             writer.parity[f"map/{grp}"] = {
                 "worst": stop_map["worst"][0]["label"] if stop_map["worst"] else None,
                 "display": stop_map["worst"][0]["display"] if stop_map["worst"] else None,
