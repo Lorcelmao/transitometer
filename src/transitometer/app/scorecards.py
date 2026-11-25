@@ -15,6 +15,7 @@ from transitometer.app.common import (
     connection,
     definitions,
     frame,
+    hour_order,
     provenance_note,
 )
 from transitometer.serve import views
@@ -136,10 +137,15 @@ def page_stop_reliability() -> None:
     hours["Data"] = hours["sufficient"].map(
         {True: "enough", False: f"under {views.MIN_CELL_EVENTS}"}
     )
+    hours_order = hour_order(hours)
     base = alt.Chart(hours, height=260).encode(
-        x=alt.X("service_hour:O", title="Hour of the service day (scheduled time)"),
+        x=alt.X(
+            "hour_label:N",
+            sort=hours_order,
+            title="Hour of the service day (+1 = after midnight)",
+        ),
         tooltip=[
-            alt.Tooltip("service_hour", title="Hour"),
+            alt.Tooltip("hour_label", title="Hour"),
             alt.Tooltip("events", title="Arrivals"),
             alt.Tooltip("on_time_share", title="On time", format=".0%"),
             alt.Tooltip("ci_low", title="95 % CI from", format=".0%"),
@@ -163,13 +169,14 @@ def page_stop_reliability() -> None:
     st.altair_chart(interval + point, width="stretch")
     st.caption(
         f"Dots: on-time share; lines: 95 % interval. Grey hours had fewer than "
-        f"{views.MIN_CELL_EVENTS} arrivals: shown for completeness, not scored."
+        f"{views.MIN_CELL_EVENTS} arrivals: shown for completeness, not scored. "
+        "Hours marked (+1) continue the same service day after midnight."
     )
     with st.expander("Hour by hour", icon=":material/table:"):
         st.dataframe(
             hours[
                 [
-                    "service_hour",
+                    "hour_label",
                     "events",
                     "on_time_share",
                     "ci_low",
@@ -182,7 +189,7 @@ def page_stop_reliability() -> None:
             hide_index=True,
             width="stretch",
             column_config={
-                "service_hour": "Hour",
+                "hour_label": "Hour",
                 "events": "Arrivals",
                 "on_time_share": st.column_config.NumberColumn("On time", format="percent"),
                 "ci_low": st.column_config.NumberColumn("95 % CI from", format="percent"),

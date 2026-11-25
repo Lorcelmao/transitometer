@@ -22,6 +22,37 @@ MUTED = "#cbd5e1"  # outline of cells that are shown but not scored
 # One hue, light -> dark; the lightest step stays clearly blue so it never reads as "no data".
 SEQUENTIAL = ["#bfdbfe", "#60a5fa", "#2563eb", "#1e40af", "#172554"]
 REPOSITORY_URL = "https://github.com/Lorcelmao/transitometer"
+BADGE_COLORS = {
+    "pass": "green",
+    "attention": "orange",
+    "fail": "red",
+    "neutral": "gray",
+}
+
+
+def badge_markdown(badge: dict[str, str] | None) -> str:
+    """Render a shared view badge ({label, tone}) as a native Streamlit Markdown badge."""
+    if not badge:
+        return ""
+    color = BADGE_COLORS.get(badge["tone"], "gray")
+    return f":{color}-badge[{badge['label']}]"
+
+
+def render_metrics(figures: list[dict[str, Any]]) -> None:
+    """Render a row of view figures with their shared status badge and sample basis."""
+    for column, figure in zip(st.columns(len(figures)), figures, strict=True):
+        column.metric(figure["label"], figure["display"], help=figure["help"], border=True)
+        badge = figure.get("badge")
+        if badge:
+            column.markdown(badge_markdown(badge))
+        if figure.get("basis"):
+            column.caption(figure["basis"])
+
+
+def hour_order(df: pd.DataFrame) -> list[str]:
+    """Chronological hour_label order so post-midnight (+1) hours follow 23:00."""
+    ordered = df[["service_hour", "hour_label"]].drop_duplicates().sort_values("service_hour")
+    return [str(label) for label in ordered["hour_label"]]
 
 
 @st.cache_resource  # type: ignore[untyped-decorator]

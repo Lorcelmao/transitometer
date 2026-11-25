@@ -10,6 +10,8 @@ export const MAP_COLUMNS = [
   "sufficient",
   "route_id",
   "direction_id",
+  "band",
+  "delta_pts",
 ] as const;
 
 export type MapStopRow = [
@@ -23,4 +25,6 @@ export type MapStopRow = [
   boolean,
   string,
   number | null,
+  number,
+  string | null,
 ];

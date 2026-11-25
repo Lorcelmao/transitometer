@@ -16,7 +16,6 @@ import json
 import math
 import re
 import shutil
-import statistics
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -24,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from transitometer.serve import hcmc_views, kpis, snapshot, views
-from transitometer.serve.format import day_label, pct
+from transitometer.serve.format import day_label
 
 SCHEMA = "transitometer.web/1"
 WEB_DATA = kpis.REPO / "web" / "public" / "data"
@@ -149,12 +148,26 @@ class _Writer:
         target.write_text(_dump(envelope) + "\n", encoding="utf-8", newline="\n")
 
     def expect(self, key: str, figures: list[dict[str, Any]]) -> None:
-        """Parity: every headline figure's display string, in page order, by page and filters."""
-        self.parity[key] = [{"key": f["key"], "display": f["display"]} for f in figures]
+        """Parity: every headline figure's display string and badge label, in page order."""
+        self.parity[key] = [
+            {
+                "key": f["key"],
+                "display": f["display"],
+                **({"badge": f["badge"]["label"]} if f.get("badge") else {}),
+            }
+            for f in figures
+        ]
+
+    def expect_takeaway(self, key: str, takeaway: str | None) -> None:
+        """Parity: the day-level takeaway sentence shown by both frontends."""
+        if takeaway:
+            self.parity[f"{key}/takeaway"] = takeaway
 
 
 HOUR_COLUMNS = (
     "service_hour",
+    "hour_label",
+    "hour_short",
     "events",
     "on_time",
     "on_time_share",
@@ -204,6 +217,8 @@ MAP_COLUMNS = (
     "sufficient",
     "route_id",
     "direction_id",
+    "band",
+    "delta_pts",
 )
 
 
@@ -212,14 +227,6 @@ MAP_CELL_LON = 0.008
 MAP_TILE_BOUNDS = (-74.26, -73.69, 40.49, 40.94)  # (min_lon, max_lon, min_lat, max_lat)
 MAP_TILE_GRID = 3
 MAP_WORST_TABLE = 50
-MAP_BAND_LIMITS = (0.30, 0.40, 0.50, 0.65)
-
-
-def _map_band_index(share: float) -> int:
-    for idx, limit in enumerate(MAP_BAND_LIMITS):
-        if share < limit:
-            return idx
-    return len(MAP_BAND_LIMITS)
 
 
 def _strip_stop_id(label: str, stop_id: str) -> str:
@@ -262,15 +269,7 @@ def _compact_map_grid(
 ) -> dict[str, Any]:
     """Lightweight payload for /diagnostics/map/: summary stats, 670 m grid, top-50 worst."""
     stops: list[dict[str, Any]] = view["stops"]
-    scored_shares = [
-        float(s["on_time_share"])
-        for s in stops
-        if s["sufficient"] and s["on_time_share"] is not None
-    ]
-    median_share = round(statistics.median(scored_shares), 4) if scored_shares else None
-    band_counts = [0, 0, 0, 0, 0]
-    for sh in scored_shares:
-        band_counts[_map_band_index(sh)] += 1
+    median_share = view["stop_median_share"]
 
     grid_cells: list[list[Any]] = []
     if grp == "bus":
@@ -313,6 +312,7 @@ def _compact_map_grid(
 
         for _, cell in sorted(cells.items()):
             share = round(cell["ot_weighted"] / cell["suff_ev"], 4) if cell["suff_ev"] > 0 else None
+            suff = cell["suff_n"] > 0 and share is not None
             routes_dict: dict[str, int] = cell["routes"]
             top_route = (
                 min(routes_dict.items(), key=lambda kv: (-kv[1], kv[0]))[0] if routes_dict else ""
@@ -327,6 +327,8 @@ def _compact_map_grid(
                     int(cell["suff_n"]),
                     str(cell["top_name"]),
                     top_route,
+                    views.stop_map_band_index(share, suff),
+                    views.stop_map_delta_pts(share, median_share, suff),
                 ]
             )
 
@@ -339,8 +341,10 @@ def _compact_map_grid(
         "thin": len(stops) - int(view["sufficient"]),
         "min_events": int(view["min_events"]),
         "stop_median_share": median_share,
-        "stop_median_display": pct(median_share),
-        "band_counts": band_counts,
+        "stop_median_display": view["stop_median_display"],
+        "bands": view["bands"],
+        "thin_band": view["thin_band"],
+        "band_counts": view["band_counts"],
         "summary": view["summary"],
         "definitions": view["definitions"],
         "worst_rows": compact["stops"][:MAP_WORST_TABLE],
@@ -403,6 +407,7 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
                 view = views.overview(con, src, grp, day)
                 overview[f"{grp}/{day}"] = view
                 writer.expect(f"overview/{grp}/{day}", view["figures"])
+                writer.expect_takeaway(f"overview/{grp}/{day}", view.get("takeaway"))
         hero = views.hero_map(con, src)
         found = views.findings(con, src)
         writer.write(
@@ -440,6 +445,8 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
                     writer.write(page, f"{page}/{grp}-{day}.json", {"mode": grp, "day": day}, view)
                     if view.get("figures"):
                         writer.expect(f"{page}/{grp}/{day}", view["figures"])
+                    if page in ("headways", "missing-trips", "delay"):
+                        writer.expect_takeaway(f"{page}/{grp}/{day}", view.get("takeaway"))
 
         for grp in MODES:
             filters = {"mode": grp}

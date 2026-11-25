@@ -285,5 +285,40 @@
    "s"
   ],
   "expected": "≤ 1,500 s"
+ },
+ {
+  "fn": "service_hour",
+  "args": [
+   0
+  ],
+  "expected": "00:00"
+ },
+ {
+  "fn": "service_hour",
+  "args": [
+   9
+  ],
+  "expected": "09:00"
+ },
+ {
+  "fn": "service_hour",
+  "args": [
+   23
+  ],
+  "expected": "23:00"
+ },
+ {
+  "fn": "service_hour",
+  "args": [
+   24
+  ],
+  "expected": "00:00 (+1)"
+ },
+ {
+  "fn": "service_hour",
+  "args": [
+   26
+  ],
+  "expected": "02:00 (+1)"
  }
 ]

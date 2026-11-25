@@ -56,11 +56,7 @@ def page_hcmc() -> None:
         st.info("No HCMC case-study snapshot found yet (`python tasks.py hcmc-build`).")
         return
 
-    cols = st.columns(len(view["figures"]))
-    for col, fig in zip(cols, view["figures"], strict=True):
-        col.metric(fig["label"], fig["display"], help=fig.get("help"))
-        if fig.get("basis"):
-            col.caption(fig["basis"])
+    common.render_metrics(view["figures"])
 
     st.info(
         "Scope & limitations: **Pre-merger HCMC (102)** uses the 102 commune-level units defined "

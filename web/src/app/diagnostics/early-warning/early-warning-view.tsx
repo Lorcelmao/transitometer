@@ -8,7 +8,7 @@ import { ChartFrame, DataTable } from "@/components/story/chart-frame";
 import { Definitions } from "@/components/story/page-parts";
 import { earlyWarning, type EarlyWarning, type Meta } from "@/data/schemas";
 import type { Initial } from "@/hooks/use-view";
-import { count, decimal, pct, serviceHour } from "@/lib/format";
+import { count, decimal, pct } from "@/lib/format";
 
 type Source = Initial<EarlyWarning>["source"];
 
@@ -69,7 +69,7 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
             label="Warnings per hour of the service day on the held-out day"
             rows={hours.map((h) => ({
               key: String(h.service_hour),
-              label: serviceHour(h.service_hour),
+              label: h.hour_label,
               share: h.bar,
               display: count(h.warnings),
               detail: `late warnings: ${h.late_display}`,
@@ -82,7 +82,7 @@ function Dispatcher({ data, source }: { data: EarlyWarning["dispatcher"]; source
             rows={hours}
             rowKey={(h) => String(h.service_hour)}
             columns={[
-              { key: "hour", label: "Hour", render: (h) => serviceHour(h.service_hour) },
+              { key: "hour", label: "Hour", render: (h) => h.hour_label },
               { key: "decisions", label: "Trips judged", numeric: true, render: (h) => count(h.decisions) },
               { key: "warnings", label: "Warnings", numeric: true, render: (h) => count(h.warnings) },
               { key: "late", label: "Late warnings", render: (h) => h.late_display },

@@ -12,7 +12,7 @@ import { Definitions } from "@/components/story/page-parts";
 import { HOUR_COLUMNS, stopIndex, stopRoute, type Meta, type StopIndex, type StopRoute } from "@/data/schemas";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useView, type Initial } from "@/hooks/use-view";
-import { count, pct, seconds, serviceHour } from "@/lib/format";
+import { count, pct, seconds } from "@/lib/format";
 
 type Stop = StopRoute["stops"][number];
 const col = Object.fromEntries(HOUR_COLUMNS.map((c, i) => [c, i])) as Record<(typeof HOUR_COLUMNS)[number], number>;
@@ -34,8 +34,8 @@ function StopDetail({
     const hr = h[col.service_hour] as number;
     return {
       hourNum: hr,
-      label: hr >= 24 ? `${String(hr - 24).padStart(2, "0")}+1` : String(hr).padStart(2, "0"),
-      fullLabel: serviceHour(hr),
+      label: h[col.hour_short] as string,
+      fullLabel: h[col.hour_label] as string,
       value: h[col.on_time_share] as number | null,
       low: h[col.ci_low] as number | null,
       high: h[col.ci_high] as number | null,

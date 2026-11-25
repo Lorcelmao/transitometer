@@ -174,20 +174,7 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
 
   const kpiExtras: Record<string, KpiExtra> = useMemo(
     () => ({
-      coverage_any: {
-        badge: { label: "% of land area", tone: "neutral" },
-      },
-      coverage_freq: {
-        badge: { label: "OSM interval only", tone: "attention" },
-      },
-      routes_mapped: {
-        badge: { label: "Primary network", tone: "neutral" },
-      },
       interval_coverage: {
-        badge:
-          view.quality_passed === view.quality_total
-            ? { label: "All checks passed", tone: "pass" }
-            : { label: `${view.quality_total - view.quality_passed} below target`, tone: "fail" },
         viz: <CheckStrip passed={view.quality_passed} total={view.quality_total} />,
       },
     }),

@@ -8,9 +8,9 @@ import { HeadwayCompositionStrip } from "@/components/story/micro-viz";
 import { Definitions } from "@/components/story/page-parts";
 import { headways, type Headways, type Meta } from "@/data/schemas";
 import type { Initial } from "@/hooks/use-view";
-import { count, dayLabel, pct } from "@/lib/format";
+import { count, pct } from "@/lib/format";
 
-function Body({ data, source, day }: { data: Headways; source: Initial<Headways>["source"]; day: string }) {
+function Body({ data, source }: { data: Headways; source: Initial<Headways>["source"] }) {
   if (!data.summary) {
     return (
       <p className="my-6 rounded-xl border border-rule bg-surface p-5 text-sm text-muted-ink">
@@ -26,36 +26,22 @@ function Body({ data, source, day }: { data: Headways; source: Initial<Headways>
 
   const extras: Record<string, KpiExtra> = {
     headways: { shortNote: "Total consecutive vehicle intervals observed." },
-    regular: {
-      badge: { label: "On rhythm", tone: "pass" },
-      shortNote: "Within 20 % of the scheduled headway.",
-    },
-    bunched: {
-      badge: bunched >= 0.05 ? { label: "Watch", tone: "attention" } : { label: "Low", tone: "pass" },
-      shortNote: "At most 25 % of scheduled headway (clumping).",
-    },
-    gaps: {
-      badge: gaps >= 0.05 ? { label: "Watch", tone: "fail" } : { label: "Low", tone: "pass" },
-      shortNote: "At least double the scheduled wait time.",
-    },
-    irregular: {
-      badge: { label: "Off rhythm", tone: "neutral" },
-      shortNote: "Outside regular band, not bunched or a gap.",
-    },
+    regular: { shortNote: "Within 20 % of the scheduled headway." },
+    bunched: { shortNote: "At most 25 % of scheduled headway (clumping)." },
+    gaps: { shortNote: "At least double the scheduled wait time." },
+    irregular: { shortNote: "Outside regular band, not bunched or a gap." },
   };
 
   return (
     <div className="space-y-5">
-      <p
-        className="rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink"
-        data-testid="headline"
-      >
-        <strong className="font-semibold">Day takeaway ({dayLabel(day)}):</strong>{" "}
-        <span className="num font-semibold">{byKey.regular?.display}</span> of{" "}
-        <span className="num">{byKey.headways?.display}</span> observed headways kept to the timetable, while{" "}
-        <span className="num font-semibold">{byKey.bunched?.display}</span> bunched together and{" "}
-        <span className="num font-semibold">{byKey.gaps?.display}</span> left long gaps.
-      </p>
+      {data.takeaway ? (
+        <p
+          className="rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink tabular-nums"
+          data-testid="headline"
+        >
+          <strong className="font-semibold">Day takeaway ({data.day_label}):</strong> {data.takeaway}
+        </p>
+      ) : null}
 
       <HeadwayCompositionStrip regular={regular} irregular={irregular} bunched={bunched} gaps={gaps} />
 
@@ -108,7 +94,7 @@ export function HeadwaysView({ meta, initial }: { meta: Meta; initial: Initial<H
       page="headways"
       schema={headways}
       initial={initial}
-      render={({ data, source, day }) => <Body data={data} source={source} day={day} />}
+      render={({ data, source }) => <Body data={data} source={source} />}
     />
   );
 }

@@ -6,8 +6,6 @@ site); this module only lays them out.
 
 from __future__ import annotations
 
-from typing import Any
-
 import altair as alt
 import streamlit as st
 
@@ -18,15 +16,12 @@ from transitometer.app.common import (
     definitions,
     filters,
     frame,
+    hour_order,
     provenance_note,
     ranking_chart,
+    render_metrics,
 )
 from transitometer.serve import views
-
-
-def _metrics(figures: list[dict[str, Any]]) -> None:
-    for column, figure in zip(st.columns(len(figures)), figures, strict=True):
-        column.metric(figure["label"], figure["display"], help=figure["help"], border=True)
 
 
 def page_otp() -> None:
@@ -45,12 +40,17 @@ def page_otp() -> None:
         return
     cells = frame(view["cells"])
     order = list(worst["route_id"])
+    hours_order = hour_order(cells)
     base = alt.Chart(cells).encode(
-        x=alt.X("service_hour:O", title="Hour of the service day (scheduled time)"),
+        x=alt.X(
+            "hour_label:N",
+            sort=hours_order,
+            title="Hour of the service day (+1 = after midnight)",
+        ),
         y=alt.Y("route_id:N", sort=order, title="Route", axis=alt.Axis(labelOverlap=False)),
         tooltip=[
             alt.Tooltip("route_id", title="Route"),
-            alt.Tooltip("service_hour", title="Hour"),
+            alt.Tooltip("hour_label", title="Hour"),
             alt.Tooltip("events", title="Arrivals", format=","),
             alt.Tooltip("on_time_share", title="On time", format=".1%"),
             alt.Tooltip("late_share", title="Late", format=".1%"),
@@ -75,7 +75,7 @@ def page_otp() -> None:
     st.subheader(f"The {len(order)} least punctual routes, hour by hour")
     st.caption(
         f"Darker blue = more punctual. Outlined white cells had fewer than {view['min_events']} "
-        "arrivals and are not scored. Hours past 23 belong to the same service day after "
+        "arrivals and are not scored. Hours marked (+1) continue the same service day after "
         "midnight. Routes are ordered from least to most punctual."
     )
     st.altair_chart((thin + scored).properties(height=max(240, 26 * len(order))), width="stretch")
@@ -125,7 +125,12 @@ def page_headways() -> None:
         st.warning("No headways were observed on this day.")
         provenance_note()
         return
-    _metrics(view["figures"])
+    if view.get("takeaway"):
+        st.info(
+            f"**Day takeaway ({view['day_label']}):** {view['takeaway']}",
+            icon=":material/summarize:",
+        )
+    render_metrics(view["figures"])
 
     bunched = frame(view["routes"])
     if not bunched.empty:
@@ -180,7 +185,12 @@ def page_missing_trips() -> None:
         st.warning("No scheduled trips on this day.")
         provenance_note()
         return
-    _metrics(view["figures"])
+    if view.get("takeaway"):
+        st.info(
+            f"**Day takeaway ({view['day_label']}):** {view['takeaway']}",
+            icon=":material/summarize:",
+        )
+    render_metrics(view["figures"])
     outcomes = frame([{k: o[k] for k in ("outcome", "trips", "order")} for o in view["outcomes"]])
     not_delivered = " || ".join(
         f"datum.outcome == '{o['outcome']}'" for o in view["outcomes"] if o["not_delivered"]

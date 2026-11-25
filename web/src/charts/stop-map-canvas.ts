@@ -7,11 +7,9 @@
  * dot halos, cursor-anchored wheel/pinch zoom, drag pan, hover ring and HTML tooltips.
  */
 import {
-  bandIndex,
   BOROUGH_LABELS,
   gridCellSize,
   LOD_ZOOM_THRESHOLD,
-  MAP_DIVERGING_BANDS,
   MAP_ZOOM_LIMIT,
   NYC_CENTER,
   NYC_INITIAL_ZOOM,
@@ -19,9 +17,11 @@ import {
   STREETS_FROM_ZOOM,
   type BandFilter,
   type Bbox,
+  type MapBandSpec,
   type MapGridCell,
   type MapLayers,
   type MapStop,
+  type MapThinBand,
   type StreetPolyline,
   type SubwayLineGroup,
 } from "@/charts/options";
@@ -67,6 +67,8 @@ export type CanvasRenderState = {
   useGrid: boolean;
   gridCells: readonly MapGridCell[];
   stops: readonly MapStop[];
+  bands: readonly MapBandSpec[];
+  thinBand: MapThinBand;
   filterBand: BandFilter;
   layers: MapLayers;
   streets: readonly StreetPolyline[] | null;
@@ -286,6 +288,8 @@ export class StopMapCanvas {
     useGrid: true,
     gridCells: [],
     stops: [],
+    bands: [],
+    thinBand: { id: "thin", label: "Under 10 arrivals", color: COLORS.mapThinStroke },
     filterBand: null,
     layers: { streets: true, subway: true, lineColors: false },
     streets: null,
@@ -463,7 +467,7 @@ export class StopMapCanvas {
     const vp = this.getViewport();
     const scale = vp.baseScale * vp.zoom;
     const compact = window.innerWidth <= 768;
-    const { mode, filterBand, layers, streets, selectedStop, font } = this.state;
+    const { mode, filterBand, layers, streets, selectedStop, font, bands, thinBand } = this.state;
     const useGrid =
       mode === "bus" &&
       (vp.zoom < LOD_ZOOM_THRESHOLD || (this.state.stops.length === 0 && this.state.gridCells.length > 0));
@@ -552,7 +556,7 @@ export class StopMapCanvas {
       const size = gridCellSize(vp.zoom, compact);
       const half = size * 0.5;
       const cornerR = Math.min(2, size * 0.28);
-      const buckets: { px: number; py: number }[][] = [[], [], [], [], []];
+      const buckets: { px: number; py: number }[][] = bands.map(() => []);
       const thinPts: { px: number; py: number }[] = [];
 
       for (let i = 0; i < cells.length; i++) {
@@ -560,9 +564,7 @@ export class StopMapCanvas {
         const lon = c[0];
         const lat = c[1];
         if (lon < viewBbox[0] || lon > viewBbox[1] || lat < viewBbox[2] || lat > viewBbox[3]) continue;
-        const share = c[3];
-        const suff = c[5] > 0 && share !== null;
-        const bi = suff ? bandIndex(share) : -1;
+        const bi = c[8];
         if (filterBand !== null) {
           if (filterBand === "thin" && bi !== -1) continue;
           if (filterBand !== "thin" && bi !== filterBand) continue;
@@ -570,12 +572,12 @@ export class StopMapCanvas {
         const px = w * 0.5 + (lon - this.centerLon) * NYC_COS_LAT * scale;
         const py = h * 0.5 - (lat - this.centerLat) * scale;
         visibleCount++;
-        if (bi === -1) {
+        if (bi < 0 || bi >= buckets.length) {
           thinPts.push({ px, py });
           targets.push({ kind: "grid", index: i, lon, lat, px, py, radius: half + 1, priority: 0 });
         } else {
           buckets[bi].push({ px, py });
-          targets.push({ kind: "grid", index: i, lon, lat, px, py, radius: half + 1, priority: 5 - bi });
+          targets.push({ kind: "grid", index: i, lon, lat, px, py, radius: half + 1, priority: bands.length - bi });
         }
       }
 
@@ -586,20 +588,20 @@ export class StopMapCanvas {
         }
         ctx.fillStyle = "#ffffff";
         ctx.fill();
-        ctx.strokeStyle = COLORS.mapThinStroke;
+        ctx.strokeStyle = thinBand.color;
         ctx.lineWidth = 1.25;
         ctx.stroke();
       }
 
-      // Draw Reliable (4) first and Critical (0) last so critical corridors always stay on top
-      for (let b = 4; b >= 0; b--) {
+      // Draw Reliable (highest id) first and Critical (0) last so critical corridors stay on top
+      for (let b = bands.length - 1; b >= 0; b--) {
         const pts = buckets[b];
         if (!pts.length) continue;
         ctx.beginPath();
         for (let i = 0; i < pts.length; i++) {
           appendRoundedRect(ctx, pts[i].px - half, pts[i].py - half, size, cornerR);
         }
-        ctx.fillStyle = MAP_DIVERGING_BANDS[b].color;
+        ctx.fillStyle = bands[b].color;
         ctx.fill();
         ctx.strokeStyle = "rgba(255,255,255,0.92)";
         ctx.lineWidth = 0.65;
@@ -609,13 +611,13 @@ export class StopMapCanvas {
       const stops = this.state.stops;
       const dotR = stopDotSize(vp.zoom, mode, compact) * 0.5;
       const strokeW = dotR >= 4 ? 1.2 : dotR >= 2.8 ? 0.9 : 0.65;
-      const buckets: { px: number; py: number }[][] = [[], [], [], [], []];
+      const buckets: { px: number; py: number }[][] = bands.map(() => []);
       const thinPts: { px: number; py: number }[] = [];
 
       for (let i = 0; i < stops.length; i++) {
         const s = stops[i];
         if (s.lon < viewBbox[0] || s.lon > viewBbox[1] || s.lat < viewBbox[2] || s.lat > viewBbox[3]) continue;
-        const bi = s.sufficient ? bandIndex(s.share) : -1;
+        const bi = s.band;
         if (filterBand !== null) {
           if (filterBand === "thin" && bi !== -1) continue;
           if (filterBand !== "thin" && bi !== filterBand) continue;
@@ -623,12 +625,12 @@ export class StopMapCanvas {
         const px = w * 0.5 + (s.lon - this.centerLon) * NYC_COS_LAT * scale;
         const py = h * 0.5 - (s.lat - this.centerLat) * scale;
         visibleCount++;
-        if (bi === -1) {
+        if (bi < 0 || bi >= buckets.length) {
           thinPts.push({ px, py });
           targets.push({ kind: "stop", index: i, lon: s.lon, lat: s.lat, px, py, radius: dotR, priority: 0 });
         } else {
           buckets[bi].push({ px, py });
-          targets.push({ kind: "stop", index: i, lon: s.lon, lat: s.lat, px, py, radius: dotR, priority: 5 - bi });
+          targets.push({ kind: "stop", index: i, lon: s.lon, lat: s.lat, px, py, radius: dotR, priority: bands.length - bi });
         }
       }
 
@@ -641,12 +643,12 @@ export class StopMapCanvas {
         }
         ctx.fillStyle = "#ffffff";
         ctx.fill();
-        ctx.strokeStyle = COLORS.mapThinStroke;
+        ctx.strokeStyle = thinBand.color;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
-      for (let b = 4; b >= 0; b--) {
+      for (let b = bands.length - 1; b >= 0; b--) {
         const pts = buckets[b];
         if (!pts.length) continue;
         ctx.beginPath();
@@ -654,7 +656,7 @@ export class StopMapCanvas {
           ctx.moveTo(pts[i].px + dotR, pts[i].py);
           ctx.arc(pts[i].px, pts[i].py, dotR, 0, TWO_PI);
         }
-        ctx.fillStyle = MAP_DIVERGING_BANDS[b].color;
+        ctx.fillStyle = bands[b].color;
         ctx.fill();
         ctx.strokeStyle = "rgba(255,255,255,0.92)";
         ctx.lineWidth = strokeW;

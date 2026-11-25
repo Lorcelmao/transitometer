@@ -4,11 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  bandMeta,
+  bandMetaById,
   gridTooltip,
   indexStreets,
   LOD_ZOOM_THRESHOLD,
-  MAP_DIVERGING_BANDS,
   MAP_ZOOM_LIMIT,
   NYC_INITIAL_ZOOM,
   splitLabel,
@@ -30,7 +29,7 @@ import { Definitions } from "@/components/story/page-parts";
 import { MAP_COLUMNS, type MapStopRow } from "@/data/map-columns";
 import type { MapTileSpec, Meta, Source, StopMapGrid } from "@/data/schemas";
 import { useUrlState } from "@/hooks/use-url-state";
-import { count } from "@/lib/format";
+import { count, pct } from "@/lib/format";
 
 const col = Object.fromEntries(MAP_COLUMNS.map((c, i) => [c, i])) as Record<
   (typeof MAP_COLUMNS)[number],
@@ -56,6 +55,8 @@ function rowToStop(r: MapStopRow): MapStop {
     sufficient: r[col.sufficient] as boolean,
     routeId: r[col.route_id] as string,
     directionId: r[col.direction_id] as number | null,
+    band: r[col.band] as number,
+    deltaPts: r[col.delta_pts] as string | null,
   };
 }
 
@@ -294,18 +295,21 @@ export function MapView({
         ? { lon: selectedRef.current.stop.lon, lat: selectedRef.current.stop.lat }
         : null;
 
+    const curMeta = curMode === "subway" ? subwayInitial : busInitial;
     engine.setState({
       mode: curMode,
       useGrid,
       gridCells: busGridCellsRef.current,
       stops: curStops,
+      bands: curMeta.bands,
+      thinBand: curMeta.thin_band,
       filterBand: filterBandRef.current,
       layers: layersRef.current,
       streets: streetsRef.current,
       selectedStop: curSelected,
       font: fontRef.current,
     });
-  }, [busInitial.tile_spec]);
+  }, [busInitial, subwayInitial]);
 
   const scheduleLazyAssets = useCallback(() => {
     if (roamTimerRef.current) clearTimeout(roamTimerRef.current);
@@ -394,7 +398,13 @@ export function MapView({
       formatGridTooltip: (index) => {
         const cell = busGridCellsRef.current[index];
         return cell
-          ? gridTooltip(cell, busInitial.stop_median_share, busInitial.stop_median_display, fontRef.current)
+          ? gridTooltip(
+              cell,
+              busInitial.bands,
+              busInitial.thin_band,
+              busInitial.stop_median_display,
+              fontRef.current,
+            )
           : "";
       },
       formatStopTooltip: (index) => {
@@ -406,7 +416,8 @@ export function MapView({
           stop,
           mMeta.min_events,
           curMode === "subway" ? "subway" : "bus",
-          mMeta.stop_median_share,
+          mMeta.bands,
+          mMeta.thin_band,
           mMeta.stop_median_display,
           fontRef.current,
         );
@@ -667,11 +678,10 @@ export function MapView({
 
   const selectedDetail = selectedStop && selectedStop.mode === mode ? selectedStop.stop : null;
   const selectedSplit = selectedDetail ? splitLabel(selectedDetail) : null;
-  const selectedBand = selectedDetail ? bandMeta(selectedDetail.share, selectedDetail.sufficient) : null;
-  const selectedDelta =
-    selectedDetail && selectedDetail.sufficient && activeMeta.stop_median_share !== null
-      ? ((selectedDetail.share - activeMeta.stop_median_share) * 100).toFixed(1)
-      : null;
+  const selectedBand = selectedDetail
+    ? bandMetaById(selectedDetail.band, activeMeta.bands, activeMeta.thin_band)
+    : null;
+  const criticalBand = activeMeta.bands[0];
 
   const btnCls =
     "inline-flex min-h-10 items-center justify-center rounded-md border border-rule-strong bg-surface px-3 text-xs font-semibold text-ink transition-colors hover:bg-panel";
@@ -688,11 +698,12 @@ export function MapView({
           </p>
         </div>
         <div className="rounded-lg border border-rule bg-surface px-4 py-3 shadow-xs">
-          <p className="text-xs font-medium text-muted-ink">Critical stops (under 30 % on time)</p>
+          <p className="text-xs font-medium text-muted-ink">
+            {criticalBand ? `${criticalBand.label} stops (${criticalBand.range} on time)` : "Critical stops"}
+          </p>
           <p className="num mt-0.5 text-xl font-bold text-fail">{count(activeMeta.band_counts[0] ?? 0)}</p>
           <p className="mt-0.5 text-xs text-muted-ink">
-            {((100 * (activeMeta.band_counts[0] ?? 0)) / Math.max(1, activeMeta.sufficient)).toFixed(1)} % of scored{" "}
-            {mode} stops.
+            {pct((activeMeta.band_counts[0] ?? 0) / Math.max(1, activeMeta.sufficient))} of scored {mode} stops.
           </p>
         </div>
         <div className="rounded-lg border border-rule bg-surface px-4 py-3 shadow-xs">
@@ -740,7 +751,7 @@ export function MapView({
                   {searchHits.length ? (
                     searchHits.map((stop) => {
                       const sp = splitLabel(stop);
-                      const bm = bandMeta(stop.share, stop.sufficient);
+                      const bm = bandMetaById(stop.band, activeMeta.bands, activeMeta.thin_band);
                       return (
                         <li key={`${stop.stopId}-${stop.routeId}-${stop.directionId ?? "x"}`}>
                           <button
@@ -826,14 +837,14 @@ export function MapView({
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1 text-xs font-semibold text-ink">On-time share</span>
-            {MAP_DIVERGING_BANDS.map((band) => {
+            {activeMeta.bands.map((band) => {
               const pressed = filterBand === band.id;
               return (
                 <button
                   key={band.id}
                   type="button"
                   aria-pressed={pressed}
-                  onClick={() => toggleBand(band.id)}
+                  onClick={() => toggleBand(band.id as Exclude<BandFilter, null>)}
                   className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
                     pressed
                       ? "border-ink bg-slate-200 font-semibold text-ink"
@@ -863,10 +874,10 @@ export function MapView({
             >
               <span
                 className="inline-block size-2.5 shrink-0 rounded-full border-[1.5px] bg-surface"
-                style={{ borderColor: COLORS.mapThinStroke }}
+                style={{ borderColor: activeMeta.thin_band.color }}
                 aria-hidden="true"
               />
-              <span>Under {activeMeta.min_events} arrivals</span>
+              <span>{activeMeta.thin_band.label}</span>
             </button>
           </div>
           <p className="text-xs leading-relaxed text-muted-ink tabular-nums">
@@ -953,8 +964,8 @@ export function MapView({
                   {selectedDetail.sufficient ? selectedDetail.display : "Not scored"}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-ink tabular-nums">
-                  {selectedDelta !== null
-                    ? `${Number(selectedDelta) >= 0 ? `+${selectedDelta}` : selectedDelta} percentage points vs ${mode} stop median (${activeMeta.stop_median_display})`
+                  {selectedDetail.deltaPts !== null
+                    ? `${selectedDetail.deltaPts} percentage points vs ${mode} stop median (${activeMeta.stop_median_display})`
                     : `Under ${activeMeta.min_events} arrivals in 2-day window`}
                 </p>
               </div>
@@ -1035,7 +1046,7 @@ export function MapView({
                 </thead>
                 <tbody>
                   {tableRows.map((stop) => {
-                    const bm = bandMeta(stop.share, stop.sufficient);
+                    const bm = bandMetaById(stop.band, activeMeta.bands, activeMeta.thin_band);
                     return (
                       <tr key={stop.stopId} className="border-t border-panel hover:bg-paper/70">
                         <th scope="row" className="px-3 py-2 text-left font-medium text-ink">

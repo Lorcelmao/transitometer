@@ -35,6 +35,11 @@ def page_delay_attribution() -> None:
         st.warning("No trips were observed on this day.")
         provenance_note()
         return
+    if view.get("takeaway"):
+        st.info(
+            f"**Delay split ({view['day_label']}):** {view['takeaway']}",
+            icon=":material/summarize:",
+        )
     for column, figure in zip(st.columns(3), view["figures"], strict=True):
         column.metric(figure["label"], figure["display"], border=True, help=figure["help"])
     st.caption(view["caption"])
@@ -182,10 +187,14 @@ def dispatcher(listed: dict) -> None:  # type: ignore[type-arg]
         alt.Chart(hours, height=220)
         .mark_bar(color=BLUE)
         .encode(
-            x=alt.X("label:N", title="Hour of the service day", sort=list(hours["label"])),
+            x=alt.X(
+                "hour_label:N",
+                title="Hour of the service day (+1 = after midnight)",
+                sort=list(hours["hour_label"]),
+            ),
             y=alt.Y("warnings:Q", title="Warnings"),
             tooltip=[
-                alt.Tooltip("label", title="Hour"),
+                alt.Tooltip("hour_label", title="Hour"),
                 alt.Tooltip("decisions", title="Trips judged", format=","),
                 alt.Tooltip("warnings", title="Warnings", format=","),
                 alt.Tooltip("late_display", title="Late warnings"),

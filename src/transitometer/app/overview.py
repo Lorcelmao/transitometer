@@ -6,7 +6,7 @@ from typing import Any
 
 import streamlit as st
 
-from transitometer.app.common import connection, evidence_folder, filters
+from transitometer.app.common import connection, evidence_folder, filters, render_metrics
 from transitometer.app.common import provenance_note as _provenance
 from transitometer.serve import views
 
@@ -22,10 +22,12 @@ def _link(name: str, label: str) -> None:
 def _scorecard(grp: str, day: str) -> dict[str, Any]:
     con, src = connection()
     view = views.overview(con, src, grp, day)
-    for column, figure in zip(st.columns(4), view["figures"], strict=True):
-        column.metric(figure["label"], figure["display"], help=figure["help"], border=True)
-        if figure["basis"]:
-            column.caption(figure["basis"])
+    if view.get("takeaway"):
+        st.info(
+            f"**Day takeaway ({view['day_label']}, {view['group_label']}):** {view['takeaway']}",
+            icon=":material/summarize:",
+        )
+    render_metrics(view["figures"])
     if view["caveat"] is not None:
         st.warning(view["caveat"]["text"], icon=":material/warning:")
     return view

@@ -24,7 +24,7 @@ export const PARITY: Record<string, unknown> = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "../../showcase/contract/parity-expected.json"), "utf8"),
 );
 
-export type FigureParity = { key: string; display: string }[];
+export type FigureParity = { key: string; display: string; badge?: string }[];
 
 /** Choose a mode and a service day with the page's own controls (as a visitor would). */
 export async function chooseFilters(page: Page, mode: string, day?: string) {

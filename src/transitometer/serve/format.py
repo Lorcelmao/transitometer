@@ -58,3 +58,31 @@ def check_value(value: float | None, unit: str) -> str:
 
 def check_threshold(threshold: float, unit: str) -> str:
     return f"≤ {pct(threshold, 2)}" if unit == "%" else f"≤ {threshold:,.0f} s"
+
+
+def service_hour(hour: int) -> str:
+    """Format a GTFS service-day hour so hours past midnight are explicit.
+
+    Hours 0..23 render as '00:00'..'23:00'; hours 24+ render as '00:00 (+1)', '01:00 (+1)', etc.
+    """
+    if hour >= 24:
+        return f"{hour - 24:02d}:00 (+1)"
+    return f"{hour:02d}:00"
+
+
+def service_hour_short(hour: int) -> str:
+    """Compact hour tick for dense multi-route axes: '00'..'23', '00+1', '01+1', etc."""
+    if hour >= 24:
+        return f"{hour - 24:02d}+1"
+    return f"{hour:02d}"
+
+
+def pts_delta(diff: float | None, digits: int = 1) -> str:
+    """Signed percentage-point difference: 0.211 -> '+21.1', -0.085 -> '-8.5'."""
+    if diff is None or math.isnan(diff):
+        return MISSING
+    val = round(100 * diff, digits)
+    if val == 0:
+        val = 0.0
+    sign = "+" if val >= 0 else ""
+    return f"{sign}{val:.{digits}f}"

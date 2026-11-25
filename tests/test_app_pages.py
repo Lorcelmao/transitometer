@@ -83,10 +83,11 @@ def test_headlines_equal_the_shared_parity_file(
     grp: str,
     day: str,
 ) -> None:
-    """Streamlit shows the same headline strings the Next.js site is tested against."""
+    """Streamlit shows the same headline strings, badges, and takeaways as the Next.js site."""
     if not PARITY.exists():
         pytest.skip("no parity file yet (python tasks.py web-data)")
-    expected = json.loads(PARITY.read_text(encoding="utf-8"))[f"{view}/{grp}/{day}"]
+    parity = json.loads(PARITY.read_text(encoding="utf-8"))
+    expected = parity[f"{view}/{grp}/{day}"]
     monkeypatch.setenv("TRANSITOMETER_APP_SOURCE", "snapshot")
     st.cache_resource.clear()
     app = AppTest.from_string(
@@ -98,6 +99,13 @@ def test_headlines_equal_the_shared_parity_file(
     app.run()
     assert not app.exception, [e.value for e in app.exception]
     assert [m.value for m in app.metric][: len(expected)] == [f["display"] for f in expected]
+    markdown_text = "\n".join(m.value for m in app.markdown)
+    for fig in expected:
+        if fig.get("badge"):
+            assert f"[{fig['badge']}]" in markdown_text
+    takeaway = parity.get(f"{view}/{grp}/{day}/takeaway")
+    if takeaway:
+        assert any(takeaway in info.value for info in app.info)
 
 
 @pytest.mark.parametrize("scope", ["core_hcmc", "merged_city_all"])
@@ -116,3 +124,7 @@ def test_hcmc_headlines_equal_the_shared_parity_file(scope: str) -> None:
     app.run()
     assert not app.exception, [e.value for e in app.exception]
     assert [m.value for m in app.metric][: len(expected)] == [f["display"] for f in expected]
+    markdown_text = "\n".join(m.value for m in app.markdown)
+    for fig in expected:
+        if fig.get("badge"):
+            assert f"[{fig['badge']}]" in markdown_text

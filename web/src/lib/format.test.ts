@@ -21,6 +21,7 @@ const IMPLEMENTATIONS: Record<string, (...args: never[]) => string> = {
   day_label: format.dayLabel,
   check_value: format.checkValue,
   check_threshold: format.checkThreshold,
+  service_hour: format.serviceHour,
 };
 
 describe("formatters match Python", () => {

@@ -26,6 +26,13 @@ for (const [view, route] of PAGES) {
         const expected = PARITY[`${view}/${mode}/${day}`] as FigureParity;
         for (const figure of expected) {
           await expect(page.getByTestId(`value-${figure.key}`)).toHaveText(figure.display);
+          if (figure.badge) {
+            await expect(page.getByTestId(`badge-${figure.key}`)).toHaveText(figure.badge);
+          }
+        }
+        const takeaway = PARITY[`${view}/${mode}/${day}/takeaway`] as string | undefined;
+        if (takeaway) {
+          await expect(page.getByTestId("headline")).toContainText(takeaway);
         }
       }
     }
@@ -118,6 +125,9 @@ test("hcmc case study: headline figures equal the parity file for both scopes", 
     const expected = PARITY[`hcmc/${scope}`] as FigureParity;
     for (const figure of expected) {
       await expect(page.getByTestId(`value-${figure.key}`)).toHaveText(figure.display);
+      if (figure.badge) {
+        await expect(page.getByTestId(`badge-${figure.key}`)).toHaveText(figure.badge);
+      }
     }
   }
   expect(failures).toEqual([]);

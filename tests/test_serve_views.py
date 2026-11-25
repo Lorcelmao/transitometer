@@ -246,3 +246,85 @@ def test_pipeline_facts_come_from_the_evidence_files() -> None:
     gold = json.loads((folder / "validation-gold.json").read_text(encoding="utf-8"))
     passed = sum(t["ok"] for t in gold["tables"].values())
     assert facts["gold"] == f"{passed} / {len(gold['tables'])}"
+
+
+def test_shared_badge_rules_apply_the_named_thresholds() -> None:
+    assert views.on_time_badge(0.499) == {"label": "Below 50 %", "tone": "attention"}
+    assert views.on_time_badge(0.500) == {"label": "Higher on-time", "tone": "pass"}
+    assert views.bunching_badge(0.049) == {"label": "Low", "tone": "pass"}
+    assert views.bunching_badge(0.050) == {"label": "Watch", "tone": "attention"}
+    assert views.gapping_badge(0.049) == {"label": "Low", "tone": "pass"}
+    assert views.gapping_badge(0.050) == {"label": "Watch", "tone": "fail"}
+    assert views.not_delivered_badge(0.099) == {"label": "Check feed", "tone": "attention"}
+    assert views.not_delivered_badge(0.100) == {"label": "Elevated", "tone": "fail"}
+    assert views.feed_score_badge(0) == {"label": "All passed", "tone": "pass"}
+    assert views.feed_score_badge(1) == {"label": "1 failed", "tone": "fail"}
+    assert views.feed_health_card_badge(0, 10) == {"label": "All 10 passed", "tone": "pass"}
+    assert views.feed_health_card_badge(1, 10) == {"label": "1 failed", "tone": "fail"}
+    assert views.feed_health_card_badge(3, 10) == {"label": "3 failed", "tone": "fail"}
+    assert views.feed_health_status_badge(0) == {"label": "All checks passed", "tone": "pass"}
+    assert views.feed_health_status_badge(1) == {"label": "1 check exceeded limit", "tone": "fail"}
+    assert views.feed_health_status_badge(3) == {"label": "3 checks exceeded limit", "tone": "fail"}
+
+
+def test_stop_map_bands_and_delta_pts_share_one_rule() -> None:
+    assert views.stop_map_band_index(0.50, False) == -1
+    assert views.stop_map_band_index(0.299, True) == 0
+    assert views.stop_map_band_index(0.30, True) == 1
+    assert views.stop_map_band_index(0.40, True) == 2
+    assert views.stop_map_band_index(0.50, True) == 3
+    assert views.stop_map_band_index(0.65, True) == 4
+    assert views.stop_map_delta_pts(0.555, 0.455, True) == "+10.0"
+    assert views.stop_map_delta_pts(0.355, 0.455, True) == "-10.0"
+    assert views.stop_map_delta_pts(0.555, 0.455, False) is None
+    assert fmt.pts_delta(0.0) == "+0.0"
+
+
+@pytest.mark.parametrize("grp", ["bus", "subway"])
+@pytest.mark.parametrize("day", DAYS)
+def test_views_share_badges_takeaways_and_hour_labels(con, grp, day) -> None:  # type: ignore[no-untyped-def]
+    ov = views.overview(con, SRC, grp, day)
+    hw = views.headways(con, SRC, grp, day)
+    mt = views.missing_trips(con, SRC, grp, day)
+    dl = views.delay(con, SRC, grp, day)
+    otp = views.on_time(con, SRC, grp, day)
+
+    # Overview and sub-pages agree on the exact same badge for shared metrics.
+    ov_by_key = {f["key"]: f for f in ov["figures"]}
+    hw_by_key = {f["key"]: f for f in hw["figures"]}
+    mt_by_key = {f["key"]: f for f in mt["figures"]}
+    assert ov_by_key["bunched"]["badge"] == hw_by_key["bunched"]["badge"]
+    assert ov_by_key["not_delivered"]["badge"] == mt_by_key["not_delivered"]["badge"]
+
+    for view in (ov, hw, mt, dl, otp):
+        assert view["takeaway"]
+
+    # Hourly rows stay ordered chronologically and tag hours >= 24 with (+1).
+    for rows in (ov["hours"], otp["cells"]):
+        for row in rows:
+            hr = int(row["service_hour"])
+            assert row["hour_label"] == fmt.service_hour(hr)
+            if hr >= 24:
+                assert row["hour_label"].endswith("(+1)")
+    ov_hours = [int(h["service_hour"]) for h in ov["hours"]]
+    assert ov_hours == sorted(ov_hours)
+    if any(hr >= 24 for hr in ov_hours):
+        idx_23 = ov_hours.index(23)
+        idx_24 = next(i for i, hr in enumerate(ov_hours) if hr >= 24)
+        assert idx_24 > idx_23
+
+
+def test_post_midnight_hours_on_snapshot_keep_order_and_suffix() -> None:
+    if not (kpis.SNAPSHOT_DIR / "manifest.json").exists():
+        pytest.skip("no snapshot in showcase/data yet")
+    with kpis.connect(SNAPSHOT_SRC) as con:
+        ov = views.overview(con, SNAPSHOT_SRC, "bus", DAYS[0])
+        ew = views.early_warning(con, SNAPSHOT_SRC, "bus")["dispatcher"]
+    ov_hours = [int(h["service_hour"]) for h in ov["hours"]]
+    assert max(ov_hours) >= 24
+    assert ov_hours == sorted(ov_hours)
+    assert ov["hours"][ov_hours.index(24)]["hour_label"] == "00:00 (+1)"
+    ew_hours = [int(h["service_hour"]) for h in ew["hours"]]
+    assert ew_hours == sorted(ew_hours)
+    for row in ew["hours"]:
+        assert row["hour_label"] == fmt.service_hour(int(row["service_hour"]))

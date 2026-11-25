@@ -44,6 +44,7 @@ export function KpiFigure({
   extra?: KpiExtra;
 }) {
   const visibleNote = extra?.shortNote ?? figure.basis ?? conciseSummary(figure.help);
+  const badge = extra?.badge ?? figure.badge ?? null;
   const showTooltip = Boolean(figure.help);
 
   return (
@@ -81,11 +82,12 @@ export function KpiFigure({
         >
           {figure.display}
         </span>
-        {extra?.badge ? (
+        {badge ? (
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${BADGE_STYLES[extra.badge.tone]}`}
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${BADGE_STYLES[badge.tone]}`}
+            data-testid={`badge-${figure.key}`}
           >
-            {extra.badge.label}
+            {badge.label}
           </span>
         ) : null}
       </dd>
