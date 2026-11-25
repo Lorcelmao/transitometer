@@ -67,7 +67,7 @@ def page_hcmc() -> None:
         "by Resolution 1685/NQ-UBTVQH15 (16 Jun 2025). M1 divides walk-shed area by natural "
         "administrative area (including Cần Giờ mangroves and waterways), so it measures **% of "
         "land area**, not **% of population**. M2 relies solely on OSM `interval` tags (0 % "
-        "`duration` tagged — no actual arrival times). All active HCMC bus stops are buffered "
+        "`duration` tagged, so no actual arrival times). All active HCMC bus stops are buffered "
         "before clipping so border-adjacent stops still cover neighboring wards."
     )
 
@@ -187,6 +187,39 @@ def page_hcmc() -> None:
             hide_index=True,
         )
 
+    if view["routes"]:
+        st.subheader("Mapped HCMC bus routes (OSM-derived)")
+        routes_df = pd.DataFrame(view["routes"])
+        flagged_n = int(routes_df["osm_incomplete"].sum())
+        st.caption(
+            f"{len(routes_df)} distinct routes in `Xe buýt Thành phố Hồ Chí Minh`. "
+            f"{flagged_n} route(s) are marked **Incomplete OSM data** instead of "
+            "displaying unreliable OSM way sums (endpoint-only stop mapping or unverified "
+            "corridor detours above 120 km); stop-based walk-shed coverage is unaffected."
+        )
+        route_display = routes_df[
+            [
+                "route_ref",
+                "route_name",
+                "directions",
+                "avg_stops_per_dir",
+                "length_display",
+                "sample_interval",
+                "osm_note",
+            ]
+        ].rename(
+            columns={
+                "route_ref": "Route",
+                "route_name": "Corridor",
+                "directions": "Dirs",
+                "avg_stops_per_dir": "Mapped stops / dir",
+                "length_display": "Length",
+                "sample_interval": "OSM interval",
+                "osm_note": "OSM data note",
+            }
+        )
+        st.dataframe(route_display, width="stretch", hide_index=True)
+
     if view["hand_checks"]:
         st.subheader("Manual cross-check against official HCMC bus information")
         st.dataframe(pd.DataFrame(view["hand_checks"]), width="stretch", hide_index=True)
@@ -197,6 +230,6 @@ def page_hcmc() -> None:
     st.caption(
         f"Data: static OpenStreetMap snapshot ({prov['attribution']}, fetched "
         f"{prov['retrieved_utc'] or 'pinned'}) processed with DuckDB Spatial ({prov['crs']}, "
-        f"{int(prov['walk_radius_m'])} m buffer) — not a live service and not an official agency "
+        f"{int(prov['walk_radius_m'])} m buffer); not a live service and not an official agency "
         "timetable."
     )

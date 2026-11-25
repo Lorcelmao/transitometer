@@ -57,13 +57,13 @@ CHECKS: tuple[QualityCheck, ...] = (
     ),
     QualityCheck(
         "stops_valid_share",
-        "Routes with >= 2 in-bbox stops",
+        "Routes with at least 2 stops in HCMC",
         0.95,
-        "Share of route relations having at least 2 located stops inside the HCMC bounding box.",
+        "Share of route relations having at least 2 located stops inside the HCMC study area.",
     ),
     QualityCheck(
         "bidirectional_ref_share",
-        "Routes mapped in >= 2 directions",
+        "Routes mapped in at least 2 directions",
         0.80,
         "Share of distinct route numbers (ref) having at least two directional relations.",
     ),
@@ -71,7 +71,7 @@ CHECKS: tuple[QualityCheck, ...] = (
         "named_stop_share",
         "Located stops with names",
         0.80,
-        "Share of in-bbox stops carrying a non-empty stop_name tag.",
+        "Share of study-area stops carrying a non-empty stop_name tag.",
     ),
 )
 

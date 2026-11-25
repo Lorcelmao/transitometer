@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Meta } from "@/data/schemas";
 
-/** Mode (bus | subway) as a toggle group, labelled for screen readers. */
+/** Mode (bus | subway) as a segmented dashboard toggle, labelled for screen readers. */
 export function ModeToggle({
   modes,
   value,
@@ -16,7 +16,7 @@ export function ModeToggle({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span id="mode-label" className="text-xs font-medium uppercase tracking-widest text-muted-ink">
+      <span id="mode-label" className="text-[13px] font-medium text-muted-ink">
         Mode
       </span>
       <ToggleGroup
@@ -24,14 +24,14 @@ export function ModeToggle({
         value={value}
         onValueChange={(v) => v && onChange(v)}
         aria-labelledby="mode-label"
-        variant="outline"
+        className="inline-flex rounded-lg border border-rule bg-panel p-0.5"
         spacing={0}
       >
         {modes.map((m) => (
           <ToggleGroupItem
             key={m.key}
             value={m.key}
-            className="min-h-11 rounded-none px-4 data-[state=on]:bg-ink data-[state=on]:text-paper"
+            className="min-h-10 rounded-md border-0 bg-transparent px-3.5 text-sm font-medium text-muted-ink shadow-none transition-colors hover:text-ink data-[state=on]:bg-surface data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:shadow-xs"
             data-testid={`mode-${m.key}`}
           >
             {m.short}
@@ -53,16 +53,18 @@ export function DaySelect({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span id="day-label" className="text-xs font-medium uppercase tracking-widest text-muted-ink">
+      <span id="day-label" className="text-[13px] font-medium text-muted-ink">
         Service day
       </span>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger aria-labelledby="day-label" className="min-h-11 rounded-none bg-paper" data-testid="day-select">
-          {/* The label is rendered in the static HTML too, so the control does not change size
-              (and shift the page) when it hydrates. */}
+        <SelectTrigger
+          aria-labelledby="day-label"
+          className="min-h-11 rounded-lg border-rule-strong bg-surface text-sm font-medium text-ink"
+          data-testid="day-select"
+        >
           <SelectValue>{days.find((d) => d.key === value)?.label}</SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="rounded-lg border-rule bg-surface">
           {days.map((d) => (
             <SelectItem key={d.key} value={d.key} data-testid={`day-${d.key}`}>
               {d.label}
@@ -74,10 +76,14 @@ export function DaySelect({
   );
 }
 
-/** The filters of a page, in one row above its content. */
+/** Sticky desktop filter toolbar (static on mobile so it never eats viewport height). */
 export function FilterBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-y border-rule py-3" role="group" aria-label="Filters">
+    <div
+      className="my-5 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border border-rule bg-surface/95 px-4 py-2.5 shadow-xs backdrop-blur lg:sticky lg:top-0 lg:z-30"
+      role="group"
+      aria-label="Filters"
+    >
       {children}
     </div>
   );

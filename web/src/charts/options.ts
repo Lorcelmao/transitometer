@@ -8,7 +8,7 @@
 import type { EChartsCoreOption } from "echarts/core";
 
 import { axisStyle, COLORS } from "@/charts/theme";
-import { count, pct, seconds } from "@/lib/format";
+import { count, pct, seconds, serviceHour } from "@/lib/format";
 
 type Tip = { data: unknown };
 
@@ -38,19 +38,19 @@ export function heatmapOption(
       formatter: ({ data }: Tip) => {
         const { cell } = data as { cell: (typeof cells)[number] };
         return [
-          `<b>Route ${cell.route_id}</b>, hour ${cell.service_hour}`,
+          `<b>Route ${cell.route_id}</b>, ${serviceHour(cell.service_hour)}`,
           `${count(cell.events)} arrivals${cell.scored ? "" : " (too few to score)"}`,
-          `On time ${pct(cell.on_time_share)} · late ${pct(cell.late_share)}`,
+          `On time ${pct(cell.on_time_share)}, late ${pct(cell.late_share)}`,
           `Median delay ${seconds(cell.median_delay_s)}`,
         ].join("<br/>");
       },
     },
     xAxis: {
       type: "category",
-      data: hours.map(String),
-      name: "Hour of the service day (scheduled time)",
+      data: hours.map((h) => (h >= 24 ? `${String(h - 24).padStart(2, "0")}+1` : String(h).padStart(2, "0"))),
+      name: "Scheduled hour of the service day (+1 = after midnight)",
       nameLocation: "middle",
-      nameGap: 26,
+      nameGap: 28,
       ...axis,
       splitArea: { show: false },
     },
@@ -66,7 +66,7 @@ export function heatmapOption(
       itemHeight: 160,
       calculable: false,
       text: ["100 % on time", "0 %"],
-      textStyle: { color: COLORS.muted, fontFamily: font, fontSize: 11 },
+      textStyle: { color: COLORS.muted, fontFamily: font, fontSize: 12 },
       inRange: { color: [...COLORS.sequential] },
     },
     series: [
@@ -132,7 +132,7 @@ export function routeIntervalOption(points: Interval[], font: string): EChartsCo
     tooltip: {
       formatter: ({ data }: Tip) => {
         const { point } = data as { point: Interval & { extra?: string } };
-        return `<b>Route ${point.label}</b><br/>On time ${pct(point.value)}<br/>95 % interval ${pct(point.low)} – ${pct(point.high)}${point.extra ? `<br/>${point.extra}` : ""}`;
+        return `<b>Route ${point.label}</b><br/>On time ${pct(point.value)}<br/>95 % interval ${pct(point.low)} to ${pct(point.high)}${point.extra ? `<br/>${point.extra}` : ""}`;
       },
     },
     xAxis: {
@@ -162,9 +162,9 @@ export function hourlyIntervalOption(
       formatter: ({ data }: Tip) => {
         const { point: p } = data as { point: (typeof points)[number] };
         return [
-          `<b>Hour ${p.label}</b>: ${count(p.events)} arrivals${p.thin ? " (too few to score)" : ""}`,
-          `On time ${pct(p.value, 0)} (95 % ${pct(p.low, 0)} – ${pct(p.high, 0)})`,
-          `Typical delay ${seconds(p.p50)} · bad day (p90) ${seconds(p.p90)}`,
+          `<b>${p.label}</b>: ${count(p.events)} arrivals${p.thin ? " (too few to score)" : ""}`,
+          `On time ${pct(p.value, 0)} (95 % ${pct(p.low, 0)} to ${pct(p.high, 0)})`,
+          `Typical delay ${seconds(p.p50)}; bad day (p90) ${seconds(p.p90)}`,
         ].join("<br/>");
       },
     },
@@ -172,9 +172,9 @@ export function hourlyIntervalOption(
       type: "category",
       data: points.map((p) => p.label),
       ...axis,
-      name: "Hour of the service day (scheduled time)",
+      name: "Scheduled hour of the service day (+1 = after midnight)",
       nameLocation: "middle",
-      nameGap: 28,
+      nameGap: 30,
     },
     yAxis: {
       type: "value",
@@ -519,12 +519,13 @@ export function hcmcChoroplethOption(
   return {
     tooltip: {
       trigger: "item",
+      textStyle: { fontFamily: font, fontSize: 12 },
       formatter: (params: { name?: string }) => {
         const w = params.name ? byId.get(params.name) : undefined;
         if (!w) return "";
         return [
-          `<b>${escapeHtml(w.ward_name)}</b>`,
-          `Area: ${escapeHtml(w.area_display)} · ${count(w.active_stops)} stops · ${count(w.distinct_routes)} routes`,
+          `<b lang="vi">${escapeHtml(w.ward_name)}</b>`,
+          `Area: ${escapeHtml(w.area_display)}, ${count(w.active_stops)} stops, ${count(w.distinct_routes)} routes`,
           `400 m (any stop): <b>${escapeHtml(w.coverage_any_display)}</b>`,
           `≥ 4 buses/h (conservative): <b>${escapeHtml(w.coverage_freq_cons_display)}</b>`,
           `≥ 4 buses/h (midpoint): ${escapeHtml(w.coverage_freq_mid_display)}`,
@@ -542,7 +543,7 @@ export function hcmcChoroplethOption(
       itemHeight: 160,
       calculable: false,
       text: ["100 % covered", "0 %"],
-      textStyle: { color: COLORS.muted, fontFamily: font, fontSize: 11 },
+      textStyle: { color: COLORS.muted, fontFamily: font, fontSize: 12 },
       inRange: { color: [...COLORS.sequential] },
     },
     geo: {

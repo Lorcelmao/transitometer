@@ -2,10 +2,10 @@
   "city": "Ho Chi Minh City",
   "osm_city_relation_id": 1973756,
   "bbox": {
-    "south": 10.34,
-    "west": 106.35,
-    "north": 11.17,
-    "east": 107.03
+    "south": 8.56,
+    "west": 106.07,
+    "north": 11.52,
+    "east": 107.59
   },
   "primary_network": "Xe buýt Thành phố Hồ Chí Minh",
   "license": "OpenStreetMap contributors, ODbL 1.0",

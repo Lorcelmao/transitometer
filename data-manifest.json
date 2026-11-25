@@ -12,8 +12,8 @@
     },
     "hcmc/osm_bus_routes.json": {
       "url": "https://download.geofabrik.de/asia/vietnam-latest.osm.pbf#hcmc_bus_routes",
-      "sha256": "ce55e1092aa3d10f6f8f3f6bbd656a75651e39e62320e5a2446a504d8d622206",
-      "bytes": 15907817,
+      "sha256": "901bd30950e8fce74439ef534a875d45ce568cc34cfd6a1b0c2983577f2cf3bc",
+      "bytes": 17246371,
       "rows": null,
       "kind": "case_study",
       "source": "osm_hcmc",

@@ -87,7 +87,7 @@ def page_validation() -> None:
 
     folder = evidence_folder()
     view = views.validation(folder)
-    st.subheader("1 · Dataset provenance")
+    st.subheader("1. Dataset provenance")
     st.dataframe(frame(view["datasets"]), hide_index=True, width="stretch")
     st.caption(
         "The archive holds the feeds as the MTA published them. Here they are **replayed** through "
@@ -97,7 +97,7 @@ def page_validation() -> None:
     )
 
     where = _shown(folder)
-    st.subheader("2 · Source integrity")
+    st.subheader("2. Source integrity")
     st.markdown("Did the data reach the lakehouse complete and unaltered?")
     integrity = view["integrity"]
     if not integrity["available"]:
@@ -111,7 +111,7 @@ def page_validation() -> None:
             + "."
         )
 
-    st.subheader("3 · Golden-reference parity")
+    st.subheader("3. Golden-reference parity")
     st.markdown(
         "The same rules were implemented a second time, independently, as **DuckDB SQL** over the "
         "raw archive (the *golden reference*). Each Spark result table must equal its golden "
@@ -146,7 +146,7 @@ def page_validation() -> None:
             f"Evidence: `{where}validation-silver.json`, `{where}validation-gold.json`."
         )
 
-    st.subheader("4 · Automated tests")
+    st.subheader("4. Automated tests")
     tests = view["tests"]
     if not tests["available"]:
         _not_measured("Recorded test results", tests["file"], where)

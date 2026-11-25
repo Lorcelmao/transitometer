@@ -16,7 +16,7 @@ LINKS: dict[str, Any] = {}  # page objects for in-text links, filled in by main
 def _link(name: str, label: str) -> None:
     page = LINKS.get(name)
     if page is not None:
-        st.page_link(page, label=label, icon=":material/arrow_forward:")
+        st.page_link(page, label=label)
 
 
 def _scorecard(grp: str, day: str) -> dict[str, Any]:
@@ -63,20 +63,20 @@ def page() -> None:
     st.subheader("How it works")
     steps = st.columns(4)
     steps[0].markdown(
-        "**1 · Real data**  \nArchived MTA GTFS-Realtime snapshots (bus trip updates, bus GPS "
+        "**1. Real data**  \nArchived MTA GTFS-Realtime snapshots (bus trip updates, bus GPS "
         "positions, subway trip updates) and the published timetables."
     )
     steps[1].markdown(
-        "**2 · Streaming ingest**  \nEach snapshot is replayed as protobuf messages through "
+        "**2. Streaming ingest**  \nEach snapshot is replayed as protobuf messages through "
         "**Kafka** and decoded by **Spark Structured Streaming** into **Delta Lake** "
         "(deduplicated, bad messages dead-lettered, counts reconciled)."
     )
     steps[2].markdown(
-        "**3 · Analytics**  \n**Spark** batch jobs infer stop arrivals, match trips to the "
+        "**3. Analytics**  \n**Spark** batch jobs infer stop arrivals, match trips to the "
         "timetable and compute the reliability and feed-quality tables."
     )
     steps[3].markdown(
-        "**4 · Serving**  \n**DuckDB** reads the Delta tables for this **Streamlit** app."
+        "**4. Serving**  \n**DuckDB** reads the Delta tables for this **Streamlit** app."
     )
 
     st.subheader("Why the numbers can be trusted")

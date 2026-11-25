@@ -9,6 +9,7 @@ export type Column<R> = {
   key: string;
   label: string;
   numeric?: boolean;
+  lang?: "vi" | "en";
   render: (row: R) => ReactNode;
 };
 
@@ -26,16 +27,23 @@ export function DataTable<R>({
 }) {
   return (
     // Focusable so keyboard users can scroll it (WCAG 2.1.1); named after the table it holds.
-    <div className="max-h-[32rem] overflow-auto border-y border-rule" tabIndex={0} role="region" aria-label={caption}>
+    <div
+      className="max-h-[30rem] max-w-full overflow-auto rounded-lg border border-rule bg-surface"
+      tabIndex={0}
+      role="region"
+      aria-label={caption}
+    >
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
-        <thead className="sticky top-0 bg-panel">
+        <thead className="sticky top-0 z-10 bg-paper">
           <tr>
             {columns.map((c) => (
               <th
                 key={c.key}
                 scope="col"
-                className={`px-3 py-2 text-xs font-medium uppercase tracking-wider text-muted-ink ${c.numeric ? "text-right" : "text-left"}`}
+                className={`border-b border-rule px-3 py-2 text-xs font-semibold text-muted-ink ${
+                  c.numeric ? "text-right" : "text-left"
+                }`}
               >
                 {c.label}
               </th>
@@ -44,14 +52,23 @@ export function DataTable<R>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={rowKey(row)} className="border-t border-rule/60">
+            <tr key={rowKey(row)} className="border-t border-panel transition-colors hover:bg-paper/70">
               {columns.map((c, i) =>
                 i === 0 ? (
-                  <th key={c.key} scope="row" className="px-3 py-1.5 text-left font-medium">
+                  <th
+                    key={c.key}
+                    scope="row"
+                    lang={c.lang}
+                    className="px-3 py-2 text-left font-medium text-ink"
+                  >
                     {c.render(row)}
                   </th>
                 ) : (
-                  <td key={c.key} className={`px-3 py-1.5 ${c.numeric ? "num text-right" : ""}`}>
+                  <td
+                    key={c.key}
+                    lang={c.lang}
+                    className={`px-3 py-2 ${c.numeric ? "num text-right text-ink" : "text-ink"}`}
+                  >
                     {c.render(row)}
                   </td>
                 ),
@@ -65,8 +82,8 @@ export function DataTable<R>({
 }
 
 /**
- * A chart with its title, a one-sentence reading, a table alternative, a text summary for
- * assistive technology, and the provenance of the numbers.
+ * Dashboard chart card: title, concise reading lead, chart/table toggle, summary and compact
+ * provenance footer.
  */
 export function ChartFrame({
   title,
@@ -77,6 +94,7 @@ export function ChartFrame({
   source,
   provenance,
   note,
+  className = "my-6",
 }: {
   title: string;
   lead?: ReactNode;
@@ -86,25 +104,31 @@ export function ChartFrame({
   source?: Source;
   provenance?: ReactNode;
   note?: ReactNode;
+  className?: string;
 }) {
   const [asTable, setAsTable] = useState(false);
   const summaryId = useId();
   return (
-    <figure className="my-10" aria-describedby={summaryId}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-ink pb-2">
-        <h2 className="font-display text-2xl md:text-3xl">{title}</h2>
+    <figure
+      className={`overflow-hidden rounded-xl border border-rule bg-surface shadow-xs ${className}`}
+      aria-describedby={summaryId}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-panel px-4 py-3.5 md:px-5">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[17px] font-semibold leading-snug text-ink">{title}</h2>
+          {lead ? <div className="mt-1 text-sm text-muted-ink">{lead}</div> : null}
+        </div>
         <button
           type="button"
           aria-pressed={asTable}
           onClick={() => setAsTable((v) => !v)}
-          className="min-h-11 px-2 text-sm text-link underline underline-offset-2"
+          className="inline-flex min-h-10 shrink-0 items-center rounded-md border border-rule bg-paper px-3 text-xs font-semibold text-brand transition-colors hover:bg-brand-soft"
         >
           {asTable ? "Show as chart" : "Show as table"}
         </button>
       </div>
-      {lead ? <div className="mt-3 max-w-prose text-base">{lead}</div> : null}
-      <div className="mt-4">{asTable ? table : chart}</div>
-      <figcaption className="mt-3 space-y-1 text-sm text-muted-ink">
+      <div className="p-4 md:p-5">{asTable ? table : chart}</div>
+      <figcaption className="space-y-1.5 border-t border-rule bg-paper px-4 py-3 text-xs text-muted-ink md:px-5">
         <p id={summaryId}>{summary}</p>
         {note ? <div>{note}</div> : null}
         {provenance ?? (source ? <ProvenanceLine source={source} /> : null)}

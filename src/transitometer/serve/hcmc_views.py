@@ -36,33 +36,33 @@ HCMC_DEFINITIONS = (
     "- **Source:** OpenStreetMap (`© OpenStreetMap contributors, ODbL 1.0`, extracted offline from "
     "Geofabrik `vietnam-latest.osm.pbf`) bus route relations (`network = Xe buýt Thành phố Hồ Chí "
     "Minh`) converted to a frequency-based GTFS snapshot, joined to OSM post-July-2025 municipal "
-    "ward/commune boundaries (`relation/1973756`, 168 subareas). Community open data — **not** an "
+    "ward/commune boundaries (`relation/1973756`, 168 subareas). Community open data: **not** an "
     "official agency timetable and **not** a live service.\n"
-    "- **400 m walk-shed (M1 — % of natural land area, not % of population):** Each active stop "
+    "- **400 m walk-shed (M1, % of natural land area, not % of population):** Each active stop "
     "is projected from `EPSG:4326` to metric `EPSG:32648` (UTM Zone 48N, `always_xy := true`), "
     "buffered by 400 m, and merged with `ST_Union_Agg` before intersecting each ward polygon so "
     "overlapping stop circles are never double-counted. The denominator is natural administrative "
-    "area — including Cần Giờ mangrove forests, rivers, and waterways — so M1 measures **% of "
+    "area (including Cần Giờ mangrove forests, rivers, and waterways), so M1 measures **% of "
     "land area**, **not** `% of population`. Straight-line (Euclidean) 400 m is also more "
     "optimistic than street-network walking distance.\n"
     "- **Border-adjacent stops:** All active stops of `Xe buýt Thành phố Hồ Chí Minh` are kept in "
     "the 400 m buffer union before clipping to each ward polygon, so stops situated immediately "
     "outside a pre-merger ward boundary still contribute their 400 m walk-shed into neighboring "
     "border wards.\n"
-    "- **Frequent service ≥ 4 buses/h (M2 — OSM `interval` only, no arrival times):** Because "
-    "most HCMC OSM routes tag `interval` as a peak–off-peak range (e.g. `00:10-00:20`), M2 is "
+    "- **Frequent service ≥ 4 buses/h (M2, OSM `interval` only, no arrival times):** Because "
+    "most HCMC OSM routes tag `interval` as a peak to off-peak range (e.g. `00:10-00:20`), M2 is "
     "derived solely from OSM `interval` tags by summing guaranteed minimum hourly departures "
     "`3600 / interval_max_s` across distinct serving route-directions (headline: conservative "
     "bound ≥ 4 buses/h, ≤ 15 min average wait; sensitivity: midpoint `interval_mid_s`). Because "
     "**0 %** of primary HCMC OSM bus relations carry a `duration` tag, derived `stop_times.txt` "
-    "keeps stop order only — there are **no actual arrival times**, and schedule reliability "
+    "keeps stop order only; there are **no actual arrival times**, and schedule reliability "
     "cannot be measured without official GTFS-Realtime feeds.\n"
     "- **Two scopes:** `Pre-merger HCMC (102)` selects strictly the 102 commune-level units "
     "(78 wards + 24 communes) formed on pre-merger Ho Chi Minh City territory under National "
     "Assembly Standing Committee Resolution `1685/NQ-UBTVQH15` (16 Jun 2025, effective 1 Jul "
     "2025; OSM total ~2,058 km² vs official ~2,095 km², −1.8 % coastal/water-boundary difference); "
     "`Merged city (168)` covers all 168 post-July-2025 subareas including former Bình Dương (36) "
-    "and Bà Rịa–Vũng Tàu (30) units served mainly by provincial bus networks outside "
+    "and Bà Rịa - Vũng Tàu (30) units served mainly by provincial bus networks outside "
     "`Xe buýt Thành phố Hồ Chí Minh`."
 )
 
@@ -172,16 +172,32 @@ def hcmc_coverage(
         ),
     )[:RANKED_WARDS]
 
-    route_rows = _rows(
+    raw_route_rows = _rows(
         con,
         f"""
         SELECT route_ref, route_name, operator, directions, avg_stops_per_dir,
-               avg_length_km, interval_min_min, interval_max_min,
+               avg_length_km, in_bbox_length_km, osm_incomplete, osm_note,
+               interval_min_min, interval_max_min,
                sample_interval, sample_opening_hours, is_ptv2_all, has_duration
         FROM {_scan(folder / "hcmc_route_summary.parquet")}
-        ORDER BY avg_length_km DESC, route_ref ASC
+        ORDER BY osm_incomplete DESC, avg_length_km DESC NULLS LAST, route_ref ASC
         """,
     )
+    route_rows = [
+        {
+            **r,
+            "length_display": (
+                "Incomplete OSM data"
+                if r["osm_incomplete"]
+                else (
+                    f"{decimal(r['avg_length_km'], 1)} km"
+                    if r["avg_length_km"] is not None
+                    else "—"
+                )
+            ),
+        }
+        for r in raw_route_rows
+    ]
     quality_rows = _rows(
         con,
         f"""
@@ -212,7 +228,7 @@ def hcmc_coverage(
                 summary["coverage_any_400m_share"],
                 pct(summary["coverage_any_400m_share"]),
                 "Deduplicated 400 m walk-shed union (ST_Union_Agg on EPSG:32648) divided by "
-                "natural administrative area (including Cần Giờ mangroves and waterways) — "
+                "natural administrative area (including Cần Giờ mangroves and waterways): "
                 "% of land area, not % of population.",
                 f"{decimal(summary['covered_any_km2'], 1)} of "
                 f"{decimal(summary['total_area_km2'], 1)} km² across {count(summary['wards'])} "
@@ -226,7 +242,7 @@ def hcmc_coverage(
                 "Share of land area within 400 m of stops guaranteeing ≥ 4 departures/hour using "
                 "OSM interval tags only (upper bound interval_max); 0% duration tagged so no "
                 "actual arrival times exist.",
-                f"midpoint sensitivity: {pct(summary['coverage_freq_midpoint_share'])} · "
+                f"midpoint sensitivity: {pct(summary['coverage_freq_midpoint_share'])}; "
                 f"{count(summary['frequent_stops_conservative'])} frequent stops",
             ),
             _figure(
@@ -235,7 +251,7 @@ def hcmc_coverage(
                 int(summary["distinct_routes"]),
                 count(summary["distinct_routes"]),
                 "Distinct route numbers (ref) tagged under Xe buýt Thành phố Hồ Chí Minh in OSM.",
-                f"{count(summary['route_relations'])} directional relations · "
+                f"{count(summary['route_relations'])} directional relations, "
                 f"{count(summary['active_stops'])} active stops in scope",
             ),
             _figure(
@@ -244,9 +260,9 @@ def hcmc_coverage(
                 summary["interval_parsed_share"],
                 pct(summary["interval_parsed_share"]),
                 "Share of HCMC bus route relations whose OSM interval tag parsed cleanly into "
-                "seconds (single value or peak–off-peak range).",
-                f"PTv2: {pct(summary['ptv2_share'])} · duration tagged: "
-                f"{pct(summary['duration_present_share'])} · "
+                "seconds (single value or peak to off-peak range).",
+                f"PTv2: {pct(summary['ptv2_share'])}, duration tagged: "
+                f"{pct(summary['duration_present_share'])}, "
                 f"{passed_checks}/{len(quality)} checks passed",
             ),
         ]

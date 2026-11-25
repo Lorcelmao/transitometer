@@ -118,9 +118,9 @@ def page_early_warning() -> None:
             icon = ":material/check_circle:" if verdict["passed"] else ":material/cancel:"
             st.markdown(f"**{verdict['title']}** {icon} {verdict['verdict']}")
             st.markdown(
-                f"F1 **{verdict['f1_display']}** vs baseline {verdict['baseline_f1_display']} · "
+                f"F1 **{verdict['f1_display']}** vs baseline {verdict['baseline_f1_display']}; "
                 f"precision **{verdict['precision_display']}** (target ≥ "
-                f"{view['min_precision_display']}) · recall {verdict['recall_display']}"
+                f"{view['min_precision_display']}); recall {verdict['recall_display']}"
             )
             st.caption(verdict["caption"])
 

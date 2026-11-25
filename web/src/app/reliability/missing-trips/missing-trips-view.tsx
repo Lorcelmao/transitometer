@@ -4,20 +4,41 @@ import { Markdown } from "@/components/markdown";
 import { ModeDayView } from "@/components/site/mode-day-view";
 import { BarList } from "@/components/story/bar-list";
 import { ChartFrame, DataTable } from "@/components/story/chart-frame";
-import { KpiRow } from "@/components/story/kpi-figure";
+import { KpiRow, type KpiExtra } from "@/components/story/kpi-figure";
 import { Caveat, Definitions } from "@/components/story/page-parts";
 import { missingTrips, type Meta, type MissingTrips } from "@/data/schemas";
 import type { Initial } from "@/hooks/use-view";
 import { count, pct } from "@/lib/format";
 
 function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTrips>["source"] }) {
-  if (!data.summary) return <p className="my-10">No scheduled trips on this day.</p>;
+  if (!data.summary) {
+    return (
+      <p className="my-6 rounded-xl border border-rule bg-surface p-5 text-sm text-muted-ink">
+        No scheduled trips on this day.
+      </p>
+    );
+  }
   const most = Math.max(...data.outcomes.map((o) => o.trips));
+  const notDelivFig = data.figures.find((f) => f.key === "not_delivered");
+  const notDelivVal = Number(notDelivFig?.value ?? 0);
+
+  const extras: Record<string, KpiExtra> = {
+    scheduled: { shortNote: "All trips scheduled in the MTA timetable for this day." },
+    not_delivered: {
+      badge: notDelivVal >= 0.1 ? { label: "Elevated", tone: "fail" } : { label: "Watch", tone: "attention" },
+      shortNote: notDelivFig?.basis
+        ? `Never reported or never moved (${notDelivFig.basis}).`
+        : "Never reported or announced without moving.",
+    },
+    unknown: {
+      badge: { label: "Excluded", tone: "neutral" },
+      shortNote: "Outside feed capture window or during a feed outage.",
+    },
+  };
+
   return (
-    <>
-      <div className="mt-2">
-        <KpiRow figures={data.figures} size="md" />
-      </div>
+    <div className="space-y-5">
+      <KpiRow figures={data.figures} size="md" extras={extras} />
       {data.caveat ? (
         <Caveat>
           <Markdown className="inline [&>p]:inline">{data.caveat.text}</Markdown>
@@ -48,7 +69,11 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
             columns={[
               { key: "outcome", label: "Outcome", render: (o) => o.outcome },
               { key: "trips", label: "Trips", numeric: true, render: (o) => count(o.trips) },
-              { key: "counted", label: "Counted as not seen running", render: (o) => (o.not_delivered ? "Yes" : "No") },
+              {
+                key: "counted",
+                label: "Counted as not seen running",
+                render: (o) => (o.not_delivered ? "Yes" : "No"),
+              },
             ]}
           />
         }
@@ -80,9 +105,24 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
                 { key: "route", label: "Route", render: (r) => r.route_id },
                 { key: "scheduled", label: "Scheduled", numeric: true, render: (r) => count(r.scheduled) },
                 { key: "missing", label: "Never reported", numeric: true, render: (r) => count(r.missing) },
-                { key: "not_run", label: "Announced, never moved", numeric: true, render: (r) => count(r.not_run) },
-                { key: "unknown", label: "Could not be judged", numeric: true, render: (r) => count(r.unknown) },
-                { key: "share", label: "Not seen running", numeric: true, render: (r) => pct(r.not_delivered_share) },
+                {
+                  key: "not_run",
+                  label: "Announced, never moved",
+                  numeric: true,
+                  render: (r) => count(r.not_run),
+                },
+                {
+                  key: "unknown",
+                  label: "Could not be judged",
+                  numeric: true,
+                  render: (r) => count(r.unknown),
+                },
+                {
+                  key: "share",
+                  label: "Not seen running",
+                  numeric: true,
+                  render: (r) => pct(r.not_delivered_share),
+                },
               ]}
             />
           }
@@ -90,7 +130,7 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
         />
       ) : null}
       <Definitions text={data.definitions} />
-    </>
+    </div>
   );
 }
 

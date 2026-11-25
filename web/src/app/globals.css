@@ -3,41 +3,56 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Editorial design tokens (plans/261003-1210-nextjs-showcase-frontend/design-system.md).
- * Light theme only; every colour is a token, so a dark theme only has to redefine :root values.
- * The surfaces (paper, panel, rule, popover) use the cool near-white neutrals of the RiftQuant
- * light theme; ink, accent and link keep the editorial values.
- * Text pairs were contrast-checked against --paper (WCAG AA): ink 17.1:1, muted 6.8:1,
- * accent 6.1:1, link 7.8:1, pass 6.0:1, warn 5.5:1; on --panel the lowest is warn at 5.2:1.
- * --rule is decorative only.
+ * Dashboard design tokens (Direction B, WCAG AA verified).
+ * Single-font English UI (Atkinson Hyperlegible Next) with dedicated Vietnamese fallback
+ * (Be Vietnam Pro via :lang(vi)) so Vietnamese diacritics never mix glyphs across fonts.
  */
 :root {
   --paper: #f6f7fb;
-  --panel: #eceff5;
-  --ink: #161513;
-  --muted-ink: #5c564d;
-  --rule: #cdd3de;
-  --accent-red: #b3261e;
+  --surface: #ffffff;
+  --panel: #eff2f8;
+  --ink: #0f172a;
+  --muted-ink: #475569;
+  --rule: #dce2ec;
+  --rule-strong: #c5cedd;
+
+  /* Meaningful color system (all text/background pairs WCAG AA/AAA verified) */
   --link: #1f4e8c;
-  --pass: #2e6b3a;
+  --brand: #1f4e8c;
+  --brand-hover: #163b6b;
+  --brand-soft: #e8f0fa;
+
+  /* Single purposeful attention accent (Ochre Amber) */
+  --attention: #b45309;
+  --attention-text: #92400e;
+  --attention-soft: #fef3c7;
+  --warn: #92400e;
+
+  /* Strictly semantic status colors */
+  --pass: #1e6130;
+  --pass-text: #1b542a;
+  --pass-soft: #eaf5ec;
   --fail: #b3261e;
-  --warn: #8a5a00;
-  /* On-time share, single blue hue, light -> dark. */
+  --fail-text: #991b1b;
+  --fail-soft: #fdeeed;
+  --accent-red: #b3261e;
+
+  /* Sequential blue scale for on-time / coverage intensity, light to dark */
   --seq-1: #d6e2ee;
   --seq-2: #9fbcd9;
   --seq-3: #4a7fb5;
   --seq-4: #1f4e8c;
   --seq-5: #0b2f5b;
 
-  /* shadcn/ui variables mapped onto the editorial tokens. */
+  /* shadcn/ui variables mapped onto dashboard tokens */
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: var(--paper);
+  --card: var(--surface);
   --card-foreground: var(--ink);
-  --popover: #ffffff;
+  --popover: var(--surface);
   --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--paper);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
   --secondary: var(--panel);
   --secondary-foreground: var(--ink);
   --muted: var(--panel);
@@ -46,9 +61,9 @@
   --accent-foreground: var(--ink);
   --destructive: var(--fail);
   --border: var(--rule);
-  --input: var(--rule);
-  --ring: var(--link);
-  --radius: 0.125rem;
+  --input: var(--rule-strong);
+  --ring: var(--brand);
+  --radius: 0.5rem;
 }
 
 @theme inline {
@@ -72,14 +87,26 @@
   --color-ring: var(--ring);
 
   --color-paper: var(--paper);
+  --color-surface: var(--surface);
   --color-panel: var(--panel);
   --color-ink: var(--ink);
   --color-muted-ink: var(--muted-ink);
   --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-attention: var(--attention);
+  --color-attention-text: var(--attention-text);
+  --color-attention-soft: var(--attention-soft);
   --color-accent-red: var(--accent-red);
   --color-link: var(--link);
   --color-pass: var(--pass);
+  --color-pass-text: var(--pass-text);
+  --color-pass-soft: var(--pass-soft);
   --color-fail: var(--fail);
+  --color-fail-text: var(--fail-text);
+  --color-fail-soft: var(--fail-soft);
   --color-warn: var(--warn);
   --color-seq-1: var(--seq-1);
   --color-seq-2: var(--seq-2);
@@ -87,14 +114,14 @@
   --color-seq-4: var(--seq-4);
   --color-seq-5: var(--seq-5);
 
-  --font-sans: var(--font-plex-sans);
-  --font-mono: var(--font-plex-mono);
-  --font-display: var(--font-newsreader);
+  --font-sans: var(--font-atkinson), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-atkinson), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --radius-sm: var(--radius);
+  --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
@@ -106,24 +133,30 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-size: 1rem;
+    font-size: 0.9375rem;
     line-height: 1.5;
+  }
+  :lang(vi) {
+    font-family: var(--font-be-vietnam), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
   :focus-visible {
-    outline: 2px solid var(--link);
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
   a {
     @apply text-link underline decoration-1 underline-offset-2 hover:decoration-2;
   }
   .num {
-    font-family: var(--font-plex-mono);
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
     white-space: nowrap;
+  }
+  .mono-id {
+    font-family: var(--font-mono);
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -138,8 +171,7 @@
 /*
  * Motion. Every animation lives inside prefers-reduced-motion: no-preference, so reduced-motion
  * visitors get the final state at once. Nothing starts invisible: entries begin at partial
- * opacity, and scroll reveals only run where the browser supports scroll-driven animations
- * (elsewhere the content is simply shown).
+ * opacity, and scroll reveals only run where supported.
  */
 html {
   scroll-behavior: smooth;
@@ -150,49 +182,25 @@ html {
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  /* Page change: a short rise into place (app/template.tsx re-mounts on every navigation). */
   .page-enter {
-    animation: page-enter 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: page-enter 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
-  /* A headline number that changed with the filters. */
   .value-update {
-    animation: value-update 260ms ease-out both;
-  }
-  @supports (animation-timeline: view()) {
-    .reveal {
-      animation: reveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 40%;
-    }
-  }
-  /* Overview intro: stops appear outward from Lower Manhattan, once per browser session. */
-  .intro-dot {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: intro-dot 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    animation-delay: var(--delay, 0ms);
+    animation: value-update 220ms ease-out both;
   }
   .intro-sweep {
-    animation: intro-sweep 1500ms cubic-bezier(0.3, 0.6, 0.2, 1) both;
+    animation: intro-sweep 1200ms cubic-bezier(0.3, 0.6, 0.2, 1) both;
   }
-  .intro-line {
-    stroke-dasharray: var(--length);
-    animation: intro-line 1400ms cubic-bezier(0.6, 0, 0.2, 1) both;
-  }
-  html[data-intro="seen"] .intro-dot,
-  html[data-intro="seen"] .intro-sweep,
-  html[data-intro="seen"] .intro-line {
+  html[data-intro="seen"] .intro-sweep {
     animation: none;
   }
-  /* A real request in flight (a filter or route file being fetched). */
   .loading-bar::after {
     animation: loading-bar 1100ms ease-in-out infinite;
   }
 }
-/* Movement only: the page is fully opaque from its first paint. */
 @keyframes page-enter {
   from {
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
 }
 @keyframes intro-sweep {
@@ -203,27 +211,9 @@ html {
     clip-path: circle(150% at var(--ox) var(--oy));
   }
 }
-/* Movement only: a changed number stays fully opaque, so it is contrast-safe while it settles. */
 @keyframes value-update {
   from {
-    transform: translateY(3px);
-  }
-}
-/* Movement only, never transparency: text below the fold stays fully readable (and contrast-safe). */
-@keyframes reveal {
-  from {
-    transform: translateY(24px);
-  }
-}
-@keyframes intro-dot {
-  from {
-    opacity: 0;
-    transform: scale(0.2);
-  }
-}
-@keyframes intro-line {
-  from {
-    stroke-dashoffset: var(--length);
+    transform: translateY(2px);
   }
 }
 @keyframes loading-bar {
@@ -245,5 +235,5 @@ html {
   position: absolute;
   inset: 0;
   width: 40%;
-  background: var(--link);
+  background: var(--brand);
 }

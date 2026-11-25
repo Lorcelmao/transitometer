@@ -26,11 +26,17 @@ function Body({ data, source }: { data: Scorecards; source: Initial<Scorecards>[
       ),
     [shown],
   );
-  if (!data.ranked.length) return <p className="my-10">No route was observed often enough to be ranked.</p>;
+  if (!data.ranked.length) {
+    return (
+      <p className="my-6 rounded-xl border border-rule bg-surface p-5 text-sm text-muted-ink">
+        No route was observed often enough to be ranked.
+      </p>
+    );
+  }
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <span id="show-label" className="text-xs font-medium uppercase tracking-widest text-muted-ink">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span id="show-label" className="text-[13px] font-medium text-muted-ink">
           Show
         </span>
         <ToggleGroup
@@ -38,13 +44,19 @@ function Body({ data, source }: { data: Scorecards; source: Initial<Scorecards>[
           value={state.show}
           onValueChange={(v) => v && setState({ show: v })}
           aria-labelledby="show-label"
-          variant="outline"
+          className="inline-flex rounded-lg border border-rule bg-panel p-0.5"
           spacing={0}
         >
-          <ToggleGroupItem value="least" className="min-h-11 rounded-none px-4 data-[state=on]:bg-ink data-[state=on]:text-paper">
+          <ToggleGroupItem
+            value="least"
+            className="min-h-10 rounded-md border-0 bg-transparent px-3.5 text-sm font-medium text-muted-ink shadow-none data-[state=on]:bg-surface data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:shadow-xs"
+          >
             Least punctual
           </ToggleGroupItem>
-          <ToggleGroupItem value="most" className="min-h-11 rounded-none px-4 data-[state=on]:bg-ink data-[state=on]:text-paper">
+          <ToggleGroupItem
+            value="most"
+            className="min-h-10 rounded-md border-0 bg-transparent px-3.5 text-sm font-medium text-muted-ink shadow-none data-[state=on]:bg-surface data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:shadow-xs"
+          >
             Most punctual
           </ToggleGroupItem>
         </ToggleGroup>
@@ -52,7 +64,13 @@ function Body({ data, source }: { data: Scorecards; source: Initial<Scorecards>[
       <ChartFrame
         title={state.show === "most" ? "The most punctual routes" : "The least punctual routes"}
         summary={`On-time share (dot) and 95 % confidence interval (line) of the ${shown.length} ${state.show === "most" ? "most" : "least"} punctual ranked routes, both service days pooled. ${data.caption}`}
-        chart={<EChart build={build} height={Math.max(260, 26 * shown.length + 70)} label="Route on-time share with 95 % intervals" />}
+        chart={
+          <EChart
+            build={build}
+            height={Math.max(280, 26 * shown.length + 76)}
+            label="Route on-time share with 95 % intervals"
+          />
+        }
         table={
           <DataTable
             caption="Ranked routes"
@@ -62,7 +80,12 @@ function Body({ data, source }: { data: Scorecards; source: Initial<Scorecards>[
               { key: "route", label: "Route", render: (r) => r.route_id },
               { key: "rank", label: "Rank", numeric: true, render: (r) => r.rank ?? "—" },
               { key: "on_time", label: "On time", numeric: true, render: (r) => pct(r.on_time_share) },
-              { key: "ci", label: "95 % interval", numeric: true, render: (r) => `${pct(r.ci_low)} – ${pct(r.ci_high)}` },
+              {
+                key: "ci",
+                label: "95 % interval",
+                numeric: true,
+                render: (r) => `${pct(r.ci_low)} to ${pct(r.ci_high)}`,
+              },
               { key: "ranks", label: "Plausible ranks", numeric: true, render: (r) => r.rank_interval },
               { key: "trips", label: "Trips", numeric: true, render: (r) => count(r.trips) },
               { key: "events", label: "Arrivals", numeric: true, render: (r) => count(r.events) },
@@ -80,7 +103,7 @@ function Body({ data, source }: { data: Scorecards; source: Initial<Scorecards>[
         source={source}
       />
       <Definitions text={data.definitions} />
-    </>
+    </div>
   );
 }
 

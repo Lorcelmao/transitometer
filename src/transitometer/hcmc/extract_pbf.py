@@ -150,14 +150,58 @@ def extract_from_pbf(
                 pts.append({"lat": round(nd[0], 6), "lon": round(nd[1], 6)})
         return pts
 
-    # Build Overpass-compatible bus_routes JSON filtered to relations touching the core HCMC bbox.
+    # Build Overpass-compatible admin_wards JSON for all 168 subarea wards of relation/1973756,
+    # and derive the merged-city extraction bounding box directly from those ward geometries
+    # (padded by ~1 km and unioned with cfg.bbox) so no post-July-2025 ward is ever clipped.
+    ward_elements: list[dict[str, Any]] = []
+    ward_lats: list[float] = []
+    ward_lons: list[float] = []
+    for rid, rtags, rrefs, rroles, rtypes in ward_rows:
+        members_out: list[dict[str, Any]] = []
+        for ref, role, rtype in zip(rrefs or [], rroles or [], rtypes or [], strict=False):
+            if str(rtype) != "way":
+                continue
+            geom = _way_geom(int(ref))
+            if len(geom) >= 2:
+                members_out.append(
+                    {
+                        "type": "way",
+                        "ref": int(ref),
+                        "role": str(role or ""),
+                        "geometry": geom,
+                    }
+                )
+                for p in geom:
+                    ward_lats.append(p["lat"])
+                    ward_lons.append(p["lon"])
+        ward_elements.append(
+            {
+                "type": "relation",
+                "id": int(rid),
+                "tags": _to_str_tags(rtags),
+                "members": members_out,
+            }
+        )
+
+    if ward_lats and ward_lons:
+        pad = 0.01
+        extract_bbox = BBox(
+            south=min(bbox.south, round(min(ward_lats) - pad, 4)),
+            west=min(bbox.west, round(min(ward_lons) - pad, 4)),
+            north=max(bbox.north, round(max(ward_lats) + pad, 4)),
+            east=max(bbox.east, round(max(ward_lons) + pad, 4)),
+        )
+    else:
+        extract_bbox = bbox
+
+    # Build Overpass-compatible bus_routes JSON filtered to relations touching merged HCMC.
     bus_elements: list[dict[str, Any]] = []
     extra_tag_nodes: dict[int, dict[str, Any]] = {}
     extra_tag_ways: dict[int, dict[str, Any]] = {}
     kept_bus = 0
 
     for rid, rtags, rrefs, rroles, rtypes in bus_rows:
-        members_out: list[dict[str, Any]] = []
+        members_out = []
         touches_bbox = False
         for ref, role, rtype in zip(rrefs or [], rroles or [], rtypes or [], strict=False):
             ref_id = int(ref)
@@ -168,7 +212,7 @@ def extract_from_pbf(
                 if nd is None:
                     continue
                 lat, lon, ntags = nd
-                if bbox.contains(lat, lon):
+                if extract_bbox.contains(lat, lon):
                     touches_bbox = True
                 members_out.append(
                     {
@@ -185,7 +229,9 @@ def extract_from_pbf(
                 geom = _way_geom(ref_id)
                 if not geom:
                     continue
-                if not touches_bbox and any(bbox.contains(p["lat"], p["lon"]) for p in geom):
+                if not touches_bbox and any(
+                    extract_bbox.contains(p["lat"], p["lon"]) for p in geom
+                ):
                     touches_bbox = True
                 members_out.append({"type": "way", "ref": ref_id, "role": role_s, "geometry": geom})
                 w_entry = ways_map.get(ref_id)
@@ -210,7 +256,7 @@ def extract_from_pbf(
     bus_payload = {
         "schema": "transitometer.osm-bus/1",
         "source": f"geofabrik:{pbf_path.name}",
-        "bbox": bbox.overpass(),
+        "bbox": extract_bbox.overpass(),
         "elements": bus_elements,
     }
     bus_out.parent.mkdir(parents=True, exist_ok=True)
@@ -219,32 +265,6 @@ def extract_from_pbf(
         encoding="utf-8",
         newline="\n",
     )
-
-    # Build Overpass-compatible admin_wards JSON for all 168 subarea wards of relation/1973756.
-    ward_elements: list[dict[str, Any]] = []
-    for rid, rtags, rrefs, rroles, rtypes in ward_rows:
-        members_out = []
-        for ref, role, rtype in zip(rrefs or [], rroles or [], rtypes or [], strict=False):
-            if str(rtype) != "way":
-                continue
-            geom = _way_geom(int(ref))
-            if len(geom) >= 2:
-                members_out.append(
-                    {
-                        "type": "way",
-                        "ref": int(ref),
-                        "role": str(role or ""),
-                        "geometry": geom,
-                    }
-                )
-        ward_elements.append(
-            {
-                "type": "relation",
-                "id": int(rid),
-                "tags": _to_str_tags(rtags),
-                "members": members_out,
-            }
-        )
 
     ward_payload = {
         "schema": "transitometer.osm-wards/1",

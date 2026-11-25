@@ -12,47 +12,65 @@ import { Definitions } from "@/components/story/page-parts";
 import { HOUR_COLUMNS, stopIndex, stopRoute, type Meta, type StopIndex, type StopRoute } from "@/data/schemas";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useView, type Initial } from "@/hooks/use-view";
-import { count, pct, seconds } from "@/lib/format";
+import { count, pct, seconds, serviceHour } from "@/lib/format";
 
 type Stop = StopRoute["stops"][number];
 const col = Object.fromEntries(HOUR_COLUMNS.map((c, i) => [c, i])) as Record<(typeof HOUR_COLUMNS)[number], number>;
 
 export const stopKey = (s: Pick<Stop, "direction_id" | "stop_id">) => `${s.direction_id ?? "-"}:${s.stop_id}`;
 
-function StopDetail({ stop, figures, source, minCellNote }: { stop: Stop; figures: StopRoute["figures"]; source: Initial<StopRoute>["source"]; minCellNote: string }) {
-  const hours = stop.hours.map((h) => ({
-    label: String(h[col.service_hour]),
-    value: h[col.on_time_share] as number | null,
-    low: h[col.ci_low] as number | null,
-    high: h[col.ci_high] as number | null,
-    thin: !h[col.sufficient],
-    events: h[col.events] as number,
-    p50: h[col.p50_delay_s] as number | null,
-    p90: h[col.p90_delay_s] as number | null,
-  }));
+function StopDetail({
+  stop,
+  figures,
+  source,
+  minCellNote,
+}: {
+  stop: Stop;
+  figures: StopRoute["figures"];
+  source: Initial<StopRoute>["source"];
+  minCellNote: string;
+}) {
+  const hours = stop.hours.map((h) => {
+    const hr = h[col.service_hour] as number;
+    return {
+      hourNum: hr,
+      label: hr >= 24 ? `${String(hr - 24).padStart(2, "0")}+1` : String(hr).padStart(2, "0"),
+      fullLabel: serviceHour(hr),
+      value: h[col.on_time_share] as number | null,
+      low: h[col.ci_low] as number | null,
+      high: h[col.ci_high] as number | null,
+      thin: !h[col.sufficient],
+      events: h[col.events] as number,
+      p50: h[col.p50_delay_s] as number | null,
+      p90: h[col.p90_delay_s] as number | null,
+    };
+  });
   const build = useCallback((font: string) => hourlyIntervalOption(hours, font), [hours]);
   return (
-    <>
-      <div className="mt-6">
-        <KpiRow
-          size="md"
-          figures={figures.map((f) => ({ ...f, value: stop.values[f.key] ?? null, display: stop.display[f.key] }))}
-        />
-      </div>
+    <div className="space-y-5">
+      <KpiRow
+        size="md"
+        figures={figures.map((f) => ({ ...f, value: stop.values[f.key] ?? null, display: stop.display[f.key] }))}
+      />
       <ChartFrame
         title={`Hour by hour at ${stop.stop_name ?? stop.stop_id}`}
-        summary={`On-time share (dot) and 95 % Wilson interval (line) for each scheduled hour at this stop, both service days pooled. ${minCellNote}`}
-        chart={<EChart build={build} height={300} label={`On-time share by hour at ${stop.label}`} />}
+        summary={`On-time share (dot) and 95 % Wilson interval (line) for each scheduled hour at this stop, both service days pooled. Hours marked +1 continue the same service day after midnight. ${minCellNote}`}
+        chart={<EChart build={build} height={310} label={`On-time share by hour at ${stop.label}`} />}
         table={
           <DataTable
             caption={`Hour by hour at ${stop.label}`}
             rows={hours}
-            rowKey={(h) => h.label}
+            rowKey={(h) => String(h.hourNum)}
             columns={[
-              { key: "hour", label: "Hour", render: (h) => h.label },
+              { key: "hour", label: "Hour", render: (h) => h.fullLabel },
               { key: "events", label: "Arrivals", numeric: true, render: (h) => count(h.events) },
               { key: "on_time", label: "On time", numeric: true, render: (h) => pct(h.value, 0) },
-              { key: "ci", label: "95 % interval", numeric: true, render: (h) => `${pct(h.low, 0)} – ${pct(h.high, 0)}` },
+              {
+                key: "ci",
+                label: "95 % interval",
+                numeric: true,
+                render: (h) => `${pct(h.low, 0)} to ${pct(h.high, 0)}`,
+              },
               { key: "p50", label: "Typical delay", numeric: true, render: (h) => seconds(h.p50) },
               { key: "p90", label: "Bad-day delay (p90)", numeric: true, render: (h) => seconds(h.p90) },
               { key: "data", label: "Data", render: (h) => (h.thin ? "too few to score" : "enough") },
@@ -61,7 +79,7 @@ function StopDetail({ stop, figures, source, minCellNote }: { stop: Stop; figure
         }
         source={source}
       />
-    </>
+    </div>
   );
 }
 
@@ -85,13 +103,17 @@ function Explorer({
   return (
     <>
       <FilterBar>
-        <ModeToggle modes={meta.modes} value={state.mode} onChange={(mode) => setState({ mode, route: "", stop: "" })} />
+        <ModeToggle
+          modes={meta.modes}
+          value={state.mode}
+          onChange={(mode) => setState({ mode, route: "", stop: "" })}
+        />
         <SearchSelect
           label="Route"
           testId="route-select"
           placeholder="Find a route"
           value={route.route_id}
-          options={index.data.routes.map((r) => ({ value: r.route_id, label: `${r.route_id} · ${r.stops} stops` }))}
+          options={index.data.routes.map((r) => ({ value: r.route_id, label: `${r.route_id} (${r.stops} stops)` }))}
           onChange={(value) => setState({ route: value, stop: "" })}
         />
         {stop ? (
@@ -118,7 +140,9 @@ function Explorer({
             minCellNote={`Hollow grey dots are hours with fewer than ${index.data.min_cell_events} arrivals: shown for completeness, not scored.`}
           />
         ) : (
-          <p className="my-10">No stop of this route was observed often enough.</p>
+          <p className="my-6 rounded-xl border border-rule bg-surface p-5 text-sm text-muted-ink">
+            No stop of this route was observed often enough.
+          </p>
         )}
       </div>
       <Definitions text={index.data.definitions} />
