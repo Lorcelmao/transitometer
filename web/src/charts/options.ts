@@ -196,28 +196,51 @@ export type MapStop = {
   share: number;
   display: string;
   sufficient: boolean;
+  routeId: string;
+  directionId: number | null;
 };
 
-/** Background geometry (public/basemap/nyc.json): [lon, lat] polylines. */
-export type MapBackground = {
-  streets: [number, number][][];
-  subway: { color: string; lines: [number, number][][] }[];
+/** Pre-aggregated 670 m neighborhood grid cell from public/data/map-grid/bus.json. */
+export type MapGridCell = readonly [
+  number, // lon
+  number, // lat
+  number, // events
+  number | null, // arrival-weighted on-time share of sufficient stops in cell
+  number, // stop count
+  number, // sufficient stop count
+  string, // busiest stop name in cell
+  string, // busiest route in cell
+];
+
+export type StreetPolyline = {
+  coords: [number, number][];
+  minLon: number;
+  maxLon: number;
+  minLat: number;
+  maxLat: number;
 };
+
+export type SubwayLineGroup = { color: string; lines: [number, number][][] };
 
 export type MapLayers = {
-  /** Bus route shapes, which trace the streets (drawn only when `zoomedIn` or for subway stops). */
+  /** Merged bus street grid (drawn only when zoomed in for buses, or when checked for subway). */
   streets: boolean;
   subway: boolean;
-  /** Subway lines in the MTA's own colours instead of one neutral grey. */
+  /** Subway lines in MTA line colours instead of neutral slate. */
   lineColors: boolean;
 };
 
+export type Bbox = readonly [number, number, number, number]; // [minLon, maxLon, minLat, maxLat]
+
+export type BandFilter = null | 0 | 1 | 2 | 3 | 4 | "thin";
+
 /**
  * The map's fixed frame: New York City with a margin (every located stop and route shape lies
- * inside; a contract test checks the exported stops). Registered once as an invisible geo map
- * (echarts-setup), so the geo component gives zoom, pan and the cos(latitude) aspect without tiles.
+ * inside; a contract test checks the exported stops and basemap geometry).
  */
 export const MAP_FRAME = { name: "nyc-frame", lon: [-74.26, -73.69], lat: [40.49, 40.94] } as const;
+export const NYC_CENTER: readonly [number, number] = [-73.975, 40.705];
+export const NYC_INITIAL_ZOOM = 1.04;
 export const MAP_FRAME_GEOJSON = {
   type: "FeatureCollection",
   features: [
@@ -240,184 +263,173 @@ export const MAP_FRAME_GEOJSON = {
   ],
 };
 
-/** Bus stops cover the street layer at city scale; it joins in once the view is zoomed this far. */
-export const STREETS_FROM_ZOOM = 1.5;
-export const MAP_ZOOM_LIMIT = { min: 1, max: 24 } as const;
+/** Bus mode switches automatically from 670 m grid to individual stops at this zoom. */
+export const LOD_ZOOM_THRESHOLD = 2.0;
+/** Merged bus street network loads and appears once zoomed into corridors. */
+export const STREETS_FROM_ZOOM = 2.5;
+export const MAP_ZOOM_LIMIT = { min: 1, max: 20 } as const;
+
+export const BOROUGH_LABELS: readonly { name: string; value: readonly [number, number] }[] = [
+  { name: "Manhattan", value: [-73.972, 40.778] },
+  { name: "Bronx", value: [-73.868, 40.852] },
+  { name: "Brooklyn", value: [-73.952, 40.642] },
+  { name: "Queens", value: [-73.818, 40.728] },
+  { name: "Staten Island", value: [-74.152, 40.58] },
+];
+
+export type MapBandSpec = {
+  readonly id: 0 | 1 | 2 | 3 | 4;
+  readonly label: string;
+  readonly range: string;
+  readonly color: string;
+  readonly max: number;
+};
 
 /**
- * Colour and size scales of the stop dots, as steps: each (colour band, size) group is drawn as one
- * "large" series (a single path), which keeps zoom and pan fast with ~12,000 stops. The bands only
- * map the exported share to a colour, like a visual map; no metric is computed here.
+ * Unified 5-class WCAG AA diverging scale anchored around the equal-weighted bus stop median
+ * (45.5 %). Every colour exceeds 4.1:1 contrast on #f4f6f9 land and 4.4:1 on #ffffff.
  */
-export const MAP_BANDS = 10;
-export const MAP_SIZES = [3, 4.5, 6.5, 9, 13] as const;
+export const MAP_DIVERGING_BANDS: readonly MapBandSpec[] = [
+  { id: 0, label: "Critical", range: "under 30 %", color: COLORS.mapDiverging[0], max: 0.3 },
+  { id: 1, label: "Poor", range: "30 to 40 %", color: COLORS.mapDiverging[1], max: 0.4 },
+  { id: 2, label: "Typical", range: "40 to 50 %", color: COLORS.mapDiverging[2], max: 0.5 },
+  { id: 3, label: "Above typical", range: "50 to 65 %", color: COLORS.mapDiverging[3], max: 0.65 },
+  { id: 4, label: "Reliable", range: "65 % or more", color: COLORS.mapDiverging[4], max: 2.0 },
+] as const;
 
-function mix(a: string, b: string, t: number) {
-  const channel = (hex: string, i: number) => parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16);
-  return `#${[0, 1, 2]
-    .map((i) => Math.round(channel(a, i) + (channel(b, i) - channel(a, i)) * t).toString(16).padStart(2, "0"))
-    .join("")}`;
+export function bandIndex(share: number | null | undefined): 0 | 1 | 2 | 3 | 4 | -1 {
+  if (share === null || share === undefined || Number.isNaN(share)) return -1;
+  if (share < 0.3) return 0;
+  if (share < 0.4) return 1;
+  if (share < 0.5) return 2;
+  if (share < 0.65) return 3;
+  return 4;
 }
 
-/** The colour of each 10 %-wide band, interpolated along the sequential ramp. */
-export function bandColors(ramp: readonly string[] = COLORS.sequential): string[] {
-  return Array.from({ length: MAP_BANDS }, (_, i) => {
-    const x = ((i + 0.5) / MAP_BANDS) * (ramp.length - 1);
-    const k = Math.min(ramp.length - 2, Math.floor(x));
-    return mix(ramp[k], ramp[k + 1], x - k);
-  });
+export function bandMeta(
+  share: number | null | undefined,
+  sufficient: boolean,
+): { id: 0 | 1 | 2 | 3 | 4 | "thin"; label: string; color: string } {
+  if (!sufficient || share === null || share === undefined) {
+    return { id: "thin", label: "Under 10 arrivals", color: COLORS.mapThinStroke };
+  }
+  const idx = bandIndex(share);
+  return idx === -1 ? { id: "thin", label: "Under 10 arrivals", color: COLORS.mapThinStroke } : MAP_DIVERGING_BANDS[idx];
 }
 
-/** Dot size grows with the square root of arrivals, snapped to the nearest step. */
-export function sizeClass(events: number): number {
-  const size = Math.max(3, Math.min(14, Math.sqrt(events) / 2.5));
-  let best = 0;
-  MAP_SIZES.forEach((s, i) => {
-    if (Math.abs(s - size) < Math.abs(MAP_SIZES[best] - size)) best = i;
-  });
-  return best;
+export function stopDotSize(z: number, mode: string, compact: boolean): number {
+  const scale = compact ? 0.85 : 1;
+  if (mode === "subway") {
+    if (z < 2.0) return +(6.0 * scale).toFixed(1);
+    if (z < 4.5) return +(7.5 * scale).toFixed(1);
+    if (z < 9.0) return +(9.5 * scale).toFixed(1);
+    return +(11.5 * scale).toFixed(1);
+  }
+  if (z < 3.0) return +(4.4 * scale).toFixed(1);
+  if (z < 5.5) return +(5.8 * scale).toFixed(1);
+  if (z < 9.5) return +(7.8 * scale).toFixed(1);
+  return +(10.0 * scale).toFixed(1);
+}
+
+export function gridCellSize(z: number, compact: boolean): number {
+  const base = compact ? 4.4 : 6.2;
+  return +(base * Math.min(1.5, Math.max(0.95, Math.pow(z, 0.45)))).toFixed(1);
+}
+
+/** Precompute bounding boxes once on load so zoomed-in street rendering only draws visible chains. */
+export function indexStreets(lines: [number, number][][]): StreetPolyline[] {
+  const out: StreetPolyline[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const coords = lines[i];
+    if (coords.length < 2) continue;
+    let minLon = Infinity;
+    let maxLon = -Infinity;
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    for (let j = 0; j < coords.length; j++) {
+      const [lon, lat] = coords[j];
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+    out.push({ coords, minLon, maxLon, minLat, maxLat });
+  }
+  return out;
 }
 
 const escapeHtml = (text: string) =>
   text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 
-/** "NAME (STOP_ID)" from the export, split so the tooltip can name each part. */
-export function splitLabel(stop: MapStop): { name: string; id: string } {
+/** "NAME (STOP_ID)" from the export, split so the tooltip and panel can name each part. */
+export function splitLabel(stop: Pick<MapStop, "label" | "stopId">): { name: string; id: string } {
   const suffix = ` (${stop.stopId})`;
   return stop.label.endsWith(suffix)
     ? { name: stop.label.slice(0, -suffix.length), id: stop.stopId }
     : { name: stop.label, id: stop.stopId };
 }
 
-/** The tooltip, written to be read on its own (what each number counts). */
-export function stopTooltip(stop: MapStop, minEvents: number): string {
-  const { name, id } = splitLabel(stop);
-  const muted = (text: string) => `<span style="color:${COLORS.muted}">${text}</span>`;
+function formatDeltaPts(share: number | null, medianShare: number | null, modeWord: string, medianDisplay: string): string {
+  if (share === null || medianShare === null) return "";
+  const pts = ((share - medianShare) * 100).toFixed(1);
+  const signed = Number(pts) >= 0 ? `+${pts}` : pts;
+  return `${signed} pts vs ${modeWord} stop median (${escapeHtml(medianDisplay)})`;
+}
+
+/** Opaque high-contrast tooltip for a 670 m neighborhood grid cell (bus city-wide view). */
+export function gridTooltip(
+  cell: MapGridCell,
+  busMedianShare: number | null,
+  busMedianDisplay: string,
+  font: string,
+): string {
+  const [, , events, share, stopCount, suffCount, topStop, topRoute] = cell;
+  const band = bandMeta(share, suffCount > 0);
+  const delta =
+    suffCount > 0 && share !== null
+      ? formatDeltaPts(share, busMedianShare, "bus", busMedianDisplay)
+      : "Under 10 arrivals across stops in this cell";
   return [
-    `<b>${escapeHtml(name)}</b>`,
-    name !== id ? muted(`Stop ${escapeHtml(id)}`) : "",
-    `${count(stop.events)} arrival${stop.events === 1 ? "" : "s"} observed, all routes, both days`,
-    stop.sufficient
-      ? `<b>${escapeHtml(stop.display)}</b> on time ${muted("(at most 1 min early, at most 5 min late)")}`
-      : muted(`Too few arrivals to score (fewer than ${count(minEvents)})`),
-    muted("Click for the stop's hours"),
+    `<div style="max-width:255px;white-space:normal;word-break:break-word;font-family:${escapeHtml(font)};color:${COLORS.ink};line-height:1.4;">`,
+    `<div style="font-weight:700;font-size:13px;margin-bottom:4px;">Area near ${escapeHtml(topStop || "NYC block")}</div>`,
+    `<div style="margin-bottom:6px;"><span style="display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#ffffff;background:${band.color};">${escapeHtml(band.label)}</span></div>`,
+    `<div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;">${share !== null && suffCount > 0 ? `${pct(share)} on time` : "Not scored"}</div>`,
+    `<div style="font-size:12px;color:${COLORS.muted};font-variant-numeric:tabular-nums;">${delta}</div>`,
+    `<div style="font-size:12px;color:#334155;margin-top:6px;border-top:1px solid ${COLORS.rule};padding-top:5px;font-variant-numeric:tabular-nums;">${count(stopCount)} stops, ${count(events)} arrivals, busiest route ${escapeHtml(topRoute || "N/A")}</div>`,
+    `<div style="font-size:11px;color:${COLORS.muted};margin-top:4px;">Zoom in or click cell to inspect individual stops</div>`,
+    "</div>",
+  ].join("");
+}
+
+/** Opaque high-contrast tooltip for an individual stop (clarifies stop-median comparison). */
+export function stopTooltip(
+  stop: MapStop,
+  minEvents: number,
+  modeWord: string,
+  medianShare: number | null,
+  medianDisplay: string,
+  font = "sans-serif",
+): string {
+  const { name, id } = splitLabel(stop);
+  const band = bandMeta(stop.share, stop.sufficient);
+  const delta = stop.sufficient
+    ? formatDeltaPts(stop.share, medianShare, modeWord, medianDisplay)
+    : `Too few arrivals to score (fewer than ${count(minEvents)})`;
+  return [
+    `<div style="max-width:265px;white-space:normal;word-break:break-word;font-family:${escapeHtml(font)};color:${COLORS.ink};line-height:1.4;">`,
+    `<div style="font-weight:700;font-size:13px;">${escapeHtml(name)}</div>`,
+    name !== id
+      ? `<div style="font-size:11px;color:${COLORS.muted};margin-bottom:5px;font-variant-numeric:tabular-nums;">Stop ${escapeHtml(id)}</div>`
+      : "",
+    `<div style="margin-bottom:5px;"><span style="display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#ffffff;background:${band.color};">${escapeHtml(band.label)}</span></div>`,
+    `<div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;">${stop.sufficient ? `${escapeHtml(stop.display)} on time` : "Not scored"}</div>`,
+    `<div style="font-size:12px;color:${COLORS.muted};font-variant-numeric:tabular-nums;">${delta}</div>`,
+    `<div style="font-size:12px;color:#334155;margin-top:6px;border-top:1px solid ${COLORS.rule};padding-top:5px;font-variant-numeric:tabular-nums;">${count(stop.events)} arrival${stop.events === 1 ? "" : "s"} observed, all routes, both days (busiest route ${escapeHtml(stop.routeId || "N/A")})</div>`,
+    `<div style="font-size:11px;color:${COLORS.muted};margin-top:4px;">On time: at most 1 min early, at most 5 min late. Click stop to pin details.</div>`,
+    "</div>",
   ]
     .filter(Boolean)
-    .join("<br/>");
-}
-
-/**
- * The map's series: background lines, then hollow (thin) stops, then scored stops by colour band
- * and size. Each stop's data item is [lon, lat, index into `stops`]. Hidden layers and empty groups
- * are left out (large-mode series do not take empty data).
- */
-export function stopMapSeries(stops: MapStop[], background: MapBackground | null, layers: MapLayers, showStreets: boolean) {
-  const colors = bandColors();
-  const scored = colors.map(() => MAP_SIZES.map(() => [] as number[][]));
-  const thin = MAP_SIZES.map(() => [] as number[][]);
-  stops.forEach((s, i) => {
-    const item = [s.lon, s.lat, i];
-    const size = sizeClass(s.events);
-    if (s.sufficient) scored[Math.min(MAP_BANDS - 1, Math.floor(s.share * MAP_BANDS))][size].push(item);
-    else thin[size].push(item);
-  });
-  const large = { coordinateSystem: "geo", large: true, largeThreshold: 0 } as const;
-  const series: Record<string, unknown>[] = [];
-  if (background && layers.streets && showStreets) {
-    series.push({
-      ...large,
-      id: "streets",
-      type: "lines",
-      polyline: true,
-      silent: true,
-      z: 1,
-      data: background.streets.map((coords) => ({ coords })),
-      lineStyle: { color: COLORS.rule, width: 0.7, opacity: 1 },
-    });
-  }
-  if (background && layers.subway) {
-    background.subway.forEach((line, i) =>
-      series.push({
-        ...large,
-        id: `subway-${i}`,
-        type: "lines",
-        polyline: true,
-        silent: true,
-        z: 2,
-        data: line.lines.map((coords) => ({ coords })),
-        lineStyle: layers.lineColors
-          ? { color: line.color, width: 1.8, opacity: 0.85 }
-          : { color: COLORS.muted, width: 1.6, opacity: 0.55 },
-      }),
-    );
-  }
-  MAP_SIZES.forEach((size, j) => {
-    if (thin[j].length)
-      series.push({
-        ...large,
-        id: `thin-${j}`,
-        type: "scatter",
-        z: 3,
-        symbolSize: size,
-        data: thin[j],
-        itemStyle: { color: "transparent", borderColor: COLORS.thin, borderWidth: 1 },
-      });
-  });
-  colors.forEach((color, b) =>
-    MAP_SIZES.forEach((size, j) => {
-      if (scored[b][j].length)
-        series.push({
-          ...large,
-          id: `band-${b}-${j}`,
-          type: "scatter",
-          z: 4 + j,
-          symbolSize: size,
-          data: scored[b][j],
-          itemStyle: { color, opacity: 0.9 },
-        });
-    }),
-  );
-  return series;
-}
-
-/**
- * Every located stop on a zoomable frame of the city, over a background drawn from the MTA's own
- * route shapes (no map tiles, no third-party requests). `view` keeps the visitor's zoom and pan
- * when layers change.
- */
-export function stopMapOption(
-  stops: MapStop[],
-  background: MapBackground | null,
-  layers: MapLayers,
-  showStreets: boolean,
-  minEvents: number,
-  view?: { center?: number[]; zoom?: number },
-): EChartsCoreOption {
-  return {
-    tooltip: {
-      formatter: ({ data }: Tip) => {
-        const stop = Array.isArray(data) ? stops[data[2] as number] : undefined;
-        return stop ? stopTooltip(stop, minEvents) : "";
-      },
-    },
-    geo: {
-      map: MAP_FRAME.name,
-      roam: true,
-      aspectScale: Math.cos((((MAP_FRAME.lat[0] + MAP_FRAME.lat[1]) / 2) * Math.PI) / 180),
-      scaleLimit: { ...MAP_ZOOM_LIMIT },
-      silent: true,
-      itemStyle: { areaColor: "transparent", borderWidth: 0 },
-      emphasis: { disabled: true },
-      label: { show: false },
-      left: 8,
-      right: 8,
-      top: 8,
-      bottom: 8,
-      ...(view?.center ? { center: view.center } : {}),
-      ...(view?.zoom ? { zoom: view.zoom } : {}),
-    },
-    series: stopMapSeries(stops, background, layers, showStreets),
-  };
+    .join("");
 }
 
 export type HcmcMapWard = {

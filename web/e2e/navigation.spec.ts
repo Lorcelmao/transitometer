@@ -47,7 +47,7 @@ test("the site works with the network to third parties blocked", async ({ page }
     }
     return route.continue();
   });
-  for (const route of ["/reliability/on-time/", "/case-study/hcmc/"]) {
+  for (const route of ["/reliability/on-time/", "/diagnostics/map/", "/case-study/hcmc/"]) {
     await page.goto(route);
     await expect(page.locator("h1")).toBeVisible();
   }
@@ -67,7 +67,7 @@ test("the Content-Security-Policy of vercel.json blocks nothing the site uses", 
       (window as unknown as { __csp: string[] }).__csp.push(`${e.violatedDirective} ${e.blockedURI}`),
     );
   });
-  for (const route of ["/", "/reliability/on-time/", "/diagnostics/stops/", "/case-study/hcmc/"]) {
+  for (const route of ["/", "/reliability/on-time/", "/diagnostics/stops/", "/diagnostics/map/", "/case-study/hcmc/"]) {
     await page.goto(route);
     await page.mouse.wheel(0, 1500); // bring the charts into view so ECharts loads
     await page.waitForLoadState("networkidle");

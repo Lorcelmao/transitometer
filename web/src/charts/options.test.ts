@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  bandColors,
+  bandIndex,
+  gridTooltip,
   heatmapOption,
   hourlyIntervalOption,
-  MAP_BANDS,
+  MAP_DIVERGING_BANDS,
   routeIntervalOption,
-  stopMapSeries,
   stopTooltip,
   type MapStop,
 } from "@/charts/options";
@@ -21,38 +21,40 @@ describe("stop map", () => {
     share,
     display: `${(share * 100).toFixed(1)} %`,
     sufficient,
-  });
-  const stops = [stop(0, 0, 50), stop(1, 0.55, 300), stop(2, 1, 2000), stop(3, 0.4, 4, false)];
-  const background = { streets: [[[-73.9, 40.7], [-73.8, 40.7]]] as [number, number][][], subway: [] };
-  const layers = { streets: true, subway: true, lineColors: false };
-
-  it("draws every stop exactly once and keeps its index for the tooltip and the click", () => {
-    const series = stopMapSeries(stops, background, layers, true) as { type: string; data: number[][] }[];
-    const indexes = series.filter((s) => s.type === "scatter").flatMap((s) => s.data.map((d) => d[2]));
-    expect(indexes.sort()).toEqual([0, 1, 2, 3]);
-    expect(series.some((s) => s.type === "lines")).toBe(true);
+    routeId: "M4",
+    directionId: 0,
   });
 
-  it("leaves the street layer out until it should show, and never sends an empty series", () => {
-    const series = stopMapSeries(stops, background, layers, false) as { type: string; data: unknown[] }[];
-    expect(series.some((s) => s.type === "lines")).toBe(false);
-    expect(series.every((s) => s.data.length > 0)).toBe(true);
-    expect(stopMapSeries(stops, null, layers, true).every((s) => s.type === "scatter")).toBe(true);
+  it("maps shares onto the 5 diverging WCAG AA bands", () => {
+    expect(MAP_DIVERGING_BANDS).toHaveLength(5);
+    expect(bandIndex(0.1)).toBe(0);
+    expect(bandIndex(0.35)).toBe(1);
+    expect(bandIndex(0.455)).toBe(2);
+    expect(bandIndex(0.6)).toBe(3);
+    expect(bandIndex(0.8)).toBe(4);
+    expect(bandIndex(null)).toBe(-1);
   });
 
-  it("has one colour per 10 % band, from the ramp's ends", () => {
-    const colors = bandColors(["#000000", "#ffffff"]);
-    expect(colors).toHaveLength(MAP_BANDS);
-    expect(colors[0] < colors[MAP_BANDS - 1]).toBe(true);
-  });
-
-  it("explains every line of the tooltip and escapes the stop name", () => {
-    const text = stopTooltip({ ...stop(1, 0.5, 300), label: "A & <B> (S1)" }, 10);
+  it("formats stop and grid tooltips with HTML escaping and equal-weighted stop median reference", () => {
+    const text = stopTooltip(
+      { ...stop(1, 0.25, 300), label: "A & <B> (S1)" },
+      10,
+      "bus",
+      0.455,
+      "45.5 %",
+    );
     expect(text).toContain("A &amp; &lt;B&gt;");
     expect(text).toContain("Stop S1");
+    expect(text).toContain("Critical");
+    expect(text).toContain("-20.5 pts vs bus stop median (45.5 %)");
     expect(text).toContain("300 arrivals observed, all routes, both days");
-    expect(text).toContain("at most 1 min early, at most 5 min late");
-    expect(stopTooltip(stop(3, 0.4, 4, false), 10)).toContain("Too few arrivals to score (fewer than 10)");
+    expect(stopTooltip(stop(3, 0.4, 4, false), 10, "bus", 0.455, "45.5 %")).toContain(
+      "Too few arrivals to score (fewer than 10)",
+    );
+
+    const gridText = gridTooltip([-73.97, 40.75, 400, 0.25, 6, 6, "5 AV & E 72", "M4"], 0.455, "45.5 %", "sans-serif");
+    expect(gridText).toContain("5 AV &amp; E 72");
+    expect(gridText).toContain("bus stop median (45.5 %)");
   });
 });
 

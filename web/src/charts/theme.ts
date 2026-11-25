@@ -12,6 +12,14 @@ export const COLORS = {
   link: "#1f4e8c",
   thin: "#94a3b8",
   sequential: ["#d6e2ee", "#9fbcd9", "#4a7fb5", "#1f4e8c", "#0b2f5b"],
+  /** Stop map basemap & WCAG AA diverging scale (>= 4.1:1 on #f4f6f9 land, >= 4.5:1 on white). */
+  mapWater: "#dde9f5",
+  mapLand: "#f4f6f9",
+  mapShoreline: "#8ea4bc",
+  mapStreets: "#c2cedc",
+  mapSubway: "#8ba0b8",
+  mapThinStroke: "#475569",
+  mapDiverging: ["#b3261e", "#c2570a", "#64748b", "#2b6cb0", "#0b3b75"],
 } as const;
 
 /** Shared axis styling: crisp hairlines and legible 12 px labels. */

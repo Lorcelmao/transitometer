@@ -64,8 +64,14 @@ def test_every_page_and_filter_combination_is_exported(
             "early-warning/{}.json",
             "delay/{}-segments.json",
             "map/{}.json",
+            "map-grid/{}.json",
         ):
             assert (data / path.format(grp)).exists()
+        if grp == "bus":
+            grid = json.loads((data / "map-grid" / "bus.json").read_text(encoding="utf-8"))
+            assert grid["data"]["grid_cells"]
+            for tile in grid["data"]["tile_spec"]["tiles"]:
+                assert (data / "map-tiles" / "bus" / f"t-{tile}.json").exists()
         index = json.loads((data / "stops" / grp / "index.json").read_text(encoding="utf-8"))
         assert index["data"]["routes"]
         for route in index["data"]["routes"]:

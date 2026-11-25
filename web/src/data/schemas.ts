@@ -8,6 +8,10 @@
  */
 import * as z from "zod/mini";
 
+import { MAP_COLUMNS, type MapStopRow } from "@/data/map-columns";
+
+export { MAP_COLUMNS, type MapStopRow };
+
 export const SCHEMA = "transitometer.web/1";
 
 const num = z.number();
@@ -316,36 +320,24 @@ export const stopRoute = z.object({
 });
 export type StopRoute = z.infer<typeof stopRoute>;
 
-export const MAP_COLUMNS = [
-  "stop_id",
-  "label",
-  "lat",
-  "lon",
-  "events",
-  "on_time_share",
-  "display",
-  "sufficient",
-  "route_id",
-  "direction_id",
-] as const;
+const mapStopRow = z.tuple([
+  z.string(),
+  z.string(),
+  num,
+  num,
+  num,
+  num,
+  z.string(),
+  z.boolean(),
+  z.string(),
+  maybeNum,
+]);
+
 export const stopMap = z.object({
   columns: z
     .array(z.string())
     .check(z.refine((columns) => columns.join() === MAP_COLUMNS.join(), "map columns changed")),
-  stops: z.array(
-    z.tuple([
-      z.string(),
-      z.string(),
-      num,
-      num,
-      num,
-      num,
-      z.string(),
-      z.boolean(),
-      z.string(),
-      maybeNum,
-    ]),
-  ),
+  stops: z.array(mapStopRow),
   worst: z.array(z.string()),
   sufficient: num,
   min_events: num,
@@ -354,9 +346,53 @@ export const stopMap = z.object({
 });
 export type StopMap = z.infer<typeof stopMap>;
 
+/** Pre-aggregated 670 m grid cell: [lon, lat, events, shareOrNull, stopCount, suffCount, topStop, topRoute]. */
+export const mapGridCell = z.tuple([num, num, num, maybeNum, num, num, z.string(), z.string()]);
+export type MapGridCell = z.infer<typeof mapGridCell>;
+
+export const mapTileSpec = z.object({
+  min_lon: num,
+  max_lon: num,
+  min_lat: num,
+  max_lat: num,
+  n: num,
+  tiles: z.array(z.string()),
+});
+export type MapTileSpec = z.infer<typeof mapTileSpec>;
+
+/** Lightweight Stop map payload: summary stats, equal-weighted stop median, top-50 table rows, 670 m grid. */
+export const stopMapGrid = z.object({
+  mode: z.string(),
+  columns: z
+    .array(z.string())
+    .check(z.refine((columns) => columns.join() === MAP_COLUMNS.join(), "map columns changed")),
+  total: num,
+  sufficient: num,
+  thin: num,
+  min_events: num,
+  stop_median_share: maybeNum,
+  stop_median_display: z.string(),
+  band_counts: z.array(num),
+  summary: z.string(),
+  definitions: z.string(),
+  worst_rows: z.array(mapStopRow),
+  grid_cells: z.array(mapGridCell),
+  stops: z.array(mapStopRow),
+  tile_spec: z.nullable(mapTileSpec),
+});
+export type StopMapGrid = z.infer<typeof stopMapGrid>;
+
+export const stopMapTile = z.object({
+  columns: z
+    .array(z.string())
+    .check(z.refine((columns) => columns.join() === MAP_COLUMNS.join(), "map columns changed")),
+  stops: z.array(mapStopRow),
+});
+export type StopMapTile = z.infer<typeof stopMapTile>;
+
 /**
- * The stop map's background (`python tasks.py web-basemap`, public/basemap/nyc.json): reference
- * geometry from the MTA static timetables, not a view, so it has its own schema tag.
+ * The stop map's background (`python tasks.py web-basemap`, public/basemap/nyc*.json) plus
+ * simplified NYC DCP borough boundaries (`public/basemap/nyc-boroughs.geojson`).
  */
 const polyline = z.array(z.tuple([num, num]));
 export const basemap = z.object({
@@ -366,6 +402,35 @@ export const basemap = z.object({
   subway: z.array(z.object({ color: z.string(), lines: z.array(polyline) })),
 });
 export type Basemap = z.infer<typeof basemap>;
+
+export const basemapSubway = z.object({
+  schema: z.literal("transitometer.basemap-subway/1"),
+  source: z.string(),
+  subway: z.array(z.object({ color: z.string(), lines: z.array(polyline) })),
+});
+export type BasemapSubway = z.infer<typeof basemapSubway>;
+
+export const basemapStreets = z.object({
+  schema: z.literal("transitometer.basemap-streets/1"),
+  source: z.string(),
+  streets: z.array(polyline),
+});
+export type BasemapStreets = z.infer<typeof basemapStreets>;
+
+export const nycBoroughs = z.object({
+  type: z.literal("FeatureCollection"),
+  features: z.array(
+    z.object({
+      type: z.literal("Feature"),
+      properties: z.object({
+        boro_code: num,
+        name: z.string(),
+      }),
+      geometry: z.looseObject({ type: z.string() }),
+    }),
+  ),
+});
+export type NycBoroughs = z.infer<typeof nycBoroughs>;
 
 export const earlyWarning = z.object({
   held_out_day: z.string(),
