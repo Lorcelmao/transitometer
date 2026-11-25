@@ -409,10 +409,10 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
             <span lang="vi" className="font-semibold text-ink">
               {view.provenance.primary_network}
             </span>
-            . {count(incompleteRoutesCount)} inter-provincial route(s) are marked{" "}
+            . {count(incompleteRoutesCount)} route(s) are marked{" "}
             <strong className="text-ink">Incomplete OSM data</strong> instead of displaying unreliable OSM way sums
-            (missing intermediate stops or unverified external detours outside the HCMC bounding box); stop-based
-            walk-shed coverage is unaffected.
+            (endpoint-only stop mapping or unverified corridor detours above 120 km); stop-based walk-shed coverage is
+            unaffected.
           </p>
           <div className="mt-4">
             <DataTable
@@ -423,7 +423,7 @@ export function HcmcView({ initial }: { initial: HcmcCoverage }) {
                 { key: "dirs", label: "Dirs", numeric: true, render: (r) => count(r.directions) },
                 {
                   key: "stops",
-                  label: "In-bbox stops / dir",
+                  label: "Mapped stops / dir",
                   numeric: true,
                   render: (r) => r.avg_stops_per_dir.toFixed(1),
                 },

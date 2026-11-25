@@ -24,10 +24,11 @@ from transitometer.hcmc.quality import evaluate_quality
 HCMC_SCHEMA = "transitometer.hcmc/1"
 BUFFER_SEGMENTS = 16  # 16 segments per quadrant (64-gon: < 0.16 % area error vs exact pi*r^2)
 # Route-level OSM completeness guards for route_summary (stop-based coverage is never filtered):
-# flag inter-provincial routes with < 2 in-bbox stops or > 50 % outside-bbox detours (> 120 km).
-MIN_ROUTE_IN_BBOX_STOPS = 2
-MAX_PLAUSIBLE_INTERPROVINCIAL_KM = 120.0
-OUTSIDE_BBOX_DETOUR_SHARE = 0.50
+# flag routes with < 2 mapped stops, endpoint-only mapping on long corridors (> 20 km with <= 2
+# stops/dir), or unverified corridor detours above 120 km.
+MIN_ROUTE_STOPS = 2
+ENDPOINT_ONLY_MIN_KM = 20.0
+MAX_PLAUSIBLE_CORRIDOR_KM = 120.0
 HCMC_TABLES = (
     "hcmc_summary",
     "hcmc_ward_coverage",
@@ -387,24 +388,30 @@ def compute_coverage(
                     row_number() OVER (PARTITION BY p.stop_id ORDER BY w.ward_id NULLS LAST) AS rn
                 FROM pts p
                 LEFT JOIN wards_utm w ON ST_Contains(w.geom_utm, p.geom_utm)
+            ),
+            near_city AS (
+                SELECT DISTINCT p.stop_id
+                FROM pts p
+                JOIN wards_utm w ON ST_DWithin(w.geom_utm, p.geom_utm, {radius_m})
             )
             SELECT
-                stop_id,
-                stop_name,
-                stop_lat,
-                stop_lon,
-                route_count,
-                direction_count,
-                buses_per_hour_min,
-                buses_per_hour_mid,
-                buses_per_hour_max,
-                is_frequent_conservative,
-                is_frequent_midpoint,
-                ward_id,
-                geom_utm,
-                ST_Buffer(geom_utm, {radius_m}, {BUFFER_SEGMENTS}) AS buf_utm
-            FROM with_ward
-            WHERE rn = 1
+                ww.stop_id,
+                ww.stop_name,
+                ww.stop_lat,
+                ww.stop_lon,
+                ww.route_count,
+                ww.direction_count,
+                ww.buses_per_hour_min,
+                ww.buses_per_hour_mid,
+                ww.buses_per_hour_max,
+                ww.is_frequent_conservative,
+                ww.is_frequent_midpoint,
+                ww.ward_id,
+                ww.geom_utm,
+                ST_Buffer(ww.geom_utm, {radius_m}, {BUFFER_SEGMENTS}) AS buf_utm
+            FROM with_ward ww
+            JOIN near_city nc ON nc.stop_id = ww.stop_id
+            WHERE ww.rn = 1
             """
         )
 
@@ -596,11 +603,14 @@ def compute_coverage(
             flagged AS (
                 SELECT
                     *,
-                    (min_stops_in_dir < {MIN_ROUTE_IN_BBOX_STOPS}) AS sparse_stops,
                     (
-                        raw_length_km > {MAX_PLAUSIBLE_INTERPROVINCIAL_KM}
-                        AND outside_bbox_share > {OUTSIDE_BBOX_DETOUR_SHARE}
-                    ) AS external_detour
+                        min_stops_in_dir < {MIN_ROUTE_STOPS}
+                        OR (
+                            raw_length_km > {ENDPOINT_ONLY_MIN_KM}
+                            AND avg_stops_per_dir <= {MIN_ROUTE_STOPS}
+                        )
+                    ) AS sparse_stops,
+                    (raw_length_km > {MAX_PLAUSIBLE_CORRIDOR_KM}) AS implausible_detour
                 FROM grouped
             )
             SELECT
@@ -610,22 +620,27 @@ def compute_coverage(
                 directions,
                 avg_stops_per_dir,
                 CASE
-                    WHEN sparse_stops OR external_detour THEN NULL
+                    WHEN sparse_stops OR implausible_detour THEN NULL
                     ELSE round(raw_length_km, 2)
                 END AS avg_length_km,
                 round(avg_in_bbox_km, 2) AS in_bbox_length_km,
-                (sparse_stops OR external_detour) AS osm_incomplete,
+                (sparse_stops OR implausible_detour) AS osm_incomplete,
                 CASE
-                    WHEN sparse_stops AND external_detour THEN
+                    WHEN sparse_stops AND implausible_detour THEN
                         'Only ' || cast(min_stops_in_dir AS VARCHAR)
-                        || ' in-bbox stop per direction; '
-                        || cast(round(outside_bbox_share * 100, 0)::INTEGER AS VARCHAR)
-                        || '% of OSM ways outside HCMC bbox'
+                        || ' stops mapped across '
+                        || cast(round(raw_length_km, 1) AS VARCHAR)
+                        || ' km (missing intermediate stops and detour above 120 km)'
+                    WHEN sparse_stops AND min_stops_in_dir < {MIN_ROUTE_STOPS} THEN
+                        'Fewer than {MIN_ROUTE_STOPS} stops mapped per direction in OSM'
                     WHEN sparse_stops THEN
-                        'Fewer than {MIN_ROUTE_IN_BBOX_STOPS} in-bbox stops mapped in OSM'
-                    WHEN external_detour THEN
-                        cast(round(outside_bbox_share * 100, 0)::INTEGER AS VARCHAR)
-                        || '% of OSM ways outside HCMC bbox with unverified detour (> 120 km)'
+                        'Only ' || cast(min_stops_in_dir AS VARCHAR)
+                        || ' stops mapped across '
+                        || cast(round(raw_length_km, 1) AS VARCHAR)
+                        || ' km (missing intermediate stops)'
+                    WHEN implausible_detour THEN
+                        'OSM ways sum to ' || cast(round(raw_length_km, 1) AS VARCHAR)
+                        || ' km (above 120 km corridor limit; unverified detour in OSM relation)'
                     ELSE ''
                 END AS osm_note,
                 interval_min_min,

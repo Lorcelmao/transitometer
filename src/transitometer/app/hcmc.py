@@ -193,9 +193,9 @@ def page_hcmc() -> None:
         flagged_n = int(routes_df["osm_incomplete"].sum())
         st.caption(
             f"{len(routes_df)} distinct routes in `Xe buýt Thành phố Hồ Chí Minh`. "
-            f"{flagged_n} inter-provincial route(s) are marked **Incomplete OSM data** instead of "
-            "displaying unreliable OSM way sums (missing intermediate stops or unverified external "
-            "detours outside the HCMC bounding box); stop-based walk-shed coverage is unaffected."
+            f"{flagged_n} route(s) are marked **Incomplete OSM data** instead of "
+            "displaying unreliable OSM way sums (endpoint-only stop mapping or unverified "
+            "corridor detours above 120 km); stop-based walk-shed coverage is unaffected."
         )
         route_display = routes_df[
             [
@@ -212,7 +212,7 @@ def page_hcmc() -> None:
                 "route_ref": "Route",
                 "route_name": "Corridor",
                 "directions": "Dirs",
-                "avg_stops_per_dir": "In-bbox stops / dir",
+                "avg_stops_per_dir": "Mapped stops / dir",
                 "length_display": "Length",
                 "sample_interval": "OSM interval",
                 "osm_note": "OSM data note",
