@@ -9,6 +9,7 @@ threshold, ranking size, pass rule, label or definition of its own, so both show
 
 from __future__ import annotations
 
+import statistics
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +25,10 @@ from transitometer.serve.format import (
     decimal,
     minutes,
     pct,
+    pts_delta,
     score,
+    service_hour,
+    service_hour_short,
 )
 from transitometer.serve.kpis import MIN_EVENTS, MIN_TRIPS, Source
 
@@ -41,6 +45,60 @@ MIN_ROUTE_TRIPS = 5  # golden min_trips: routes with fewer trips are not ranked
 MIN_SEGMENTS = 20  # segment-hours with fewer observations are not ranked
 DEVELOPMENT_DAY, HELD_OUT_DAY = "20260922", "20260923"  # rules were tuned on the first day only
 MIN_PRECISION = 0.6  # early-warning acceptance, declared before the held-out day was computed
+
+# --- shared display thresholds, status badges and diverging map bands -------------------------
+# Every status threshold, badge label/tone, colour-scale boundary and day-level takeaway lives
+# here once so Streamlit and the Next.js site cannot diverge (report section 5.3).
+
+ON_TIME_BELOW_HALF_THRESHOLD = 0.50
+"""Overview punctuality threshold: shares below 50 % receive 'Below 50 %' (attention);
+shares at or above 50 % receive 'Higher on-time' (pass)."""
+
+ON_TIME_TWO_THIRDS_LOW = 0.60
+ON_TIME_TWO_THIRDS_HIGH = 0.75
+"""Plain-English Overview takeaway band: shares in [60 %, 75 %) read 'Roughly two-thirds'."""
+
+HEADWAY_WATCH_THRESHOLD = 0.05
+"""Headways and Overview bunching/gapping threshold: shares at or above 5 % receive 'Watch'
+(attention for bunching, fail for long gaps); lower shares receive 'Low' (pass)."""
+
+BUNCHING_PEER_RATIO_HIGH = 10.0
+"""Overview takeaway ratio threshold: when a mode's bunching share is at least 10x its peer
+mode on the same service day, the takeaway highlights the tenfold gap."""
+
+NOT_DELIVERED_ELEVATED_THRESHOLD = 0.10
+"""Trip-delivery threshold shared by Overview and Trip delivery: observable scheduled trips not
+seen running at or above 10 % receive 'Elevated' (fail); lower shares receive 'Check feed'
+(attention) because absence from a real-time feed is evidence, not proof."""
+
+HEADWAY_REGULAR_BADGE: Row = {"label": "On rhythm", "tone": "pass"}
+"""Static badge for regular headways (within 20 % of the scheduled interval)."""
+
+HEADWAY_IRREGULAR_BADGE: Row = {"label": "Off rhythm", "tone": "neutral"}
+"""Static badge for irregular headways (outside regular band, not bunched or a gap)."""
+
+UNKNOWN_TRIPS_BADGE: Row = {"label": "Excluded", "tone": "neutral"}
+"""Static badge for scheduled trips that could not be judged and are excluded from the rate."""
+
+FINDING_ROUTE_BADGE: Row = {"label": "Below route median", "tone": "fail"}
+"""Badge on the Overview key-finding card for the least punctual ranked bus route."""
+
+STOP_MAP_BANDS: tuple[Row, ...] = (
+    {"id": 0, "label": "Critical", "range": "under 30 %", "color": "#b3261e", "max": 0.30},
+    {"id": 1, "label": "Poor", "range": "30 to 40 %", "color": "#c2570a", "max": 0.40},
+    {"id": 2, "label": "Typical", "range": "40 to 50 %", "color": "#64748b", "max": 0.50},
+    {"id": 3, "label": "Above typical", "range": "50 to 65 %", "color": "#2b6cb0", "max": 0.65},
+    {"id": 4, "label": "Reliable", "range": "65 % or more", "color": "#0b3b75", "max": None},
+)
+"""Unified 5-class WCAG AA diverging on-time scale for /diagnostics/map/, anchored near the
+equal-weighted bus stop median (45.5 %) and shared identically across bus and subway."""
+
+STOP_MAP_THIN_BAND: Row = {
+    "id": "thin",
+    "label": f"Under {MIN_CELL_EVENTS} arrivals",
+    "color": "#475569",
+}
+"""Hollow-outline map category for stops with fewer than MIN_CELL_EVENTS arrivals."""
 
 GROUPS = {"bus": "MTA Bus", "subway": "NYC Subway (lines 1 to 7, S)"}
 SHORT_GROUPS = {"bus": "Bus", "subway": "Subway"}
@@ -111,6 +169,153 @@ DATASETS = [
 ]
 
 
+def _badge(label: str, tone: str) -> Row:
+    """A status badge shared by both frontends: label text and semantic tone."""
+    return {"label": label, "tone": tone}
+
+
+def on_time_badge(share: float | None) -> Row | None:
+    """Overview punctuality badge based on ON_TIME_BELOW_HALF_THRESHOLD."""
+    if share is None:
+        return None
+    if share < ON_TIME_BELOW_HALF_THRESHOLD:
+        return _badge("Below 50 %", "attention")
+    return _badge("Higher on-time", "pass")
+
+
+def bunching_badge(share: float | None) -> Row | None:
+    """Bunching badge shared by Overview and Headways (HEADWAY_WATCH_THRESHOLD)."""
+    if share is None:
+        return None
+    if share >= HEADWAY_WATCH_THRESHOLD:
+        return _badge("Watch", "attention")
+    return _badge("Low", "pass")
+
+
+def gapping_badge(share: float | None) -> Row | None:
+    """Long-gap headway badge (HEADWAY_WATCH_THRESHOLD)."""
+    if share is None:
+        return None
+    if share >= HEADWAY_WATCH_THRESHOLD:
+        return _badge("Watch", "fail")
+    return _badge("Low", "pass")
+
+
+def not_delivered_badge(share: float | None) -> Row | None:
+    """Trip-delivery badge shared by Overview and Trip delivery."""
+    if share is None:
+        return None
+    if share >= NOT_DELIVERED_ELEVATED_THRESHOLD:
+        return _badge("Elevated", "fail")
+    return _badge("Check feed", "attention")
+
+
+def feed_score_badge(failed_count: int) -> Row:
+    """Overview feed-quality KPI badge from the number of failed checks."""
+    if failed_count > 0:
+        return _badge(f"{failed_count} failed", "fail")
+    return _badge("All passed", "pass")
+
+
+def feed_health_card_badge(failed_count: int, total: int) -> Row:
+    """Feed-health summary card badge from failed and total check counts."""
+    if failed_count > 0:
+        return _badge(f"{failed_count} failed", "fail")
+    return _badge(f"All {total} passed", "pass")
+
+
+def feed_health_status_badge(failed_count: int) -> Row:
+    """Feed-health check table status badge."""
+    if failed_count > 0:
+        noun = "check" if failed_count == 1 else "checks"
+        return _badge(f"{failed_count} {noun} exceeded limit", "fail")
+    return _badge("All checks passed", "pass")
+
+
+def stop_map_band_index(share: float | None, sufficient: bool = True) -> int:
+    """Map an on-time share onto STOP_MAP_BANDS (0..4), or -1 for thinly observed stops."""
+    if not sufficient or share is None:
+        return -1
+    for band in STOP_MAP_BANDS:
+        limit = band["max"]
+        if limit is None or share < limit:
+            return int(band["id"])
+    return len(STOP_MAP_BANDS) - 1
+
+
+def stop_map_delta_pts(
+    share: float | None, median_share: float | None, sufficient: bool = True
+) -> str | None:
+    """Signed percentage-point difference against the mode's stop median, or None if unscored."""
+    if not sufficient or share is None or median_share is None:
+        return None
+    return pts_delta(share - median_share)
+
+
+def _linear_quantile(sorted_values: list[float], p: float) -> float:
+    """Linear-interpolated quantile over a sorted non-empty list of floats."""
+    if not sorted_values:
+        return 0.0
+    idx = (len(sorted_values) - 1) * p
+    lo = int(idx)
+    hi = min(len(sorted_values) - 1, lo + 1)
+    return sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * (idx - lo)
+
+
+def _overview_takeaway(
+    grp: str,
+    otp: Row | None,
+    heads: Row | None,
+    peer_heads: Row | None,
+    fail_count: int,
+    has_caveat: bool,
+) -> str:
+    """Plain-English day takeaway computed from the day's metrics and shared thresholds."""
+    mode_word = "bus" if grp == "bus" else "subway"
+    peer_word = "subway" if grp == "bus" else "bus"
+
+    on_time_val = otp["on_time_share"] if otp else None
+    if on_time_val is None:
+        punctuality = f"No {mode_word} arrivals were recorded"
+    elif on_time_val < ON_TIME_BELOW_HALF_THRESHOLD:
+        punctuality = f"Fewer than half of {mode_word} arrivals kept to schedule"
+    elif ON_TIME_TWO_THIRDS_LOW <= on_time_val < ON_TIME_TWO_THIRDS_HIGH:
+        punctuality = f"Roughly two-thirds of {mode_word} arrivals kept to schedule"
+    elif on_time_val >= ON_TIME_TWO_THIRDS_HIGH:
+        punctuality = f"More than three-quarters of {mode_word} arrivals kept to schedule"
+    else:
+        punctuality = f"More than half of {mode_word} arrivals kept to schedule"
+
+    bunched_val = heads["bunched_share"] if heads else None
+    peer_bunched = peer_heads["bunched_share"] if peer_heads else None
+    if (
+        bunched_val is not None
+        and peer_bunched is not None
+        and peer_bunched > 0
+        and (bunched_val / peer_bunched) >= BUNCHING_PEER_RATIO_HIGH
+    ):
+        bunching_clause = f", bunching ran more than ten times higher than {peer_word}"
+    elif bunched_val is not None and bunched_val < HEADWAY_WATCH_THRESHOLD:
+        bunching_clause = " with low bunching"
+    elif bunched_val is not None:
+        bunching_clause = f", with {pct(bunched_val)} of headways bunched"
+    else:
+        bunching_clause = ""
+
+    if fail_count == 0:
+        feed_clause = ", and all feed quality checks passed."
+    elif fail_count == 1:
+        feed_clause = ", and 1 feed quality check exceeded its limit."
+    elif has_caveat:
+        feed_clause = (
+            f", but {fail_count} feed quality checks failed and warrant caution when reading "
+            "missing trips."
+        )
+    else:
+        feed_clause = f", and {fail_count} feed quality checks exceeded their limits."
+    return f"{punctuality}{bunching_clause}{feed_clause}"
+
+
 def _figure(
     key: str,
     label: str,
@@ -118,9 +323,10 @@ def _figure(
     display: str,
     help: str | None = None,
     basis: str | None = None,
+    badge: Row | None = None,
 ) -> Row:
-    """A headline number: raw value for charts and tests, display string for both frontends, and
-    the sample it is computed on (`basis`, for example "of 1,379,432 inferred arrivals")."""
+    """A headline number: raw value for charts and tests, display string for both frontends,
+    sample size (`basis`), and optional shared status badge (`label` + `tone`)."""
     return {
         "key": key,
         "label": label,
@@ -128,6 +334,7 @@ def _figure(
         "display": display,
         "help": help,
         "basis": basis,
+        "badge": badge,
     }
 
 
@@ -141,10 +348,22 @@ def _pick(rows: list[Row], **match: Any) -> Row | None:
 def overview(con: Con, src: Source, grp: str, day: str) -> Row:
     """The day at a glance: punctuality, bunching, delivery and feed quality of one mode."""
     otp = _pick(kpis.otp_overview(con, src), grp=grp, service_date=day, scope="all_stops")
-    heads = _pick(kpis.headway_overview(con, src), grp=grp, service_date=day)
+    headway_rows = kpis.headway_overview(con, src)
+    heads = _pick(headway_rows, grp=grp, service_date=day)
+    peer_grp = "subway" if grp == "bus" else "bus"
+    peer_heads = _pick(headway_rows, grp=peer_grp, service_date=day)
     trips = _pick(kpis.delivery_overview(con, src), grp=grp, service_date=day)
     feed = _pick(kpis.feed_scores(con, src), feed=f"{grp}_tu", day=day)
     observable = trips["scheduled"] - trips["unknown"] if trips else None
+    fail_count = int(feed["checks"] - feed["passed"]) if feed else 0
+    failed_raw = feed["failed_checks"] if feed else ""
+    failed_names = [_check_name(m) for m in failed_raw.split(", ")] if failed_raw else []
+    feed_checks = (
+        {"passed": int(feed["passed"]), "total": int(feed["checks"]), "failed": failed_names}
+        if feed
+        else None
+    )
+    caveat = _subway_caveat(con, src, day) if grp == "subway" else None
     figures = [
         _figure(
             "on_time",
@@ -154,6 +373,7 @@ def overview(con: Con, src: Source, grp: str, day: str) -> Row:
             "Share of inferred arrivals at intermediate scheduled stops that were at most 1 min "
             "early and at most 5 min late (the MTA's on-time band).",
             f"of {count(otp['events'])} inferred arrivals" if otp else None,
+            badge=on_time_badge(otp["on_time_share"] if otp else None),
         ),
         _figure(
             "bunched",
@@ -163,6 +383,7 @@ def overview(con: Con, src: Source, grp: str, day: str) -> Row:
             "Share of observed gaps between consecutive vehicles that were at most a quarter of "
             "the scheduled gap: vehicles arriving in clumps.",
             f"of {count(heads['headways'])} observed headways" if heads else None,
+            badge=bunching_badge(heads["bunched_share"] if heads else None),
         ),
         _figure(
             "not_delivered",
@@ -173,6 +394,7 @@ def overview(con: Con, src: Source, grp: str, day: str) -> Row:
             "the scheduled trips the feed could observe. Absence from the feed is evidence, not "
             "proof, that a trip did not run.",
             f"of {count(observable)} observable scheduled trips" if trips else None,
+            badge=not_delivered_badge(trips["not_delivered_share"] if trips else None),
         ),
         _figure(
             "feed_score",
@@ -182,11 +404,13 @@ def overview(con: Con, src: Source, grp: str, day: str) -> Row:
             "Share of the feed's data-quality checks that passed (trip-update feed of this "
             "mode, this day).",
             f"{feed['passed']} of {feed['checks']} checks passed" if feed else None,
+            badge=feed_score_badge(fail_count) if feed else None,
         ),
     ]
     hours = [
         {
             **h,
+            "hour_label": service_hour(int(h["service_hour"])),
             "display": pct(h["on_time_share"]),
             "sufficient": h["events"] >= HOURLY_MIN_EVENTS,
         }
@@ -197,10 +421,12 @@ def overview(con: Con, src: Source, grp: str, day: str) -> Row:
         "group_label": GROUPS[grp],
         "day": day,
         "day_label": day_label(day),
+        "takeaway": _overview_takeaway(grp, otp, heads, peer_heads, fail_count, caveat is not None),
+        "feed_checks": feed_checks,
         "figures": figures,
         "hours": hours,
         "hourly_min_events": HOURLY_MIN_EVENTS,
-        "caveat": _subway_caveat(con, src, day) if grp == "subway" else None,
+        "caveat": caveat,
     }
 
 
@@ -225,6 +451,7 @@ def trust(folder: Path) -> Row:
     rows = sum(f["archive_rows"] for f in integrity["feeds"]) if integrity["available"] else None
     passed = sum(layer["passed"] for layer in parity["layers"])
     total = sum(layer["total"] for layer in parity["layers"])
+    all_ok = bool(integrity.get("ok") and parity["ok"])
     return {
         "integrity": {
             "available": integrity["available"],
@@ -244,6 +471,11 @@ def trust(folder: Path) -> Row:
                 for layer in parity["layers"]
             ),
         },
+        "badge": (
+            _badge("Parity and integrity checks passed", "pass")
+            if all_ok
+            else _badge("Check validation report", "fail")
+        ),
     }
 
 
@@ -273,14 +505,32 @@ def on_time(con: Con, src: Source, grp: str, day: str) -> Row:
     routes = kpis.least_punctual_routes(con, src, grp, day, limit=HEATMAP_ROUTES)
     ranked = {r["route_id"] for r in routes}
     cells = [
-        {**cell, "scored": cell["events"] >= MIN_EVENTS}
+        {
+            **cell,
+            "hour_label": service_hour(int(cell["service_hour"])),
+            "hour_short": service_hour_short(int(cell["service_hour"])),
+            "scored": cell["events"] >= MIN_EVENTS,
+        }
         for cell in kpis.otp_route_hour(con, src, grp, day)
         if cell["route_id"] in ranked
     ]
+    ranking = routes[:RANKED_ROUTES]
+    day_text = day_label(day)
+    worst = ranking[0] if ranking else None
+    takeaway = (
+        f"On {day_text}, route {worst['route_id']} was the least punctual of the {GROUPS[grp]} "
+        f"routes: {pct(worst['on_time_share'])} of its {count(worst['events'])} observed arrivals "
+        "were on time."
+        if worst is not None
+        else None
+    )
     return {
+        "day": day,
+        "day_label": day_text,
+        "takeaway": takeaway,
         "routes": routes,
         "cells": cells,
-        "ranking": routes[:RANKED_ROUTES],
+        "ranking": ranking,
         "min_events": MIN_EVENTS,
         "definitions": OTP_DEFINITIONS,
     }
@@ -304,8 +554,13 @@ def headways(con: Con, src: Source, grp: str, day: str) -> Row:
     row = _pick(kpis.headway_overview(con, src), grp=grp, service_date=day)
     routes = kpis.most_bunched_routes(con, src, grp, day, limit=RANKED_ROUTES)
     shown = {r["route_id"] for r in routes}
-    cells = [c for c in kpis.headway_route_hour(con, src, grp, day) if c["route_id"] in shown]
+    cells = [
+        {**c, "hour_label": service_hour(int(c["service_hour"]))}
+        for c in kpis.headway_route_hour(con, src, grp, day)
+        if c["route_id"] in shown
+    ]
     figures = []
+    takeaway = None
     if row is not None:
         irregular = max(0.0, 1 - row["regular_share"] - row["bunched_share"] - row["gap_share"])
         figures = [
@@ -316,6 +571,7 @@ def headways(con: Con, src: Source, grp: str, day: str) -> Row:
                 row["regular_share"],
                 pct(row["regular_share"]),
                 "Within ±20 % of the scheduled headway.",
+                badge=dict(HEADWAY_REGULAR_BADGE),
             ),
             _figure(
                 "bunched",
@@ -323,6 +579,7 @@ def headways(con: Con, src: Source, grp: str, day: str) -> Row:
                 row["bunched_share"],
                 pct(row["bunched_share"]),
                 "At most 25 % of the scheduled headway.",
+                badge=bunching_badge(row["bunched_share"]),
             ),
             _figure(
                 "gaps",
@@ -330,6 +587,7 @@ def headways(con: Con, src: Source, grp: str, day: str) -> Row:
                 row["gap_share"],
                 pct(row["gap_share"]),
                 "At least twice the scheduled headway.",
+                badge=gapping_badge(row["gap_share"]),
             ),
             _figure(
                 "irregular",
@@ -337,9 +595,18 @@ def headways(con: Con, src: Source, grp: str, day: str) -> Row:
                 irregular,
                 pct(irregular),
                 "Every other headway: off schedule, not extreme.",
+                badge=dict(HEADWAY_IRREGULAR_BADGE),
             ),
         ]
+        takeaway = (
+            f"{pct(row['regular_share'])} of {count(row['headways'])} observed headways kept to "
+            f"the timetable, while {pct(row['bunched_share'])} bunched together and "
+            f"{pct(row['gap_share'])} left long gaps."
+        )
     return {
+        "day": day,
+        "day_label": day_label(day),
+        "takeaway": takeaway,
         "summary": row,
         "figures": figures,
         "routes": routes,
@@ -372,8 +639,11 @@ MISSING_DEFINITIONS = (
 def missing_trips(con: Con, src: Source, grp: str, day: str) -> Row:
     """BR3: every scheduled trip's outcome, the least delivered routes, and the subway caveat."""
     row = _pick(kpis.delivery_overview(con, src), grp=grp, service_date=day)
+    caveat = _subway_caveat(con, src, day) if grp == "subway" else None
     figures, outcomes = [], []
+    takeaway = None
     if row is not None:
+        observable = row["scheduled"] - row["unknown"]
         figures = [
             _figure("scheduled", "Scheduled trips", row["scheduled"], count(row["scheduled"])),
             _figure(
@@ -383,7 +653,8 @@ def missing_trips(con: Con, src: Source, grp: str, day: str) -> Row:
                 pct(row["not_delivered_share"]),
                 "Never reported + announced but never moved, as a share of the trips the feed "
                 "could observe (trips that could not be judged excluded).",
-                f"of {count(row['scheduled'] - row['unknown'])} observable trips",
+                f"of {count(observable)} observable trips",
+                badge=not_delivered_badge(row["not_delivered_share"]),
             ),
             _figure(
                 "unknown",
@@ -392,6 +663,7 @@ def missing_trips(con: Con, src: Source, grp: str, day: str) -> Row:
                 count(row["unknown"]),
                 "Trips whose scheduled time fell outside the snapshots read or inside a feed "
                 "outage.",
+                badge=dict(UNKNOWN_TRIPS_BADGE),
             ),
         ]
         outcomes = [
@@ -404,8 +676,21 @@ def missing_trips(con: Con, src: Source, grp: str, day: str) -> Row:
             }
             for i, (key, label) in enumerate(OUTCOMES)
         ]
-    caveat = _subway_caveat(con, src, day) if grp == "subway" else None
+        base_sentence = (
+            f"{pct(row['not_delivered_share'])} of {count(observable)} observable scheduled "
+            f"trips were not seen running ({count(row['missing'])} never reported, "
+            f"{count(row['not_run'])} announced without moving)"
+        )
+        takeaway = (
+            f"{base_sentence}; read with care because {caveat['display']} of real-time trips had "
+            "unmatched IDs."
+            if caveat is not None
+            else f"{base_sentence}."
+        )
     return {
+        "day": day,
+        "day_label": day_label(day),
+        "takeaway": takeaway,
         "summary": row,
         "figures": figures,
         "outcomes": outcomes,
@@ -484,12 +769,20 @@ def route_stops(con: Con, src: Source, grp: str, route_id: str) -> list[Row]:
 
 def _stop_summary(hours: list[Row]) -> Row:
     """Hours at one stop plus their totals: arrivals, on time over all hours, hours scored."""
-    arrivals = sum(int(h["events"]) for h in hours)
-    on_time_count = sum(int(h["on_time"]) for h in hours)
+    labelled = [
+        {
+            **h,
+            "hour_label": service_hour(int(h["service_hour"])),
+            "hour_short": service_hour_short(int(h["service_hour"])),
+        }
+        for h in hours
+    ]
+    arrivals = sum(int(h["events"]) for h in labelled)
+    on_time_count = sum(int(h["on_time"]) for h in labelled)
     share = on_time_count / arrivals if arrivals else None
-    scored = sum(bool(h["sufficient"]) for h in hours)
+    scored = sum(bool(h["sufficient"]) for h in labelled)
     return {
-        "hours": hours,
+        "hours": labelled,
         "figures": [
             _figure("arrivals", "Arrivals observed", arrivals, count(arrivals)),
             _figure("on_time", "On time, all hours", share, pct(share)),
@@ -497,7 +790,7 @@ def _stop_summary(hours: list[Row]) -> Row:
                 "scored_hours",
                 "Hours with enough data",
                 scored,
-                f"{scored} of {len(hours)}",
+                f"{scored} of {len(labelled)}",
                 f"Hours with at least {MIN_CELL_EVENTS} arrivals over both days.",
             ),
         ],
@@ -545,7 +838,7 @@ def stop_map(con: Con, src: Source, grp: str) -> Row:
     A stop is sufficient with at least MIN_CELL_EVENTS arrivals pooled over all routes and hours
     (the same bar as one stop-hour on the stop reliability page).
     """
-    stops = [
+    raw_stops = [
         {
             **s,
             "sufficient": s["events"] >= MIN_CELL_EVENTS,
@@ -554,6 +847,25 @@ def stop_map(con: Con, src: Source, grp: str) -> Row:
         }
         for s in kpis.stop_map(con, src, grp)
     ]
+    scored_shares = [
+        float(s["on_time_share"])
+        for s in raw_stops
+        if s["sufficient"] and s["on_time_share"] is not None
+    ]
+    median_share = round(statistics.median(scored_shares), 4) if scored_shares else None
+    band_counts = [0] * len(STOP_MAP_BANDS)
+    stops = []
+    for s in raw_stops:
+        band_id = stop_map_band_index(s["on_time_share"], s["sufficient"])
+        if band_id >= 0:
+            band_counts[band_id] += 1
+        stops.append(
+            {
+                **s,
+                "band": band_id,
+                "delta_pts": stop_map_delta_pts(s["on_time_share"], median_share, s["sufficient"]),
+            }
+        )
     ordered = sorted(stops, key=lambda s: (not s["sufficient"], s["on_time_share"], s["stop_id"]))
     worst = [s for s in ordered if s["sufficient"]][:MAP_WORST]
     return {
@@ -561,6 +873,11 @@ def stop_map(con: Con, src: Source, grp: str) -> Row:
         "worst": worst,
         "sufficient": sum(s["sufficient"] for s in stops),
         "min_events": MIN_CELL_EVENTS,
+        "stop_median_share": median_share,
+        "stop_median_display": pct(median_share),
+        "bands": [dict(b) for b in STOP_MAP_BANDS],
+        "thin_band": dict(STOP_MAP_THIN_BAND),
+        "band_counts": band_counts,
         "definitions": MAP_DEFINITIONS,
         "summary": (
             f"{len(stops):,} located stops, {sum(s['sufficient'] for s in stops):,} with at least "
@@ -619,17 +936,35 @@ def findings(con: Con, src: Source) -> list[Row]:
         rows = [r for r in rows if r["scope"] == "all_stops"]
         events = sum(r["events"] for r in rows)
         pooled[grp] = (sum(r["on_time_share"] * r["events"] for r in rows) / events, events)
-    hours = [h for h in kpis.hourly_on_time(con, src, "bus") if h["events"] >= HOURLY_MIN_EVENTS]
-    worst_hour = min(hours, key=lambda h: (h["on_time_share"], h["service_hour"]))
-    best_hour = max(hours, key=lambda h: (h["on_time_share"], -h["service_hour"]))
+    all_bus_hours = [
+        {
+            "hour": int(h["service_hour"]),
+            "hour_label": service_hour(int(h["service_hour"])),
+            "events": int(h["events"]),
+            "share": h["on_time_share"],
+            "display": pct(h["on_time_share"]),
+            "sufficient": h["events"] >= HOURLY_MIN_EVENTS,
+        }
+        for h in kpis.hourly_on_time(con, src, "bus")
+    ]
+    hours = [h for h in all_bus_hours if h["sufficient"]]
+    worst_hour = min(hours, key=lambda h: (h["share"], h["hour"]))
+    best_hour = max(hours, key=lambda h: (h["share"], -h["hour"]))
     ranked = route_scorecards(con, src, "bus")["ranked"]
+    sorted_shares = sorted(float(r["on_time_share"]) for r in ranked)
     last = ranked[-1]
     late = next(v for v in early_warning(con, src, "bus")["verdicts"] if v["outcome"] == "late")
+    mode_gap_label = f"{pts_delta(pooled['subway'][0] - pooled['bus'][0])} pt gap"
+    hour_drop_label = (
+        f"{pts_delta(best_hour['share'] - worst_hour['share']).lstrip('+')} pt drop from peak"
+    )
+    late_passed = bool(late.get("passed"))
     return [
         {
             "key": "modes",
             "kicker": "Bus vs subway",
             "value": pct(pooled["subway"][0]),
+            "badge": _badge(mode_gap_label, "attention"),
             "headline": (
                 f"{pct(pooled['subway'][0])} of subway arrivals were on time, against "
                 f"{pct(pooled['bus'][0])} of bus arrivals."
@@ -638,27 +973,48 @@ def findings(con: Con, src: Source) -> list[Row]:
                 f"Both days pooled: {count(pooled['subway'][1])} subway and "
                 f"{count(pooled['bus'][1])} bus inferred arrivals at intermediate stops."
             ),
+            "stats": {
+                "subway_share": pooled["subway"][0],
+                "subway_display": pct(pooled["subway"][0]),
+                "subway_events": int(pooled["subway"][1]),
+                "bus_share": pooled["bus"][0],
+                "bus_display": pct(pooled["bus"][0]),
+                "bus_events": int(pooled["bus"][1]),
+            },
             "page": "on-time",
         },
         {
             "key": "hours",
             "kicker": "Time of day",
-            "value": pct(worst_hour["on_time_share"]),
+            "value": pct(worst_hour["share"]),
+            "badge": _badge(hour_drop_label, "attention"),
             "headline": (
-                f"Bus punctuality was lowest at {int(worst_hour['service_hour']):02d}:00 "
-                f"({pct(worst_hour['on_time_share'])}) and highest at "
-                f"{int(best_hour['service_hour']):02d}:00 ({pct(best_hour['on_time_share'])})."
+                f"Bus punctuality was lowest at {worst_hour['hour_label']} "
+                f"({worst_hour['display']}) and highest at "
+                f"{best_hour['hour_label']} ({best_hour['display']})."
             ),
             "detail": (
                 f"Hours of the service day (scheduled time) with at least "
                 f"{HOURLY_MIN_EVENTS:,} arrivals, both days pooled."
             ),
+            "stats": {
+                "worst_hour": worst_hour["hour"],
+                "worst_hour_label": worst_hour["hour_label"],
+                "worst_share": worst_hour["share"],
+                "worst_display": worst_hour["display"],
+                "best_hour": best_hour["hour"],
+                "best_hour_label": best_hour["hour_label"],
+                "best_share": best_hour["share"],
+                "best_display": best_hour["display"],
+                "points": [h for h in all_bus_hours if h["hour"] <= 23 and h["share"] is not None],
+            },
             "page": "on-time",
         },
         {
             "key": "route",
             "kicker": "Least punctual route",
             "value": pct(last["on_time_share"]),
+            "badge": dict(FINDING_ROUTE_BADGE),
             "headline": (
                 f"Route {last['route_id']} ranked last of {len(ranked)} bus routes: "
                 f"{pct(last['on_time_share'])} on time."
@@ -667,12 +1023,21 @@ def findings(con: Con, src: Source) -> list[Row]:
                 f"95 % interval {pct(last['ci_low'])} to {pct(last['ci_high'])}, "
                 f"plausible ranks {last['rank_interval']}, from {count(last['events'])} arrivals."
             ),
+            "stats": {
+                "median": _linear_quantile(sorted_shares, 0.5),
+                "q25": _linear_quantile(sorted_shares, 0.25),
+                "q75": _linear_quantile(sorted_shares, 0.75),
+            },
             "page": "scorecards",
         },
         {
             "key": "warning",
             "kicker": "Early warning",
             "value": late.get("f1_display", "—"),
+            "badge": _badge(
+                "Passed checks" if late_passed else "Did not pass",
+                "pass" if late_passed else "fail",
+            ),
             "headline": (
                 f"Halfway through a bus trip, a simple rule predicted a late finish with F1 "
                 f"{late.get('f1_display')} against the baseline's {late.get('baseline_f1_display')}"
@@ -734,29 +1099,46 @@ def delay(con: Con, src: Source, grp: str, day: str) -> Row:
     """BR4: how much of a trip's final delay it inherited and how much it gained en route."""
     row = _pick(kpis.delay_overview(con, src), grp=grp, service_date=day)
     if row is None:
-        return {"summary": None, "figures": [], "caption": None, "definitions": DELAY_DEFINITIONS}
+        return {
+            "day": day,
+            "day_label": day_label(day),
+            "takeaway": None,
+            "summary": None,
+            "figures": [],
+            "caption": None,
+            "definitions": DELAY_DEFINITIONS,
+        }
+    inherited_display = minutes(row["mean_inherited_delay_s"])
+    gained_display = minutes(row["mean_gained_delay_s"])
+    final_display = minutes(row["mean_final_delay_s"])
     return {
+        "day": day,
+        "day_label": day_label(day),
+        "takeaway": (
+            f"A typical trip reached its first observed stop {inherited_display} late and lost "
+            f"another {gained_display} along the way, finishing {final_display} late."
+        ),
         "summary": row,
         "figures": [
             _figure(
                 "inherited",
                 "Delay at first observed stop",
                 row["mean_inherited_delay_s"],
-                minutes(row["mean_inherited_delay_s"]),
+                inherited_display,
                 "Mean over trips (one row per trip and vehicle).",
             ),
             _figure(
                 "gained",
                 "Delay gained en route",
                 row["mean_gained_delay_s"],
-                minutes(row["mean_gained_delay_s"]),
+                gained_display,
                 "Mean of the sum of segment excesses: observed minus scheduled travel time.",
             ),
             _figure(
                 "final",
                 "Delay at last observed stop",
                 row["mean_final_delay_s"],
-                minutes(row["mean_final_delay_s"]),
+                final_display,
             ),
         ],
         "caption": (
@@ -772,8 +1154,9 @@ def costly_segments(con: Con, src: Source, grp: str) -> Row:
     rows = [
         {
             **r,
+            "hour_label": service_hour(int(r["service_hour"])),
             "segment": (
-                f"{int(r['service_hour']):02d}:00, {r['route_id']}: "
+                f"{service_hour(int(r['service_hour']))}, {r['route_id']}: "
                 f"{r['from_name']} to {r['to_name']}"
             ),
         }
@@ -880,8 +1263,11 @@ def _came_true(hits: int, warned: int) -> str:
 
 
 def _clock(seconds: int) -> str:
-    """Seconds after GTFS time zero as HH:MM; hours past 23 stay on the same service day."""
-    return f"{seconds // 3600:02d}:{seconds % 3600 // 60:02d}"
+    """Seconds after GTFS time zero as HH:MM; hours past 23 carry '(+1)'."""
+    hr, mn = seconds // 3600, seconds % 3600 // 60
+    if hr >= 24:
+        return f"{hr - 24:02d}:{mn:02d} (+1)"
+    return f"{hr:02d}:{mn:02d}"
 
 
 def warning_list(con: Con, src: Source, grp: str, day: str) -> Row:
@@ -907,7 +1293,8 @@ def warning_list(con: Con, src: Source, grp: str, day: str) -> Row:
     hours = [counts(r) for r in kpis.warning_hours(con, src, grp, day, base)]
     hours = [h for h in hours if h["warnings"]]
     for h in hours:
-        h["label"] = f"{int(h['service_hour']):02d}:00"
+        h["label"] = service_hour(int(h["service_hour"]))
+        h["hour_label"] = h["label"]
     # Bar lengths relative to the longest bar of each list, so the frontends only draw them.
     for rows in (routes, hours):
         top = max((r["warnings"] for r in rows), default=0)
@@ -947,8 +1334,8 @@ def warning_list(con: Con, src: Source, grp: str, day: str) -> Row:
         ),
         "hours_caption": (
             "Warnings raised in each hour of the service day, by the time of the decision point "
-            "(halfway through the trip); hours without a warning are left out. Hours past 23 "
-            "belong to the same service day after midnight."
+            "(halfway through the trip); hours without a warning are left out. Hours marked (+1) "
+            "continue the same service day after midnight."
         ),
         "examples_caption": (
             "Trips the late rule warned about, one per route, highest projected delay first: "
@@ -1006,13 +1393,21 @@ def feed_health(con: Con, src: Source, day: str) -> Row:
             }
             for check in kpis.feed_checks(con, src, feed, day)
         ]
+        passed_count = int(row["passed"])
+        total_count = int(row["checks"])
+        failed_count = total_count - passed_count
         feeds.append(
             {
                 "feed": feed,
                 "label": label,
                 "score": row["score"],
                 "display": score(row["score"]),
-                "help": f"{row['passed']} of {row['checks']} checks passed",
+                "help": f"{passed_count} of {total_count} checks passed",
+                "passed": passed_count,
+                "total": total_count,
+                "failed_count": failed_count,
+                "badge": feed_health_card_badge(failed_count, total_count),
+                "status_badge": feed_health_status_badge(failed_count),
                 "failed": names,
                 "checks": checks,
             }

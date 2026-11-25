@@ -23,6 +23,23 @@ HCMC_DIR = kpis.SNAPSHOT_DIR / "hcmc"
 HAND_CHECKS_PATH = kpis.REPO / "results" / "hcmc-hand-checks.json"
 RANKED_WARDS = 15
 
+HCMC_COVERAGE_ANY_BADGE: Row = {"label": "% of land area", "tone": "neutral"}
+"""Badge reminding readers that M1 divides walk-shed area by natural land area, not population."""
+
+HCMC_COVERAGE_FREQ_BADGE: Row = {"label": "OSM interval only", "tone": "attention"}
+"""Badge flagging that M2 relies solely on OpenStreetMap interval tags (no arrival times)."""
+
+HCMC_ROUTES_MAPPED_BADGE: Row = {"label": "Primary network", "tone": "neutral"}
+"""Badge scoping the route count to the primary HCMC municipal bus network."""
+
+
+def hcmc_quality_badge(passed: int, total: int) -> Row:
+    """Pass/fail badge for the HCMC OpenStreetMap completeness checks."""
+    if passed == total:
+        return {"label": "All checks passed", "tone": "pass"}
+    return {"label": f"{total - passed} below target", "tone": "fail"}
+
+
 SCOPES: dict[str, str] = {
     "core_hcmc": "Pre-merger HCMC (102 units, Res. 1685/NQ-UBTVQH15)",
     "merged_city_all": "Post-July-2025 merged HCMC (all 168 subareas)",
@@ -92,6 +109,7 @@ def _figure(
     display: str,
     help_text: str | None = None,
     basis: str | None = None,
+    badge: Row | None = None,
 ) -> Row:
     return {
         "key": key,
@@ -100,6 +118,7 @@ def _figure(
         "display": display,
         "help": help_text,
         "basis": basis,
+        "badge": badge,
     }
 
 
@@ -233,6 +252,7 @@ def hcmc_coverage(
                 f"{decimal(summary['covered_any_km2'], 1)} of "
                 f"{decimal(summary['total_area_km2'], 1)} km² across {count(summary['wards'])} "
                 "wards/communes",
+                badge=dict(HCMC_COVERAGE_ANY_BADGE),
             ),
             _figure(
                 "coverage_freq",
@@ -244,6 +264,7 @@ def hcmc_coverage(
                 "actual arrival times exist.",
                 f"midpoint sensitivity: {pct(summary['coverage_freq_midpoint_share'])}; "
                 f"{count(summary['frequent_stops_conservative'])} frequent stops",
+                badge=dict(HCMC_COVERAGE_FREQ_BADGE),
             ),
             _figure(
                 "routes_mapped",
@@ -253,6 +274,7 @@ def hcmc_coverage(
                 "Distinct route numbers (ref) tagged under Xe buýt Thành phố Hồ Chí Minh in OSM.",
                 f"{count(summary['route_relations'])} directional relations, "
                 f"{count(summary['active_stops'])} active stops in scope",
+                badge=dict(HCMC_ROUTES_MAPPED_BADGE),
             ),
             _figure(
                 "interval_coverage",
@@ -264,6 +286,7 @@ def hcmc_coverage(
                 f"PTv2: {pct(summary['ptv2_share'])}, duration tagged: "
                 f"{pct(summary['duration_present_share'])}, "
                 f"{passed_checks}/{len(quality)} checks passed",
+                badge=hcmc_quality_badge(passed_checks, len(quality)),
             ),
         ]
 
