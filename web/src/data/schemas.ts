@@ -509,6 +509,7 @@ export const validation = z.object({
       passed: z.optional(num),
       failed: z.optional(num),
       skipped: z.optional(num),
+      ran: z.optional(num),
   }),
 });
 export type Validation = z.infer<typeof validation>;

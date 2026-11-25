@@ -366,11 +366,7 @@ def build(snapshot_dir: Path, out: Path, evidence_out: Path) -> dict[str, Any]:
         writer.parity["validation"] = {
             "parity": trust["parity"]["display"],
             "archive_rows": trust["integrity"]["archive_rows_display"],
-            "tests": (
-                f"{validation['tests']['passed']:,} / {validation['tests']['total']:,}"
-                if validation["tests"]["available"]
-                else "not yet measured"
-            ),
+            "tests": writer.parity["pipeline"]["tests"] or "not yet measured",
         }
 
         hcmc_dir = snapshot_dir / "hcmc"

@@ -125,4 +125,6 @@ def tests(folder: Path = RESULTS) -> dict[str, Any]:
     data = _load(folder, "test-summary")
     if data is None:
         return {"available": False, "file": "test-summary.json"}
-    return {"available": True, "file": "test-summary.json", **data}
+    # Skipped tests did not run: "passed / ran" keeps a skip from reading like a failure.
+    ran = data["total"] - data.get("skipped", 0)
+    return {"available": True, "file": "test-summary.json", **data, "ran": ran}

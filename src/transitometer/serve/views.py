@@ -711,7 +711,7 @@ def pipeline(folder: Path) -> Row:
         if "gold" in layers
         else None,
         "gold_seconds": f"{gold_run['elapsed_s']:,.0f} s" if gold_run else None,
-        "tests": f"{tests['passed']:,} / {tests['total']:,}" if tests["available"] else None,
+        "tests": f"{tests['passed']:,} / {tests['ran']:,}" if tests["available"] else None,
     }
 
 

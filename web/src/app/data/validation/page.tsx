@@ -145,7 +145,7 @@ export default function Page() {
             <div className="border-t-2 border-ink pt-2">
               <dt className="text-xs font-medium uppercase tracking-wider text-muted-ink">Tests passed</dt>
               <dd className="num mt-1 text-4xl" data-testid="tests-passed">
-                {count(data.tests.passed)} / {count(data.tests.total)}
+                {count(data.tests.passed)} / {count(data.tests.ran)}
               </dd>
               <dd className="mt-1 text-sm">
                 {count(data.tests.failed)} failed, {count(data.tests.skipped)} skipped · evidence: {link(data.tests.file)}

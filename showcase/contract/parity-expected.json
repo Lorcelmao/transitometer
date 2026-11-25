@@ -356,7 +356,7 @@
     "messages": "52,756,838",
     "silver": "4 / 4",
     "stop_events": "2,955,606",
-    "tests": "220 / 221"
+    "tests": "307 / 307"
   },
   "scorecards/bus": {
     "least": "QM42",
@@ -399,6 +399,6 @@
   "validation": {
     "archive_rows": "607,076,700",
     "parity": "Silver 4 / 4 · Gold 23 / 23",
-    "tests": "220 / 221"
+    "tests": "307 / 307"
   }
 }

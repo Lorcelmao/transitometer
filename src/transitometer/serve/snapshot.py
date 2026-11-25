@@ -110,8 +110,12 @@ def build(exports: Path, results: Path, policy: Path, out: Path, origin: Origin)
         tables[name] = {"rows": rows, "validated": name in compared}
 
     evidence_dir = out / "evidence"
-    if out.exists():
-        shutil.rmtree(out)  # the snapshot is fully derived; never keep stale tables
+    # The snapshot is fully derived: never keep stale tables. Only its own files are cleared;
+    # sibling folders (showcase/data/hcmc, built by `tasks.py hcmc-build`) are not ours to delete.
+    if evidence_dir.exists():
+        shutil.rmtree(evidence_dir)
+    for stale in [*out.glob("*.parquet"), out / "manifest.json"]:
+        stale.unlink(missing_ok=True)
     evidence_dir.mkdir(parents=True)
     for name, entry in tables.items():
         target = out / f"{name}.parquet"
