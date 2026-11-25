@@ -8,7 +8,7 @@
 import type { EChartsCoreOption } from "echarts/core";
 
 import { axisStyle, COLORS } from "@/charts/theme";
-import { count, pct, seconds, serviceHour } from "@/lib/format";
+import { count, pct, seconds } from "@/lib/format";
 
 type Tip = { data: unknown };
 
@@ -17,6 +17,8 @@ export function heatmapOption(
   cells: {
     route_id: string;
     service_hour: number;
+    hour_label: string;
+    hour_short: string;
     events: number;
     on_time_share: number | null;
     late_share: number | null;
@@ -26,7 +28,9 @@ export function heatmapOption(
   routes: string[],
   font: string,
 ): EChartsCoreOption {
-  const hours = Array.from(new Set(cells.map((c) => c.service_hour))).sort((a, b) => a - b);
+  const shortByHour = new Map<number, string>();
+  for (const c of cells) shortByHour.set(c.service_hour, c.hour_short);
+  const hours = Array.from(shortByHour.keys()).sort((a, b) => a - b);
   const point = (c: (typeof cells)[number]) => ({
     value: [hours.indexOf(c.service_hour), routes.indexOf(c.route_id), c.on_time_share ?? 0],
     cell: c,
@@ -38,7 +42,7 @@ export function heatmapOption(
       formatter: ({ data }: Tip) => {
         const { cell } = data as { cell: (typeof cells)[number] };
         return [
-          `<b>Route ${cell.route_id}</b>, ${serviceHour(cell.service_hour)}`,
+          `<b>Route ${cell.route_id}</b>, ${cell.hour_label}`,
           `${count(cell.events)} arrivals${cell.scored ? "" : " (too few to score)"}`,
           `On time ${pct(cell.on_time_share)}, late ${pct(cell.late_share)}`,
           `Median delay ${seconds(cell.median_delay_s)}`,
@@ -47,7 +51,7 @@ export function heatmapOption(
     },
     xAxis: {
       type: "category",
-      data: hours.map((h) => (h >= 24 ? `${String(h - 24).padStart(2, "0")}+1` : String(h).padStart(2, "0"))),
+      data: hours.map((h) => shortByHour.get(h) ?? String(h)),
       name: "Scheduled hour of the service day (+1 = after midnight)",
       nameLocation: "middle",
       nameGap: 28,
@@ -198,6 +202,8 @@ export type MapStop = {
   sufficient: boolean;
   routeId: string;
   directionId: number | null;
+  band: number;
+  deltaPts: string | null;
 };
 
 /** Pre-aggregated 670 m neighborhood grid cell from public/data/map-grid/bus.json. */
@@ -210,6 +216,8 @@ export type MapGridCell = readonly [
   number, // sufficient stop count
   string, // busiest stop name in cell
   string, // busiest route in cell
+  number, // diverging band id (0..4) or -1 for thin
+  string | null, // pre-formatted signed delta vs bus stop median (e.g. "-8.5")
 ];
 
 export type StreetPolyline = {
@@ -278,43 +286,27 @@ export const BOROUGH_LABELS: readonly { name: string; value: readonly [number, n
 ];
 
 export type MapBandSpec = {
-  readonly id: 0 | 1 | 2 | 3 | 4;
+  readonly id: number;
   readonly label: string;
   readonly range: string;
   readonly color: string;
-  readonly max: number;
+  readonly max: number | null;
 };
 
-/**
- * Unified 5-class WCAG AA diverging scale anchored around the equal-weighted bus stop median
- * (45.5 %). Every colour exceeds 4.1:1 contrast on #f4f6f9 land and 4.4:1 on #ffffff.
- */
-export const MAP_DIVERGING_BANDS: readonly MapBandSpec[] = [
-  { id: 0, label: "Critical", range: "under 30 %", color: COLORS.mapDiverging[0], max: 0.3 },
-  { id: 1, label: "Poor", range: "30 to 40 %", color: COLORS.mapDiverging[1], max: 0.4 },
-  { id: 2, label: "Typical", range: "40 to 50 %", color: COLORS.mapDiverging[2], max: 0.5 },
-  { id: 3, label: "Above typical", range: "50 to 65 %", color: COLORS.mapDiverging[3], max: 0.65 },
-  { id: 4, label: "Reliable", range: "65 % or more", color: COLORS.mapDiverging[4], max: 2.0 },
-] as const;
+export type MapThinBand = {
+  readonly id: "thin";
+  readonly label: string;
+  readonly color: string;
+};
 
-export function bandIndex(share: number | null | undefined): 0 | 1 | 2 | 3 | 4 | -1 {
-  if (share === null || share === undefined || Number.isNaN(share)) return -1;
-  if (share < 0.3) return 0;
-  if (share < 0.4) return 1;
-  if (share < 0.5) return 2;
-  if (share < 0.65) return 3;
-  return 4;
-}
-
-export function bandMeta(
-  share: number | null | undefined,
-  sufficient: boolean,
-): { id: 0 | 1 | 2 | 3 | 4 | "thin"; label: string; color: string } {
-  if (!sufficient || share === null || share === undefined) {
-    return { id: "thin", label: "Under 10 arrivals", color: COLORS.mapThinStroke };
-  }
-  const idx = bandIndex(share);
-  return idx === -1 ? { id: "thin", label: "Under 10 arrivals", color: COLORS.mapThinStroke } : MAP_DIVERGING_BANDS[idx];
+/** Look up a pre-assigned Python diverging band id (0..4) or -1 (thin) from the exported scale. */
+export function bandMetaById(
+  bandId: number,
+  bands: readonly MapBandSpec[],
+  thinBand: MapThinBand,
+): { id: number | "thin"; label: string; color: string } {
+  const match = bandId >= 0 ? bands.find((b) => b.id === bandId) : undefined;
+  return match ?? thinBand;
 }
 
 export function stopDotSize(z: number, mode: string, compact: boolean): number {
@@ -369,25 +361,24 @@ export function splitLabel(stop: Pick<MapStop, "label" | "stopId">): { name: str
     : { name: stop.label, id: stop.stopId };
 }
 
-function formatDeltaPts(share: number | null, medianShare: number | null, modeWord: string, medianDisplay: string): string {
-  if (share === null || medianShare === null) return "";
-  const pts = ((share - medianShare) * 100).toFixed(1);
-  const signed = Number(pts) >= 0 ? `+${pts}` : pts;
-  return `${signed} pts vs ${modeWord} stop median (${escapeHtml(medianDisplay)})`;
+function formatDeltaPts(deltaPts: string | null, modeWord: string, medianDisplay: string): string {
+  if (!deltaPts) return "";
+  return `${escapeHtml(deltaPts)} pts vs ${modeWord} stop median (${escapeHtml(medianDisplay)})`;
 }
 
 /** Opaque high-contrast tooltip for a 670 m neighborhood grid cell (bus city-wide view). */
 export function gridTooltip(
   cell: MapGridCell,
-  busMedianShare: number | null,
+  bands: readonly MapBandSpec[],
+  thinBand: MapThinBand,
   busMedianDisplay: string,
   font: string,
 ): string {
-  const [, , events, share, stopCount, suffCount, topStop, topRoute] = cell;
-  const band = bandMeta(share, suffCount > 0);
+  const [, , events, share, stopCount, suffCount, topStop, topRoute, bandId, deltaPts] = cell;
+  const band = bandMetaById(bandId, bands, thinBand);
   const delta =
     suffCount > 0 && share !== null
-      ? formatDeltaPts(share, busMedianShare, "bus", busMedianDisplay)
+      ? formatDeltaPts(deltaPts, "bus", busMedianDisplay)
       : "Under 10 arrivals across stops in this cell";
   return [
     `<div style="max-width:255px;white-space:normal;word-break:break-word;font-family:${escapeHtml(font)};color:${COLORS.ink};line-height:1.4;">`,
@@ -406,14 +397,15 @@ export function stopTooltip(
   stop: MapStop,
   minEvents: number,
   modeWord: string,
-  medianShare: number | null,
+  bands: readonly MapBandSpec[],
+  thinBand: MapThinBand,
   medianDisplay: string,
   font = "sans-serif",
 ): string {
   const { name, id } = splitLabel(stop);
-  const band = bandMeta(stop.share, stop.sufficient);
+  const band = bandMetaById(stop.band, bands, thinBand);
   const delta = stop.sufficient
-    ? formatDeltaPts(stop.share, medianShare, modeWord, medianDisplay)
+    ? formatDeltaPts(stop.deltaPts, modeWord, medianDisplay)
     : `Too few arrivals to score (fewer than ${count(minEvents)})`;
   return [
     `<div style="max-width:265px;white-space:normal;word-break:break-word;font-family:${escapeHtml(font)};color:${COLORS.ink};line-height:1.4;">`,

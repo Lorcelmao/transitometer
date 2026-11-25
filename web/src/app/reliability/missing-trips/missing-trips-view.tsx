@@ -20,24 +20,29 @@ function Body({ data, source }: { data: MissingTrips; source: Initial<MissingTri
   }
   const most = Math.max(...data.outcomes.map((o) => o.trips));
   const notDelivFig = data.figures.find((f) => f.key === "not_delivered");
-  const notDelivVal = Number(notDelivFig?.value ?? 0);
 
   const extras: Record<string, KpiExtra> = {
     scheduled: { shortNote: "All trips scheduled in the MTA timetable for this day." },
     not_delivered: {
-      badge: notDelivVal >= 0.1 ? { label: "Elevated", tone: "fail" } : { label: "Watch", tone: "attention" },
       shortNote: notDelivFig?.basis
         ? `Never reported or never moved (${notDelivFig.basis}).`
         : "Never reported or announced without moving.",
     },
     unknown: {
-      badge: { label: "Excluded", tone: "neutral" },
       shortNote: "Outside feed capture window or during a feed outage.",
     },
   };
 
   return (
     <div className="space-y-5">
+      {data.takeaway ? (
+        <p
+          className="rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink tabular-nums"
+          data-testid="headline"
+        >
+          <strong className="font-semibold">Day takeaway ({data.day_label}):</strong> {data.takeaway}
+        </p>
+      ) : null}
       <KpiRow figures={data.figures} size="md" extras={extras} />
       {data.caveat ? (
         <Caveat>

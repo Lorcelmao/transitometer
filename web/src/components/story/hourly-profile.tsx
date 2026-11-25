@@ -1,12 +1,12 @@
 import type { Overview } from "@/data/schemas";
-import { count, serviceHour } from "@/lib/format";
+import { count } from "@/lib/format";
 
 type Hour = Overview["views"][string]["hours"][number];
 
 /**
  * On-time share by hour of the service day as a plain SVG chart (no chart library on the overview).
  * Marks the daily high (blue circle) and daily low (amber diamond) among sufficient hours,
- * draws hollow circles for low-volume hours, and labels hours past midnight as 00:00 (+1), etc.
+ * draws hollow circles for low-volume hours, and uses Python's pre-formatted hour_label.
  */
 export function HourlyProfile({ hours, label }: { hours: Hour[]; label: string }) {
   const W = 640;
@@ -32,7 +32,8 @@ export function HourlyProfile({ hours, label }: { hours: Hour[]; label: string }
     ? `${path}L${x(points[points.length - 1].service_hour).toFixed(1)},${y(0)}L${x(points[0].service_hour).toFixed(1)},${y(0)}Z`
     : "";
 
-  const ticks = Array.from({ length: Math.floor(maxHour / 4) + 1 }, (_, i) => i * 4);
+  const byHour = new Map(hours.map((h) => [h.service_hour, h.hour_label]));
+  const ticks = Array.from({ length: Math.floor(maxHour / 4) + 1 }, (_, i) => i * 4).filter((hr) => byHour.has(hr));
   const clampLabelX = (cx: number) => Math.max(pad.left + 58, Math.min(W - pad.right - 58, cx));
 
   return (
@@ -60,7 +61,7 @@ export function HourlyProfile({ hours, label }: { hours: Hour[]; label: string }
       ))}
       {ticks.map((hour) => (
         <text key={hour} x={x(hour)} y={H - 8} textAnchor="middle" className="fill-muted-ink text-[12px]">
-          {hour >= 24 ? `${String(hour - 24).padStart(2, "0")}:00 (+1)` : `${String(hour).padStart(2, "0")}:00`}
+          {byHour.get(hour)}
         </text>
       ))}
       <path d={area} fill="var(--seq-1)" opacity={0.5} />
@@ -69,7 +70,7 @@ export function HourlyProfile({ hours, label }: { hours: Hour[]; label: string }
       {points.map((h) => {
         const cx = x(h.service_hour);
         const cy = y(h.on_time_share as number);
-        const hLabel = serviceHour(h.service_hour);
+        const hLabel = h.hour_label;
         const isLow = lowPt && h.service_hour === lowPt.service_hour;
         const isHigh = highPt && h.service_hour === highPt.service_hour;
         if (isLow) {

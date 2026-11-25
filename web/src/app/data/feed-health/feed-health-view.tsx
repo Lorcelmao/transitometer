@@ -16,8 +16,6 @@ export function FeedHealthView({ meta, data, source }: { meta: Meta; data: FeedH
   const [state, setState] = useUrlState({ day: days[0], feed: feedKeys[0] }, { day: days, feed: feedKeys });
   const view = data.views[state.day];
   const feed = view.feeds.find((f) => f.feed === state.feed) ?? view.feeds[0];
-  const feedPassed = feed.checks.filter((c) => c.passed).length;
-  const feedFailed = feed.checks.length - feedPassed;
 
   return (
     <div className="space-y-5">
@@ -32,9 +30,6 @@ export function FeedHealthView({ meta, data, source }: { meta: Meta; data: FeedH
       {/* 3 Feed cards with discrete pass/fail check blocks */}
       <dl className="grid gap-3.5 md:grid-cols-3">
         {view.feeds.map((f) => {
-          const total = f.checks.length;
-          const passed = f.checks.filter((c) => c.passed).length;
-          const failedCount = total - passed;
           const selected = f.feed === feed.feed;
           return (
             <div
@@ -48,18 +43,18 @@ export function FeedHealthView({ meta, data, source }: { meta: Meta; data: FeedH
                 <span>{f.label}</span>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    failedCount > 0 ? "bg-fail-soft text-fail-text" : "bg-pass-soft text-pass-text"
+                    f.badge.tone === "fail" ? "bg-fail-soft text-fail-text" : "bg-pass-soft text-pass-text"
                   }`}
                 >
-                  {failedCount > 0 ? `${failedCount} failed` : `All ${total} passed`}
+                  {f.badge.label}
                 </span>
               </dt>
               <dd className="num text-[28px] font-bold leading-none tracking-tight text-ink">{f.display}</dd>
               <dd>
-                <CheckStrip passed={passed} total={total} />
+                <CheckStrip passed={f.passed} total={f.total} />
               </dd>
               <dd className="text-xs leading-relaxed text-muted-ink">
-                {failedCount > 0
+                {f.failed_count > 0
                   ? `${f.help}. Exceeded limit on: ${f.failed.join(", ")}.`
                   : `${f.help}. Every automated threshold met for this feed.`}
               </dd>
@@ -76,7 +71,7 @@ export function FeedHealthView({ meta, data, source }: { meta: Meta; data: FeedH
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-panel px-4 py-3.5 md:px-5">
           <div>
             <h2 id="checks" className="text-[17px] font-semibold text-ink">
-              {feed.label}: check by check ({feedPassed} of {feed.checks.length} passed, {view.day_label})
+              {feed.label}: check by check ({feed.passed} of {feed.total} passed, {view.day_label})
             </h2>
             <p className="mt-0.5 text-xs text-muted-ink">
               Lower values are better. Dark vertical tick marks the maximum allowed limit for each check.
@@ -101,15 +96,13 @@ export function FeedHealthView({ meta, data, source }: { meta: Meta; data: FeedH
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            {feedFailed > 0 ? (
-              <span className="rounded-full bg-fail-soft px-2.5 py-1 text-xs font-semibold text-fail-text">
-                {feedFailed} {feedFailed === 1 ? "check" : "checks"} exceeded limit
-              </span>
-            ) : (
-              <span className="rounded-full bg-pass-soft px-2.5 py-1 text-xs font-semibold text-pass-text">
-                All checks passed
-              </span>
-            )}
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                feed.status_badge.tone === "fail" ? "bg-fail-soft text-fail-text" : "bg-pass-soft text-pass-text"
+              }`}
+            >
+              {feed.status_badge.label}
+            </span>
           </div>
         </div>
 

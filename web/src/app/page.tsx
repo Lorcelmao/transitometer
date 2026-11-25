@@ -12,24 +12,43 @@ import { PageIntro } from "@/components/story/page-parts";
 import { readMeta, readView } from "@/data/load";
 import {
   earlyWarning as earlyWarningSchema,
-  feedHealth as feedHealthSchema,
   overview as overviewSchema,
   scorecards as scorecardsSchema,
+  type Badge,
 } from "@/data/schemas";
-import { count, pct } from "@/lib/format";
+import { count } from "@/lib/format";
 
-function quantile(sorted: number[], p: number): number {
-  if (!sorted.length) return 0;
-  const idx = (sorted.length - 1) * p;
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
+const BADGE_CLS: Record<Badge["tone"], string> = {
+  pass: "bg-pass-soft text-pass-text",
+  fail: "bg-fail-soft text-fail-text",
+  attention: "bg-attention-soft text-attention-text",
+  neutral: "bg-panel text-muted-ink",
+};
+
+type ModesStats = {
+  subway_share: number;
+  subway_display: string;
+  subway_events: number;
+  bus_share: number;
+  bus_display: string;
+  bus_events: number;
+};
+type HoursStats = {
+  worst_hour: number;
+  worst_hour_label: string;
+  worst_share: number;
+  worst_display: string;
+  best_hour: number;
+  best_hour_label: string;
+  best_share: number;
+  best_display: string;
+  points: { hour: number; share: number }[];
+};
+type RouteStats = { median: number; q25: number; q75: number };
 
 export default function Home() {
   const meta = readMeta();
   const { data: overview, source } = readView("overview.json", overviewSchema);
-  const { data: feedHealth } = readView("feed-health.json", feedHealthSchema);
   const { data: busScorecards } = readView("scorecards/bus.json", scorecardsSchema);
   const { data: busEarlyWarning } = readView("early-warning/bus.json", earlyWarningSchema);
   const { pipeline, trust } = overview;
@@ -37,68 +56,13 @@ export default function Home() {
   const href = (page: string) => PAGES.find((p) => p.page === page)?.href ?? "/";
   const findingByKey = Object.fromEntries(overview.findings.map((f) => [f.key, f]));
 
-  // Exact arrival-weighted pooled bus vs subway shares across both days (matches findings.modes).
-  const days = meta.days.map((d) => d.key);
-  const pooledMode = (mode: string) => {
-    let events = 0;
-    let onTimeWeighted = 0;
-    for (const day of days) {
-      const v = overview.views[`${mode}/${day}`];
-      if (!v) continue;
-      for (const h of v.hours) {
-        if (h.on_time_share !== null) {
-          events += h.events;
-          onTimeWeighted += h.on_time_share * h.events;
-        }
-      }
-    }
-    return { share: events > 0 ? onTimeWeighted / events : 0, events };
-  };
-  const subwayPooled = pooledMode("subway");
-  const busPooled = pooledMode("bus");
-  const modeGapPts = ((subwayPooled.share - busPooled.share) * 100).toFixed(1);
+  const modesStats = findingByKey.modes?.stats as ModesStats | undefined;
+  const hoursStats = findingByKey.hours?.stats as HoursStats | undefined;
+  const routeStats = findingByKey.route?.stats as RouteStats | undefined;
 
-  // Exact 24-hour (00:00 to 23:00) pooled bus curve from overview.views for Finding 2.
-  const busHourMap = new Map<number, { events: number; weighted: number }>();
-  for (const day of days) {
-    const v = overview.views[`bus/${day}`];
-    if (!v) continue;
-    for (const h of v.hours) {
-      if (h.service_hour <= 23 && h.on_time_share !== null) {
-        const cur = busHourMap.get(h.service_hour) ?? { events: 0, weighted: 0 };
-        cur.events += h.events;
-        cur.weighted += h.on_time_share * h.events;
-        busHourMap.set(h.service_hour, cur);
-      }
-    }
-  }
-  const pooledHours = Array.from(busHourMap.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([hour, { events, weighted }]) => ({
-      hour,
-      events,
-      share: events > 0 ? weighted / events : 0,
-    }));
-  const suffPooledHours = pooledHours.filter((h) => h.events >= 1000);
-  const worstPooled = suffPooledHours.reduce(
-    (a, b) => (b.share < a.share ? b : a),
-    suffPooledHours[0] ?? { hour: 16, events: 0, share: 0.403 },
-  );
-  const bestPooled = suffPooledHours.reduce(
-    (a, b) => (b.share > a.share ? b : a),
-    suffPooledHours[0] ?? { hour: 0, events: 0, share: 0.622 },
-  );
-  const hourDropPts = ((bestPooled.share - worstPooled.share) * 100).toFixed(1);
-
-  // Bus route median + IQR + worst route from scorecards/bus.json for Finding 3.
   const rankedBus = busScorecards.ranked;
-  const sortedShares = [...rankedBus.map((r) => r.on_time_share)].sort((a, b) => a - b);
-  const busMedian = quantile(sortedShares, 0.5);
-  const busQ25 = quantile(sortedShares, 0.25);
-  const busQ75 = quantile(sortedShares, 0.75);
   const worstRoute = rankedBus[rankedBus.length - 1];
 
-  // Bus late early-warning verdict from early-warning/bus.json for Finding 4.
   const lateVerdict = busEarlyWarning.verdicts.find((v) => v.outcome === "late");
   const lateRuleRow = busEarlyWarning.comparison.find(
     (r) => r.outcome === "late" && r.method === "rule" && r.service_date === busEarlyWarning.held_out_day,
@@ -106,18 +70,6 @@ export default function Home() {
   const lateBaseRow = busEarlyWarning.comparison.find(
     (r) => r.outcome === "late" && r.method === "baseline" && r.service_date === busEarlyWarning.held_out_day,
   );
-
-  // Compact feed-check lookup per mode/day for KPI card #4 micro-visual.
-  const feedChecksByKey: Record<string, { passed: number; total: number; failed: string[] }> = {};
-  for (const [dayKey, dayView] of Object.entries(feedHealth.views)) {
-    for (const f of dayView.feeds) {
-      const modeKey = f.feed === "bus_tu" ? "bus" : f.feed === "subway_tu" ? "subway" : null;
-      if (!modeKey) continue;
-      const total = f.checks.length;
-      const passed = f.checks.filter((c) => c.passed).length;
-      feedChecksByKey[`${modeKey}/${dayKey}`] = { passed, total, failed: f.failed };
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -147,7 +99,7 @@ export default function Home() {
         bunching, trip delivery, and feed health.
       </PageIntro>
 
-      <HomeGlance meta={meta} overview={overview} source={source} feedChecks={feedChecksByKey} />
+      <HomeGlance meta={meta} overview={overview} source={source} />
 
       {/* Key findings across both service days (explicit scope + real-data micro-visuals) */}
       <section aria-labelledby="findings-heading" className="space-y-3.5">
@@ -162,7 +114,7 @@ export default function Home() {
 
         <div className="grid gap-3.5 md:grid-cols-2">
           {/* Finding 1: Subway vs Bus */}
-          {findingByKey.modes ? (
+          {findingByKey.modes && modesStats ? (
             <article
               className="flex flex-col gap-3 rounded-xl border border-rule bg-surface p-4 shadow-xs"
               data-testid="finding-modes"
@@ -179,8 +131,8 @@ export default function Home() {
                     <span className="text-xs font-medium text-muted-ink">subway arrivals on time</span>
                   </div>
                 </div>
-                <span className="num rounded-full bg-attention-soft px-2.5 py-0.5 text-xs font-semibold text-attention-text">
-                  +{modeGapPts} pt gap
+                <span className={`num rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE_CLS[findingByKey.modes.badge.tone]}`}>
+                  {findingByKey.modes.badge.label}
                 </span>
               </div>
               <div className="rounded-lg border border-panel bg-paper p-3">
@@ -188,14 +140,14 @@ export default function Home() {
                   rows={[
                     {
                       label: "Subway",
-                      value: subwayPooled.share,
-                      display: pct(subwayPooled.share),
+                      value: modesStats.subway_share,
+                      display: modesStats.subway_display,
                       tone: "brand",
                     },
                     {
                       label: "Bus",
-                      value: busPooled.share,
-                      display: pct(busPooled.share),
+                      value: modesStats.bus_share,
+                      display: modesStats.bus_display,
                       tone: "attention",
                     },
                   ]}
@@ -207,7 +159,8 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-panel pt-2.5 text-xs">
                 <span className="num text-muted-ink">
-                  Both days pooled: {count(subwayPooled.events)} subway and {count(busPooled.events)} bus arrivals
+                  Both days pooled: {count(modesStats.subway_events)} subway and {count(modesStats.bus_events)} bus
+                  arrivals
                 </span>
                 <Link href={href(findingByKey.modes.page)} prefetch={false} className="font-semibold no-underline hover:underline">
                   Open on-time report
@@ -217,7 +170,7 @@ export default function Home() {
           ) : null}
 
           {/* Finding 2: Lowest Bus Hour */}
-          {findingByKey.hours ? (
+          {findingByKey.hours && hoursStats ? (
             <article
               className="flex flex-col gap-3 rounded-xl border border-rule bg-surface p-4 shadow-xs"
               data-testid="finding-hours"
@@ -232,26 +185,26 @@ export default function Home() {
                       {findingByKey.hours.value}
                     </span>
                     <span className="text-xs font-medium text-muted-ink">
-                      at {String(worstPooled.hour).padStart(2, "0")}:00 (afternoon rush)
+                      at {hoursStats.worst_hour_label} (afternoon rush)
                     </span>
                   </div>
                 </div>
-                <span className="num rounded-full bg-attention-soft px-2.5 py-0.5 text-xs font-semibold text-attention-text">
-                  {hourDropPts} pt drop from peak
+                <span className={`num rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE_CLS[findingByKey.hours.badge.tone]}`}>
+                  {findingByKey.hours.badge.label}
                 </span>
               </div>
               <div className="rounded-lg border border-panel bg-paper px-3 py-2">
                 <MiniHourlySparkline
-                  points={pooledHours}
+                  points={hoursStats.points}
                   lowHour={{
-                    hour: worstPooled.hour,
-                    share: worstPooled.share,
-                    display: pct(worstPooled.share),
+                    hour: hoursStats.worst_hour,
+                    share: hoursStats.worst_share,
+                    display: hoursStats.worst_display,
                   }}
                   highHour={{
-                    hour: bestPooled.hour,
-                    share: bestPooled.share,
-                    display: pct(bestPooled.share),
+                    hour: hoursStats.best_hour,
+                    share: hoursStats.best_share,
+                    display: hoursStats.best_display,
                   }}
                 />
               </div>
@@ -271,7 +224,7 @@ export default function Home() {
           ) : null}
 
           {/* Finding 3: Least Punctual Bus Route */}
-          {findingByKey.route && worstRoute ? (
+          {findingByKey.route && worstRoute && routeStats ? (
             <article
               className="flex flex-col gap-3 rounded-xl border border-rule bg-surface p-4 shadow-xs"
               data-testid="finding-route"
@@ -290,8 +243,8 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
-                <span className="rounded-full bg-fail-soft px-2.5 py-0.5 text-xs font-semibold text-fail-text">
-                  Below route median
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE_CLS[findingByKey.route.badge.tone]}`}>
+                  {findingByKey.route.badge.label}
                 </span>
               </div>
               <div className="rounded-lg border border-panel bg-paper px-3 py-2">
@@ -300,9 +253,9 @@ export default function Home() {
                   value={worstRoute.on_time_share}
                   ciLow={worstRoute.ci_low ?? worstRoute.on_time_share}
                   ciHigh={worstRoute.ci_high ?? worstRoute.on_time_share}
-                  median={busMedian}
-                  q25={busQ25}
-                  q75={busQ75}
+                  median={routeStats.median}
+                  q25={routeStats.q25}
+                  q75={routeStats.q75}
                 />
               </div>
               <p className="flex-1 text-sm leading-relaxed text-ink">
@@ -338,12 +291,8 @@ export default function Home() {
                     <span className="text-xs font-medium text-muted-ink">F1 score (higher is better)</span>
                   </div>
                 </div>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    lateVerdict.passed ? "bg-pass-soft text-pass-text" : "bg-fail-soft text-fail-text"
-                  }`}
-                >
-                  {lateVerdict.passed ? "Passed checks" : "Did not pass"}
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE_CLS[findingByKey.warning.badge.tone]}`}>
+                  {findingByKey.warning.badge.label}
                 </span>
               </div>
               <div className="rounded-lg border border-panel bg-paper p-3">
@@ -404,14 +353,8 @@ export default function Home() {
               and verified table by table against an independent DuckDB SQL reference.
             </p>
           </div>
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-              trust.integrity.ok && trust.parity.ok
-                ? "bg-pass-soft text-pass-text"
-                : "bg-fail-soft text-fail-text"
-            }`}
-          >
-            {trust.integrity.ok && trust.parity.ok ? "Parity and integrity checks passed" : "Check validation report"}
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${BADGE_CLS[trust.badge.tone]}`}>
+            {trust.badge.label}
           </span>
         </div>
 

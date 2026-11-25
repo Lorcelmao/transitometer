@@ -12,29 +12,25 @@ import { CheckStrip, PeerCompareBar } from "@/components/story/micro-viz";
 import { Caveat } from "@/components/story/page-parts";
 import type { Meta, Overview, Source } from "@/data/schemas";
 import { useUrlState } from "@/hooks/use-url-state";
-import { count, serviceHour } from "@/lib/format";
-
-type FeedCheckSummary = { passed: number; total: number; failed: string[] };
+import { count } from "@/lib/format";
 
 function shortDay(label: string): string {
   return label.replace(/ \d{4}$/, "");
 }
 
 /**
- * Interactive Overview section: sticky mode/day filter bar, non-repetitive day takeaway,
- * 4 context-rich KPI cards with explicit single-day peer scope, and side-by-side Hourly Profile
+ * Interactive Overview section: sticky mode/day filter bar, shared day takeaway from views.py,
+ * 4 context-rich KPI cards (badges pre-computed in Python), and side-by-side Hourly Profile
  * + NYC Stop Map preview.
  */
 export function HomeGlance({
   meta,
   overview,
   source,
-  feedChecks,
 }: {
   meta: Meta;
   overview: Overview;
   source: Source;
-  feedChecks: Record<string, FeedCheckSummary>;
 }) {
   const modes = meta.modes.map((m) => m.key);
   const days = meta.days.map((d) => d.key);
@@ -46,23 +42,14 @@ export function HomeGlance({
   const peerByKey = Object.fromEntries((peerView?.figures ?? []).map((f) => [f.key, f]));
   const byKey = Object.fromEntries(view.figures.map((f) => [f.key, f]));
   const dayShort = shortDay(view.day_label);
-  const fc = feedChecks[`${state.mode}/${state.day}`];
+  const fc = view.feed_checks;
   const failCount = fc ? fc.total - fc.passed : 0;
 
   const modeName = state.mode === "bus" ? "MTA Bus" : "NYC Subway";
-  const takeawayText =
-    state.mode === "bus"
-      ? `Fewer than half of bus arrivals kept to schedule, bunching ran more than ten times higher than subway, and ${failCount} feed quality check exceeded its limit.`
-      : `Roughly two-thirds of subway arrivals kept to schedule with minimal bunching, but ${failCount} feed quality checks failed and warrant caution when reading missing trips.`;
-
   const basisPlain = (basis: string | null | undefined) => (basis ? basis.replace(/^of /, "") : "");
 
   const extras: Record<string, KpiExtra> = {
     on_time: {
-      badge:
-        (byKey.on_time?.value ?? 0) < 0.5
-          ? { label: "Below 50 %", tone: "attention" }
-          : { label: "Higher on-time", tone: "pass" },
       viz:
         byKey.on_time?.value !== null && peerByKey.on_time?.value !== null ? (
           <PeerCompareBar
@@ -78,10 +65,6 @@ export function HomeGlance({
       shortNote: `Within 1 min early to 5 min late (MTA standard), across ${basisPlain(byKey.on_time?.basis)}.`,
     },
     bunched: {
-      badge:
-        (byKey.bunched?.value ?? 0) >= 0.05
-          ? { label: "Watch", tone: "attention" }
-          : { label: "Low", tone: "pass" },
       viz:
         byKey.bunched?.value !== null && peerByKey.bunched?.value !== null ? (
           <PeerCompareBar
@@ -96,10 +79,6 @@ export function HomeGlance({
       shortNote: `Vehicles arriving within 25 % of scheduled gap, out of ${basisPlain(byKey.bunched?.basis)}.`,
     },
     not_delivered: {
-      badge:
-        (byKey.not_delivered?.value ?? 0) >= 0.1
-          ? { label: "Elevated", tone: "fail" }
-          : { label: "Check feed", tone: "attention" },
       viz:
         byKey.not_delivered?.value !== null && peerByKey.not_delivered?.value !== null ? (
           <PeerCompareBar
@@ -107,17 +86,13 @@ export function HomeGlance({
             peerValue={peerByKey.not_delivered.value as number}
             peerLabel={`${peerLabelShort} (${dayShort})`}
             peerDisplay={peerByKey.not_delivered.display}
-            fillTone={(byKey.not_delivered?.value ?? 0) >= 0.1 ? "fail" : "attention"}
+            fillTone={byKey.not_delivered?.badge?.tone === "fail" ? "fail" : "attention"}
             leftLabel="Lower is better"
           />
         ) : undefined,
       shortNote: `Never reported or never moved in feed, from ${basisPlain(byKey.not_delivered?.basis)}.`,
     },
     feed_score: {
-      badge:
-        failCount > 0
-          ? { label: `${failCount} failed`, tone: "fail" }
-          : { label: "All passed", tone: "pass" },
       viz: fc ? <CheckStrip passed={fc.passed} total={fc.total} /> : undefined,
       shortNote:
         fc && failCount > 0
@@ -133,7 +108,7 @@ export function HomeGlance({
         <DaySelect days={meta.days} value={state.day} onChange={(day) => setState({ day })} />
       </FilterBar>
 
-      {/* Plain-English takeaway without repeating the exact KPI figures directly below */}
+      {/* Plain-English takeaway shared with Streamlit via views.overview */}
       <p
         key={`${state.mode}-${state.day}`}
         className="value-update rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink"
@@ -142,7 +117,7 @@ export function HomeGlance({
         <strong className="font-semibold">
           Day takeaway ({view.day_label}, {modeName}):
         </strong>{" "}
-        {takeawayText}
+        {view.takeaway}
       </p>
 
       {view.caveat ? (
@@ -178,7 +153,7 @@ export function HomeGlance({
                 rows={view.hours}
                 rowKey={(h) => String(h.service_hour)}
                 columns={[
-                  { key: "hour", label: "Hour", render: (h) => serviceHour(h.service_hour) },
+                  { key: "hour", label: "Hour", render: (h) => h.hour_label },
                   { key: "events", label: "Arrivals", numeric: true, render: (h) => count(h.events) },
                   {
                     key: "share",

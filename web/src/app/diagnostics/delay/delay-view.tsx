@@ -69,18 +69,16 @@ function Body({ data, mode, segments }: { data: Delay; mode: string; segments: I
       </p>
     );
   }
-  const shown = Object.fromEntries(data.figures.map((f) => [f.key, f.display]));
   return (
     <div className="space-y-5">
-      <p
-        className="rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink"
-        data-testid="headline"
-      >
-        <strong className="font-semibold">Delay split:</strong> A typical trip reached its first observed stop{" "}
-        <span className="num font-semibold">{shown.inherited}</span> late and lost another{" "}
-        <span className="num font-semibold">{shown.gained}</span> along the way, finishing{" "}
-        <span className="num font-semibold">{shown.final}</span> late.
-      </p>
+      {data.takeaway ? (
+        <p
+          className="rounded-lg border border-blue-200 border-l-4 border-l-brand bg-brand-soft px-4 py-3 text-[15px] leading-relaxed text-ink tabular-nums"
+          data-testid="headline"
+        >
+          <strong className="font-semibold">Delay split:</strong> {data.takeaway}
+        </p>
+      ) : null}
       <KpiRow figures={data.figures} size="md" />
       {data.caption ? <p className="text-xs text-muted-ink">{data.caption}</p> : null}
       <SegmentList mode={mode} initial={segments} />

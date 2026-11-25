@@ -17,6 +17,12 @@ export const SCHEMA = "transitometer.web/1";
 const num = z.number();
 const maybeNum = z.nullable(z.number());
 
+export const badge = z.object({
+  label: z.string(),
+  tone: z.enum(["pass", "fail", "attention", "neutral"]),
+});
+export type Badge = z.infer<typeof badge>;
+
 export const figure = z.object({
   key: z.string(),
   label: z.string(),
@@ -24,6 +30,7 @@ export const figure = z.object({
   display: z.string(),
   help: z.nullable(z.string()),
   basis: z.optional(z.nullable(z.string())),
+  badge: z.optional(z.nullable(badge)),
 });
 export type Figure = z.infer<typeof figure>;
 
@@ -97,16 +104,34 @@ export const overview = z.object({
       group_label: z.string(),
       day: z.string(),
       day_label: z.string(),
+      takeaway: z.string(),
+      feed_checks: z.nullable(z.object({ passed: num, total: num, failed: z.array(z.string()) })),
       figures: z.array(figure),
       hours: z.array(
-        z.object({ service_hour: num, events: num, on_time_share: maybeNum, display: z.string(), sufficient: z.boolean() }),
+        z.object({
+          service_hour: num,
+          hour_label: z.string(),
+          events: num,
+          on_time_share: maybeNum,
+          display: z.string(),
+          sufficient: z.boolean(),
+        }),
       ),
       hourly_min_events: num,
       caveat,
     }),
   ),
   findings: z.array(
-    z.object({ key: z.string(), kicker: z.string(), value: z.string(), headline: z.string(), detail: z.string(), page: z.string() }),
+    z.object({
+      key: z.string(),
+      kicker: z.string(),
+      value: z.string(),
+      badge,
+      headline: z.string(),
+      detail: z.string(),
+      stats: z.optional(z.looseObject({})),
+      page: z.string(),
+    }),
   ),
   pipeline: z.object({
     messages: z.nullable(z.string()),
@@ -138,6 +163,7 @@ export const overview = z.object({
       total: num,
       display: z.string(),
     }),
+    badge,
   }),
 });
 export type Overview = z.infer<typeof overview>;
@@ -149,12 +175,17 @@ const routeShare = z.object({
   late_share: num,
 });
 export const onTime = z.object({
+  day: z.string(),
+  day_label: z.string(),
+  takeaway: z.nullable(z.string()),
   routes: z.array(routeShare),
   ranking: z.array(routeShare),
   cells: z.array(
     z.object({
       route_id: z.string(),
       service_hour: num,
+      hour_label: z.string(),
+      hour_short: z.string(),
       events: num,
       on_time_share: maybeNum,
       late_share: maybeNum,
@@ -168,6 +199,9 @@ export const onTime = z.object({
 export type OnTime = z.infer<typeof onTime>;
 
 export const headways = z.object({
+  day: z.string(),
+  day_label: z.string(),
+  takeaway: z.nullable(z.string()),
   summary: z.nullable(z.looseObject({ headways: num })),
   figures: z.array(figure),
   routes: z.array(
@@ -184,6 +218,7 @@ export const headways = z.object({
     z.object({
       route_id: z.string(),
       service_hour: num,
+      hour_label: z.string(),
       headways: num,
       regular_share: maybeNum,
       bunched: num,
@@ -195,6 +230,9 @@ export const headways = z.object({
 export type Headways = z.infer<typeof headways>;
 
 export const missingTrips = z.object({
+  day: z.string(),
+  day_label: z.string(),
+  takeaway: z.nullable(z.string()),
   summary: z.nullable(z.looseObject({ scheduled: num })),
   figures: z.array(figure),
   outcomes: z.array(
@@ -225,6 +263,9 @@ export const missingTrips = z.object({
 export type MissingTrips = z.infer<typeof missingTrips>;
 
 export const delay = z.object({
+  day: z.string(),
+  day_label: z.string(),
+  takeaway: z.nullable(z.string()),
   summary: z.nullable(z.looseObject({ trip_vehicles: num })),
   figures: z.array(figure),
   caption: z.nullable(z.string()),
@@ -238,6 +279,7 @@ export const segments = z.object({
       route_id: z.string(),
       direction_id: maybeNum,
       service_hour: num,
+      hour_label: z.string(),
       from_stop: z.string(),
       to_stop: z.string(),
       from_name: z.string(),
@@ -288,6 +330,8 @@ export type StopIndex = z.infer<typeof stopIndex>;
 
 export const HOUR_COLUMNS = [
   "service_hour",
+  "hour_label",
+  "hour_short",
   "events",
   "on_time",
   "on_time_share",
@@ -313,7 +357,21 @@ export const stopRoute = z.object({
       values: z.record(z.string(), maybeNum),
       display: z.record(z.string(), z.string()),
       hours: z.array(
-        z.tuple([num, num, num, maybeNum, maybeNum, maybeNum, num, num, maybeNum, maybeNum, z.boolean()]),
+        z.tuple([
+          num,
+          z.string(),
+          z.string(),
+          num,
+          num,
+          maybeNum,
+          maybeNum,
+          maybeNum,
+          num,
+          num,
+          maybeNum,
+          maybeNum,
+          z.boolean(),
+        ]),
       ),
     }),
   ),
@@ -331,6 +389,8 @@ const mapStopRow = z.tuple([
   z.boolean(),
   z.string(),
   maybeNum,
+  num,
+  z.nullable(z.string()),
 ]);
 
 export const stopMap = z.object({
@@ -346,9 +406,34 @@ export const stopMap = z.object({
 });
 export type StopMap = z.infer<typeof stopMap>;
 
-/** Pre-aggregated 670 m grid cell: [lon, lat, events, shareOrNull, stopCount, suffCount, topStop, topRoute]. */
-export const mapGridCell = z.tuple([num, num, num, maybeNum, num, num, z.string(), z.string()]);
+/** Pre-aggregated 670 m grid cell: [lon, lat, events, shareOrNull, stopCount, suffCount, topStop, topRoute, band, deltaPts]. */
+export const mapGridCell = z.tuple([
+  num,
+  num,
+  num,
+  maybeNum,
+  num,
+  num,
+  z.string(),
+  z.string(),
+  num,
+  z.nullable(z.string()),
+]);
 export type MapGridCell = z.infer<typeof mapGridCell>;
+
+export const mapBandSpec = z.object({
+  id: num,
+  label: z.string(),
+  range: z.string(),
+  color: z.string(),
+  max: maybeNum,
+});
+
+export const mapThinBand = z.object({
+  id: z.literal("thin"),
+  label: z.string(),
+  color: z.string(),
+});
 
 export const mapTileSpec = z.object({
   min_lon: num,
@@ -360,7 +445,7 @@ export const mapTileSpec = z.object({
 });
 export type MapTileSpec = z.infer<typeof mapTileSpec>;
 
-/** Lightweight Stop map payload: summary stats, equal-weighted stop median, top-50 table rows, 670 m grid. */
+/** Lightweight Stop map payload: summary stats, equal-weighted stop median, diverging bands, top-50 table rows, 670 m grid. */
 export const stopMapGrid = z.object({
   mode: z.string(),
   columns: z
@@ -372,6 +457,8 @@ export const stopMapGrid = z.object({
   min_events: num,
   stop_median_share: maybeNum,
   stop_median_display: z.string(),
+  bands: z.array(mapBandSpec),
+  thin_band: mapThinBand,
   band_counts: z.array(num),
   summary: z.string(),
   definitions: z.string(),
@@ -489,6 +576,7 @@ export const earlyWarning = z.object({
         z.object({
           service_hour: num,
           label: z.string(),
+          hour_label: z.string(),
           decisions: num,
           warnings: num,
           bar: num,
@@ -532,6 +620,11 @@ export const feedHealth = z.object({
           score: num,
           display: z.string(),
           help: z.string(),
+          passed: num,
+          total: num,
+          failed_count: num,
+          badge,
+          status_badge: badge,
           failed: z.array(z.string()),
           checks: z.array(
             z.object({

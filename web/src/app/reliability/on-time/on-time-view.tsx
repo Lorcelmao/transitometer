@@ -10,18 +10,14 @@ import { ChartFrame, DataTable } from "@/components/story/chart-frame";
 import { Definitions } from "@/components/story/page-parts";
 import { onTime, type Meta, type OnTime } from "@/data/schemas";
 import type { Initial } from "@/hooks/use-view";
-import { count, dayLabel, pct, serviceHour } from "@/lib/format";
+import { count, pct } from "@/lib/format";
 
 function Body({
   data,
   source,
-  day,
-  groupLabel,
 }: {
   data: OnTime;
   source: Initial<OnTime>["source"];
-  day: string;
-  groupLabel: string;
 }) {
   const routes = data.routes.map((r) => r.route_id);
   const build = useCallback((font: string) => heatmapOption(data.cells, routes, font), [data, routes]);
@@ -32,20 +28,12 @@ function Body({
       </p>
     );
   }
-  const worst = data.ranking[0];
   return (
     <>
       <ChartFrame
         title={`The ${routes.length} least punctual routes, hour by hour`}
-        lead={
-          <p>
-            On {dayLabel(day)}, route <strong className="font-semibold text-ink">{worst.route_id}</strong> was the
-            least punctual of the {groupLabel} routes:{" "}
-            <span className="num font-semibold text-ink">{pct(worst.on_time_share)}</span> of its{" "}
-            <span className="num">{count(worst.events)}</span> observed arrivals were on time.
-          </p>
-        }
-        summary={`Heatmap of on-time share by route and hour for the ${routes.length} least punctual routes, least punctual first. Darker blue means more punctual; outlined cells had fewer than ${data.min_events} arrivals and are not scored. Hours marked +1 continue the same service day after midnight.`}
+        lead={data.takeaway ? <p className="tabular-nums">{data.takeaway}</p> : undefined}
+        summary={`Heatmap of on-time share by route and hour for the ${routes.length} least punctual routes, least punctual first. Darker blue means more punctual; outlined cells had fewer than ${data.min_events} arrivals and are not scored. Hours marked (+1) continue the same service day after midnight.`}
         chart={
           <EChart
             build={build}
@@ -60,7 +48,7 @@ function Body({
             rowKey={(c) => `${c.route_id}-${c.service_hour}`}
             columns={[
               { key: "route", label: "Route", render: (c) => c.route_id },
-              { key: "hour", label: "Hour", numeric: true, render: (c) => serviceHour(c.service_hour) },
+              { key: "hour", label: "Hour", numeric: true, render: (c) => c.hour_label },
               { key: "events", label: "Arrivals", numeric: true, render: (c) => count(c.events) },
               {
                 key: "on_time",
@@ -116,14 +104,7 @@ export function OnTimeView({ meta, initial }: { meta: Meta; initial: Initial<OnT
       page="on-time"
       schema={onTime}
       initial={initial}
-      render={({ data, source, mode, day }) => (
-        <Body
-          data={data}
-          source={source}
-          day={day}
-          groupLabel={meta.modes.find((m) => m.key === mode)?.label ?? mode}
-        />
-      )}
+      render={({ data, source }) => <Body data={data} source={source} />}
     />
   );
 }
